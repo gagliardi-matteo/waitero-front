@@ -1,0 +1,12 @@
+<div *ngFor="let categoria of categorie" class="mb-6">
+  <h2 class="text-lg font-semibold mb-2">{{ categoria.nome }}</h2>
+  <div *ngIf="getPiattiByCategoria(categoria.id).length; else noPiatti">
+    <ul>
+      <li *ngFor="let piatto of getPiattiByCategoria(categoria.id)" class="ml-4">
+        🍽️ {{ piatto.nome }} – {{ piatto.prezzo}} €
+        <p class="text-sm text-gray-600">{{ piatto.descrizione }}</p>
+      </li>
+    </ul>
+  </div>
+  <ng-template #noPiatti><p class="text-gray-500 ml-4">Nessun piatto in questa categoria.</p></ng-template>
+</div>
