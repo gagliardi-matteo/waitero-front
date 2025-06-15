@@ -10,6 +10,11 @@ export const routes: Routes = [
     path: 'menu',
     loadComponent: () => import('./pages/menu/menu.component').then(m => m.MenuComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'menu-management',
+    loadComponent: () => import('./pages/menu-management/menu-management.component').then(m => m.MenuManagementComponent),
+    canActivate: [authGuard]
   }
   // altre rotte (es. menu)...
 ];

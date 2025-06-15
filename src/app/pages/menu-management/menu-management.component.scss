@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+
+.content {
+  flex: 1;
+  padding: 0 2rem 2rem;
+  background-color: #f8f5f0;
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+
+    h1 {
+      color: #3E2C23;
+    }
+
+    .add-button {
+      background-color: #7E8D66;
+      border: none;
+      padding: 0.5rem 1rem;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+
+      .plus-icon {
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  .category-section {
+    margin-bottom: 3rem;
+  }
+
+  .category-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #3E2C23;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.5rem;
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .menu-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    color: #2E2E2E;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: transform 0.2s ease;
+
+    img {
+      object-fit: cover;
+      height: 140px;
+      width: 100%;
+      transition: transform 0.2s ease;
+    }
+
+    &:hover img {
+      transform: scale(1.05);
+    }
+
+    .info {
+      padding: 1rem;
+
+      .category-label {
+        font-size: 0.75rem;
+        color: #7E8D66;
+      }
+
+      .name {
+        font-weight: 600;
+        font-size: 1rem;
+        margin: 0.5rem 0 0.25rem;
+      }
+
+      .price {
+        font-size: 0.95rem;
+        color: #2E2E2E;
+        margin-bottom: 0.75rem;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+
+        button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #5C5C5C;
+          transition: color 0.2s ease;
+
+          .material-symbols-outlined {
+            font-size: 20px;
+            vertical-align: middle;
+          }
+        }
+
+        .edit-btn:hover {
+          color: #B2552F;
+        }
+
+        .delete-btn:hover {
+          color: #C24545;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+.sidebar {
+  width: 240px;
+  background-color: #7E8D66;
+  color: white;
+  height: 100%;
+  padding: 1rem;
+  position: fixed;
+  .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    li {
+        margin-bottom: 3rem; // prima era 1rem
+        padding-left: 0.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &.active {
+            font-weight: 600;
+            border-left: 3px solid white;
+        }
+    }
+  }
+}
