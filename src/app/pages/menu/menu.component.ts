@@ -6,6 +6,7 @@ import { NgFor, NgIf } from '@angular/common';
 import { Piatto } from '../../models/piatto.model';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { Ristorante } from '../../models/ristorante.mode';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-menu',
@@ -35,7 +36,7 @@ export class MenuComponent implements OnInit {
 
     if (!restaurantId || !tableId || !token) return;
 
-    this.http.post<{ valid: boolean }>('http://localhost:8080/api/customer/validate-token', {
+    this.http.post<{ valid: boolean }>(`${environment.apiUrl}/customer/validate-token`, {
       token, restaurantId, tableId
     }).subscribe(res => {
       if (!res.valid) return;
@@ -45,7 +46,7 @@ export class MenuComponent implements OnInit {
       if (typeof window !== 'undefined') {
         history.replaceState(null, '', `/menu/${restaurantId}/${tableId}`);
       }
-      this.http.get<Ristorante>(`http://localhost:8080/api/customer/ristorante/${this.restaurantId}`)
+      this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`)
       .subscribe(data => {
         this.ristoranteObj = data;
       })
@@ -54,7 +55,7 @@ export class MenuComponent implements OnInit {
   }
 
   loadPiatti() {
-    this.http.get<Piatto[]>(`http://localhost:8080/api/customer/menu/piatti/${this.restaurantId}`)
+    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}`)
       .subscribe(data => {
         this.piatti = data;
         this.piattiRaggruppati = this.raggruppaPerCategoria(data);
@@ -90,7 +91,7 @@ export class MenuComponent implements OnInit {
 
   getImageUrl(imageUrl: string | null | undefined): string {
     return (!imageUrl || imageUrl.trim() === '') ? '/placeholder.png' :
-      `http://localhost:8080/api/image/images/${imageUrl}`;
+      `${environment.apiUrl}/image/images/${imageUrl}`;
   }
 
   trackById(index: number, item: any): any {

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { jwtDecode } from 'jwt-decode';
 import { TokenPayload } from '../models/TokenPayload.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -27,7 +28,7 @@ export class AuthService {
     this.authService.signIn(GoogleLoginProvider.PROVIDER_ID).then(user => {
       const idToken = user.idToken;
       this.http.post<{ accessToken: string; refreshToken: string }>(
-        'http://localhost:8080/api/auth/login',
+        `${environment.apiUrl}/auth/login`,
         { idToken }
       ).subscribe(res => {
         this.accessToken = res.accessToken;
@@ -62,7 +63,7 @@ export class AuthService {
     if (!refreshToken) return;
 
     return this.http.post<{ accessToken: string; refreshToken: string }>(
-      'http://localhost:8080/api/auth/refresh-token',
+      `${environment.apiUrl}/auth/refresh-token`,
       { refreshToken }
     ).subscribe(res => {
       this.accessToken = res.accessToken;
@@ -73,7 +74,7 @@ export class AuthService {
 
   loginWithGoogleIdToken(idToken: string) {
     this.http.post<{ accessToken: string; refreshToken: string }>(
-      'http://localhost:8080/api/auth/login',
+      `${environment.apiUrl}/auth/login`,
       { idToken }
     ).subscribe(res => {
       this.accessToken = res.accessToken;

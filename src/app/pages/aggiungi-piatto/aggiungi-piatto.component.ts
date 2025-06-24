@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { response } from 'express';
 import { AuthService } from '../../auth/AuthService';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-add-dish',
@@ -65,7 +66,7 @@ export class AddDishComponent {
       formData.append('image', this.selectedFile);
     }
 
-    this.http.post(`http://localhost:8080/api/menu/piatti/${userId}`, formData).subscribe({
+    this.http.post(`${environment.apiUrl}/menu/piatti/${userId}`, formData).subscribe({
       next: () => this.router.navigate(['/menu-management']),
       error: (err) => {
         console.error(err);

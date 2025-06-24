@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../../auth/AuthService';
 import { Piatto } from '../../models/piatto.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-menu-management',
@@ -29,7 +30,7 @@ export class MenuManagementComponent implements OnInit {
       return;
     }
 
-    this.http.get<Piatto[]>(`http://localhost:8080/api/menu/piattiRistoratore/${this.userId}`)
+    this.http.get<Piatto[]>(`${environment.apiUrl}/menu/piattiRistoratore/${this.userId}`)
       .subscribe({
         next: (data: any[]) => this.piatti = data,
         error: (err) => console.error('Errore caricamento piatti:', err)
@@ -81,7 +82,7 @@ export class MenuManagementComponent implements OnInit {
     if (!imageUrl || imageUrl.trim() === '') {
       return '/placeholder.png'; // ✅ immagine locale fallback
     }
-    return `http://localhost:8080/api/image/images/${imageUrl}`;
+    return `${environment.apiUrl}/image/images/${imageUrl}`;
   }
 
 }

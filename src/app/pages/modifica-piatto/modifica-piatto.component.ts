@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { PiattoService } from '../../services/piatto.service';
 import { Piatto } from '../../models/piatto.model';
 import { CategoriaEnum } from '../../models/categorie.enum';
+import { environment } from '../../../environments/environment';
 
 
 @Component({
@@ -93,7 +94,7 @@ export class ModificaPiattoComponent implements OnInit {
     if (!imageUrl || imageUrl.trim() === '' || imageUrl === 'assets/placeholder.jpg') {
       return '/placeholder.png';
     }
-    return `http://localhost:8080/api/image/images/${imageUrl}`;
+    return `${environment.apiUrl}/image/images/${imageUrl}`;
   }
 
   annullaNuovaImmagine(): void {
