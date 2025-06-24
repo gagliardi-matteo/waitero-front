@@ -2,14 +2,11 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-  root: 'src', // Vite parte da src/
+  root: 'src',
   plugins: [tsconfigPaths()],
   build: {
-    outDir: '../dist/client', // esce fuori da src
+    outDir: '../dist/client',
     emptyOutDir: true,
-    rollupOptions: {
-      input: 'index.html', // index in src/
-    },
   },
   ssr: {
     noExternal: [/^@angular/],
