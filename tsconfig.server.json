@@ -1,15 +1,16 @@
 {
-  "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "outDir": "./dist/out-tsc/server",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "rootDir": ".",                             
+    "outDir": "./dist/front/server",            
     "types": []
   },
-  "files": [
-    "src/main.server.ts"
+  "include": [
+    "server.ts", 
+    "src/main.server.ts"                        
   ]
 }
