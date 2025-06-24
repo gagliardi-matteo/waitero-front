@@ -12,5 +12,9 @@
     "src/server.ts",
     "src/main.server.ts",
     "src/app/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.spec.ts",
+    "src/test.ts"
   ]
 }
