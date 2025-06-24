@@ -16,17 +16,20 @@ app.use(express.static(distFolder));
 
 app.get('*', async (req, res) => {
   try {
-    const html = await renderApplication(() => bootstrapApplication(AppComponent, config), {
-      document: indexHtml,
-      url: req.url
-    });
+    const html = await renderApplication(
+      () => bootstrapApplication(AppComponent, config),
+      {
+        document: indexHtml,
+        url: req.url
+      }
+    );
     res.status(200).send(html);
   } catch (err) {
     console.error(err);
-    res.status(500).send('Errore nel rendering SSR');
+    res.status(500).send('Server error');
   }
 });
 
 app.listen(port, () => {
-  console.log(`✅ SSR in ascolto su http://localhost:${port}`);
+  console.log(`✅ Angular SSR server listening on http://localhost:${port}`);
 });

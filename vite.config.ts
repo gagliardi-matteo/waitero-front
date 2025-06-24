@@ -2,8 +2,9 @@ import { defineConfig } from 'vite';
 import angular from '@analogjs/vite-plugin-angular';
 import { resolve } from 'path';
 
-export default defineConfig(({ command }) => {
-  const isSSR = command === 'build';
+const isSSR = process.env['BUILD_TARGET'] === 'ssr';
+
+export default defineConfig(() => {
   return {
     plugins: [angular()],
     build: isSSR
