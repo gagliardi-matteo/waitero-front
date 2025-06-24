@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc --project tsconfig.server.json",
-    "preview": "vite preview",
-    "start": "node dist/server/server.js", 
-    "test": "ng test"
+    "start": "node dist/server/server.js"
   },
   "private": true,
   "dependencies": {

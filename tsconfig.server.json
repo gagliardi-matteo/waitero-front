@@ -5,11 +5,11 @@
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "rootDir": "src",
-    "outDir": "./dist/front/server",
+    "outDir": "dist/server",
     "types": []
   },
   "include": [
-    "src/main.server.ts"
+    "src/main.server.ts",
+    "src/server.ts"
   ]
 }
