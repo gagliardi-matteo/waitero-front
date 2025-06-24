@@ -34,8 +34,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
-            "prerender": true
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -112,8 +111,15 @@
             }
           },
           "defaultConfiguration": "production"
+        },
+        "prerender": {
+          "builder": "@angular-devkit/build-angular:prerender",
+          "options": {
+            "browserTarget": "front:build:production",
+            "serverTarget": "front:server:production",
+            "routes": [ "/" ]
+          }
         }
-
       }
     }
   }
