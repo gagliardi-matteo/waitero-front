@@ -3,10 +3,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:client": "vite build",
-    "build:server": "vite build --ssr src/main.server.ts",
-    "build:ssr": "npm run build:client && npm run build:server",
-    "start": "node server.ts"
+    "dev": "vite",
+    "ng": "ng",
+    "build": "vite build && tsc --project tsconfig.server.json",
+    "start": "node dist/server/server.js",
+    "build:ssr": "cross-env BUILD_TARGET=ssr vite build && tsc --project tsconfig.server.json"
   },
   "private": true,
   "dependencies": {
