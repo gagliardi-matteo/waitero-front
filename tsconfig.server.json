@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",                        // <== CAMBIA QUESTO
-    "moduleResolution": "Node",                // <== CAMBIA QUESTO
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "./dist/front/server",
     "types": []
   },
