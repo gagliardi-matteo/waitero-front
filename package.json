@@ -3,11 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",                             
-    "ng": "ng",
-    "start": "node dist/server/server.js",   
-    "build": "vite build && tsc --project tsconfig.server.json",
-    "build:ssr": "cross-env BUILD_TARGET=ssr vite build && tsc --project tsconfig.server.json"
+    "build:client": "vite build",
+    "build:server": "vite build --ssr src/main.server.ts",
+    "build:ssr": "npm run build:client && npm run build:server",
+    "start": "node server.ts"
   },
   "private": true,
   "dependencies": {
@@ -44,6 +43,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.5.2"
+    "typescript": "~5.5.2",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }
