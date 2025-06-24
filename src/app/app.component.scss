@@ -1,8 +1,17 @@
+.layout {
+  display: flex;
+  flex-direction: row;
+}
+
 .content {
-  margin-left: 240px; // offset esatto per non finirci sotto
-  padding: 2rem;
   min-height: 100vh;
-  background-color: #f6f1eb;
+  background-color: #ecebeb;
   box-sizing: border-box;
   overflow-y: auto;
+  flex: 1;
+  transition: margin-left 0.2s ease;
+}
+
+.with-sidebar {
+  margin-left: 240px; // Larghezza della tua sidebar
 }

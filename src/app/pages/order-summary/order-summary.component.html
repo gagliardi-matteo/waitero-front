@@ -1,0 +1,30 @@
+<div class="order-summary-wrapper" [class.expanded]="isExpanded">
+  <div class="summary-header" (click)="toggleExpanded()">
+    <div class="badge">{{ piatti.length }}</div>
+    <div class="vedi-carrello-text">Vedi carrello</div>
+    <div class="prezzo">{{ totale | number: '1.2-2' }} €</div>
+  </div>
+
+  <div class="order-content">
+    <div class="order-details">
+      <h3>Il tuo ordine</h3>
+      <ul>
+        <li *ngFor="let item of piattiRaggruppati">
+          <div class="item-row">
+            <div class="info">
+              {{ item.nome }} · {{ item.prezzo | number: '1.2-2' }} €
+            </div>
+            <div class="actions">
+              <button (click)="rimuovi(item)">−</button>
+              <span>{{ quantita(item.id) }}</span>
+              <button (click)="aggiungi(item)">+</button>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+    </div>
+
+    <button class="confirm-btn" (click)="confermaOrdine($event)">Conferma Ordine</button>
+  </div>
+</div>

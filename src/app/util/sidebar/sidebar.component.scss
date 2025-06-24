@@ -1,12 +1,12 @@
 .sidebar {
   width: 240px;
-  background-color: #7E8D66;
+  background-color: #ac0017;
   color: white;
   height: 100%;
   padding: 1rem;
   position: fixed;
   .logo {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: bold;
     margin-bottom: 2rem;
   }
@@ -19,10 +19,23 @@
         font-size: 1rem;
         font-weight: 500;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem; // spazio tra icona e testo
 
         &.active {
             font-weight: 600;
             border-left: 3px solid white;
+        }
+
+        .material-symbols-outlined {
+          font-size: 20px;
+          line-height: 1;
+        }
+
+        .label {
+          display: inline-block;
+          vertical-align: middle;
         }
     }
   }

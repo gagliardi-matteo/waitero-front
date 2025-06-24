@@ -1,0 +1,32 @@
+<div class="add-dish-form">
+  <h2>Aggiungi Piatto</h2>
+  <form [formGroup]="dishForm" (ngSubmit)="onSubmit()">
+    <label>Nome</label>
+    <input type="text" formControlName="nome" />
+
+    <label>Descrizione</label>
+    <textarea formControlName="descrizione" class="descrizione" id="descrizione"></textarea>
+
+    <label>Categoria</label>
+    <select formControlName="categoria">
+      <option disabled value="">Seleziona...</option>
+      <option>Primo</option>
+      <option>Secondo</option>
+      <option>Dolce</option>
+      <option>Contorno</option>
+    </select>
+
+    <label>Prezzo</label>
+    <input type="number" formControlName="prezzo" min="0" />
+
+    <label>Immagine</label>
+    <input type="file" (change)="onFileSelected($event)" />
+
+    <img *ngIf="previewUrl" [src]="previewUrl" width="150" class="preview-img" />
+
+    <button  class="add-button" type="submit" [disabled]="dishForm.invalid">Salva</button>
+    <button [routerLink]="['/menu-management']">
+      Indietro
+    </button>
+  </form>
+</div>

@@ -1,7 +1,7 @@
 <div class="content">
   <div class="page-header">
     <h1>Gestione Menù</h1>
-    <button class="add-button">
+    <button class="add-button" [routerLink]="['/add-dish']">
       <span class="plus-icon">+</span> Inserisci Piatto
     </button>
   </div>
@@ -10,13 +10,13 @@
     <h2 class="category-title">{{ entry[0] }}</h2>
     <div class="menu-grid">
       <div class="menu-card" *ngFor="let item of entry[1]">
-        <img [src]="item.imageUrl" alt="{{ item.name }}" />
+        <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
         <div class="info">
-          <div class="category-label">{{ item.category }}</div>
-          <div class="name">{{ item.name }}</div>
-          <div class="price">{{ item.price }}€</div>
+          <div class="category-label">{{ item.categoria }}</div>
+          <div class="name">{{ item.nome }}</div>
+          <div class="price">{{ item.prezzo }}€</div>
           <div class="actions">
-            <button class="edit-btn">
+            <button class="edit-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]">
               <span class="material-symbols-outlined">edit</span>
             </button>
             <button class="delete-btn">

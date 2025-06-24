@@ -1,12 +1,37 @@
-<div *ngFor="let categoria of categorie" class="mb-6">
-  <h2 class="text-lg font-semibold mb-2">{{ categoria.nome }}</h2>
-  <div *ngIf="getPiattiByCategoria(categoria.id).length; else noPiatti">
-    <ul>
-      <li *ngFor="let piatto of getPiattiByCategoria(categoria.id)" class="ml-4">
-        🍽️ {{ piatto.nome }} – {{ piatto.prezzo}} €
-        <p class="text-sm text-gray-600">{{ piatto.descrizione }}</p>
-      </li>
-    </ul>
+<div class="menu-header" *ngIf="ristoranteObj !==undefined">
+  <span>{{categoriaLabel(ristoranteObj.nome)}}</span>
+</div>
+
+<div class="menu-container">
+  <div class="category" *ngFor="let group of piattiRaggruppati">
+    <h2 class="category-title">{{ categoriaLabel(group[0]) }}</h2>
+
+    <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" (click)="openDettaglio(piatto)">
+      <div class="dish-info">
+        <div>
+          <div class="dish-name">{{ piatto.nome }}</div>
+          <div class="dish-description">{{ piatto.descrizione }}</div>
+          <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} €</div>
+        </div>
+      </div>
+
+      <div class="dish-image-container">
+        <img class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
+
+        <ng-container *ngIf="quantita(piatto.id) > 0; else addBtn">
+          <div class="dish-add-overlay" (click)="$event.stopPropagation()">
+            <button class="round-btn" (click)="removeFromOrder(piatto)">−</button>
+            <span class="qty-number">{{ quantita(piatto.id) }}</span>
+            <button class="round-btn" (click)="addToOrder(piatto)">+</button>
+          </div>
+        </ng-container>
+
+        <ng-template #addBtn>
+          <button class="add-button-overlay" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
+        </ng-template>
+      </div>
+    </div>
   </div>
-  <ng-template #noPiatti><p class="text-gray-500 ml-4">Nessun piatto in questa categoria.</p></ng-template>
+
+  <app-order-summary [piatti]="ordine" />
 </div>

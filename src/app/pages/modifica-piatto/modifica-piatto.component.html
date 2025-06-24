@@ -1,0 +1,53 @@
+<div class="modifica-container">
+  <div class="form-card">
+    <h1 class="title">Modifica Piatto</h1>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label>
+        Nome
+        <input type="text" formControlName="nome" />
+      </label>
+
+      <label>
+        Descrizione
+        <textarea formControlName="descrizione"></textarea>
+      </label>
+
+      <label>
+        Categoria
+        <select formControlName="categoria">
+            <option [ngValue]="null">Seleziona...</option>
+            <option *ngFor="let cat of categorie" [ngValue]="cat[0]">{{ cat[1] }}</option>
+        </select>
+      </label>
+
+      <label>
+        Prezzo
+        <input type="number" formControlName="prezzo" />
+      </label>
+
+      <label>
+        Immagine attuale
+        <img
+            class="preview-img"
+            [src]="imagePreviewUrl || imageUrlOriginale"
+        />
+      </label>
+
+      <label>
+        Carica nuova immagine
+        <input type="file" #fileInput (change)="onImageSelected($event)" />
+      </label>
+      <div *ngIf="nuovaImmagine" class="image-cancel">
+        <button type="button" (click)="annullaNuovaImmagine()">Annulla immagine selezionata</button>
+      </div>
+
+      <label class="disponibile-checkbox">
+        <input type="checkbox" formControlName="disponibile" />
+        Disponibile
+      </label>
+
+      <button type="submit" [disabled]="form.invalid">Salva modifiche</button>
+    </form>
+  </div>
+</div>

@@ -1,5 +1,5 @@
-import { Component, ElementRef, inject, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, inject, AfterViewInit, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../auth/AuthService';
 
 declare const google: any;
@@ -26,21 +26,24 @@ declare const google: any;
 export class LoginComponent implements AfterViewInit {
   private auth = inject(AuthService);
   private elementRef = inject(ElementRef);
+  private platformId = inject(PLATFORM_ID);
 
   ngAfterViewInit(): void {
-    google.accounts.id.initialize({
-      client_id: '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com',
-      callback: (response: any) => this.handleCredentialResponse(response)
-    });
+    if (isPlatformBrowser(this.platformId)) {
+      google.accounts.id.initialize({
+        client_id: '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com',
+        callback: (response: any) => this.handleCredentialResponse(response)
+      });
 
-    google.accounts.id.renderButton(
-      this.elementRef.nativeElement.querySelector('#g_id_signin'),
-      {
-        theme: 'outline',
-        size: 'large',
-        width: 250
-      }
-    );
+      google.accounts.id.renderButton(
+        this.elementRef.nativeElement.querySelector('#g_id_signin'),
+        {
+          theme: 'outline',
+          size: 'large',
+          width: 250
+        }
+      );
+    }
   }
 
   handleCredentialResponse(response: any) {

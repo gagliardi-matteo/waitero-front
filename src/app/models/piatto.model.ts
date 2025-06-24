@@ -4,5 +4,7 @@ export interface Piatto {
   descrizione: string;
   prezzo: number;
   disponibile: boolean;
-  categoriaId: number;
+  categoria: string;
+  imageUrl: string | null;
+  ingredienti?: string;
 }

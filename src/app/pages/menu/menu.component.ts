@@ -1,27 +1,105 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MenuService } from '../../services/menu.service';
-import { CategoriaPiatto, PiattoDTO } from '../../types';
-import { AsyncPipe, NgFor, NgIf } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { NgFor, NgIf } from '@angular/common';
+import { Piatto } from '../../models/piatto.model';
+import { OrderSummaryComponent } from '../order-summary/order-summary.component';
+import { Ristorante } from '../../models/ristorante.mode';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, NgIf, NgFor],
+  imports: [CommonModule, OrderSummaryComponent, NgFor, NgIf],
   templateUrl: './menu.component.html',
+  styleUrls: ['./menu.component.scss']
 })
 export class MenuComponent implements OnInit {
-  private readonly menuService = inject(MenuService);
+  restaurantId: string = '';
+  tableId: string = '';
+  piatti: Piatto[] = [];
+  ordine: Piatto[] = [];
+  piattiRaggruppati: [string, Piatto[]][] = [];
+  ristoranteObj!: Ristorante;
 
-  categorie: CategoriaPiatto[] = [];
-  piatti: PiattoDTO[] = [];
+  readonly categoriaOrder: string[] = [
+    'ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'
+  ];
+
+  constructor(private http: HttpClient, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    this.menuService.getCategorie().subscribe(c => this.categorie = c);
-    this.menuService.getPiatti().subscribe(p => this.piatti = p);
+    const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
+    const tableId = this.route.snapshot.paramMap.get('tableId');
+    const token = this.route.snapshot.paramMap.get('token');
+
+    if (!restaurantId || !tableId || !token) return;
+
+    this.http.post<{ valid: boolean }>('http://localhost:8080/api/customer/validate-token', {
+      token, restaurantId, tableId
+    }).subscribe(res => {
+      if (!res.valid) return;
+      this.restaurantId = restaurantId;
+      this.tableId = tableId;
+      this.loadPiatti();
+      if (typeof window !== 'undefined') {
+        history.replaceState(null, '', `/menu/${restaurantId}/${tableId}`);
+      }
+      this.http.get<Ristorante>(`http://localhost:8080/api/customer/ristorante/${this.restaurantId}`)
+      .subscribe(data => {
+        this.ristoranteObj = data;
+      })
+    });
+
   }
 
-  getPiattiByCategoria(categoriaId: number): PiattoDTO[] {
-    return this.piatti.filter(p => p.categoriaId === categoriaId);
+  loadPiatti() {
+    this.http.get<Piatto[]>(`http://localhost:8080/api/customer/menu/piatti/${this.restaurantId}`)
+      .subscribe(data => {
+        this.piatti = data;
+        this.piattiRaggruppati = this.raggruppaPerCategoria(data);
+      });
   }
+
+  private raggruppaPerCategoria(piatti: Piatto[]): [string, Piatto[]][] {
+    const map = new Map<string, Piatto[]>();
+    for (const piatto of piatti) {
+      const cat = (piatto.categoria ?? 'SENZA CATEGORIA').toUpperCase();
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(piatto);
+    }
+    return this.categoriaOrder.filter(cat => map.has(cat)).map(cat => [cat, map.get(cat)!]);
+  }
+
+  categoriaLabel(cat: string): string {
+    return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+  }  
+
+  addToOrder(piatto: Piatto) {
+    this.ordine.push(piatto);
+  }
+
+  removeFromOrder(piatto: Piatto) {
+    const index = this.ordine.findIndex(p => p.id === piatto.id);
+    if (index >= 0) this.ordine.splice(index, 1);
+  }
+
+  quantita(itemId: number): number {
+    return this.ordine.filter(p => p.id === itemId).length;
+  }
+
+  getImageUrl(imageUrl: string | null | undefined): string {
+    return (!imageUrl || imageUrl.trim() === '') ? '/placeholder.png' :
+      `http://localhost:8080/api/image/images/${imageUrl}`;
+  }
+
+  trackById(index: number, item: any): any {
+    return item.id;
+  }
+
+  openDettaglio(piatto: Piatto): void {
+    console.log('Dettaglio piatto:', piatto);
+  }
+
+
 }

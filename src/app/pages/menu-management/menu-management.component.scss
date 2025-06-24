@@ -2,8 +2,8 @@
 
 .content {
   flex: 1;
-  padding: 0 2rem 2rem;
-  background-color: #f8f5f0;
+  padding: 2rem 2rem 2rem;
+  background-color: #ecebeb;
 
   .page-header {
     display: flex;
@@ -16,7 +16,7 @@
     }
 
     .add-button {
-      background-color: #7E8D66;
+      background-color: #ac0017;
       border: none;
       padding: 0.5rem 1rem;
       color: white;
@@ -79,7 +79,7 @@
 
       .category-label {
         font-size: 0.75rem;
-        color: #7E8D66;
+        color: #ac0017;
       }
 
       .name {

@@ -1,9 +1,22 @@
-<nav class="sidebar">
+<!-- sidebar.component.html -->
+<nav class="sidebar" *ngIf="isLoggedIn()">
   <div class="logo">WaiterO</div>
   <ul>
-    <li routerLink="/orders">Ordini</li>
-    <li routerLink="/menu" class="active">Menù</li>
-    <li routerLink="/qrcode">QR Code</li>
-    <li routerLink="/payments">Pagamenti</li>
+    <li routerLink="/orders">
+      <span class="material-symbols-outlined">receipt_long</span>
+      <span class="label">Ordini</span>
+    </li>
+    <li routerLink="/menu" class="active">
+      <span class="material-symbols-outlined">local_dining</span>
+      <span class="label">Menù</span>
+    </li>
+    <li routerLink="/qrcode">
+      <span class="material-symbols-outlined">qr_code</span>
+      <span class="label">QR Code</span>
+    </li>
+    <li routerLink="/payments">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="label">Pagamenti</span>
+    </li>
   </ul>
 </nav>

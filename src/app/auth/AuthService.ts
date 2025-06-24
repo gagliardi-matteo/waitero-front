@@ -1,17 +1,27 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { GoogleLoginProvider, SocialAuthService } from '@abacritt/angularx-social-login';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
+import { jwtDecode } from 'jwt-decode';
+import { TokenPayload } from '../models/TokenPayload.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private authService = inject(SocialAuthService);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
 
   accessToken: string | null = null;
   refreshToken: string | null = null;
-  private readonly TOKEN_KEY = 'accessToken';
+
+  private readonly ACCESS_KEY = 'accessToken';
+  private readonly REFRESH_KEY = 'refreshToken';
+
+  private isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
 
   loginWithGoogle() {
     this.authService.signIn(GoogleLoginProvider.PROVIDER_ID).then(user => {
@@ -22,25 +32,33 @@ export class AuthService {
       ).subscribe(res => {
         this.accessToken = res.accessToken;
         this.refreshToken = res.refreshToken;
-        localStorage.setItem('accessToken', res.accessToken);
-        localStorage.setItem('refreshToken', res.refreshToken);
+
+        if (this.isBrowser()) {
+          localStorage.setItem(this.ACCESS_KEY, res.accessToken);
+          localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
+        }
+
         this.router.navigate(['/menu']);
       });
     });
   }
 
   getToken() {
-    return this.accessToken || localStorage.getItem('accessToken');
+    return this.accessToken || (this.isBrowser() ? localStorage.getItem(this.ACCESS_KEY) : null);
   }
 
   logout() {
     this.authService.signOut();
-    localStorage.clear();
+    if (this.isBrowser()) {
+      localStorage.clear();
+    }
     this.router.navigate(['/login']);
   }
 
   refreshAccessToken() {
-    const refreshToken = localStorage.getItem('refreshToken');
+    if (!this.isBrowser()) return;
+
+    const refreshToken = localStorage.getItem(this.REFRESH_KEY);
     if (!refreshToken) return;
 
     return this.http.post<{ accessToken: string; refreshToken: string }>(
@@ -48,36 +66,55 @@ export class AuthService {
       { refreshToken }
     ).subscribe(res => {
       this.accessToken = res.accessToken;
-      localStorage.setItem('accessToken', res.accessToken);
-      localStorage.setItem('refreshToken', res.refreshToken);
+      localStorage.setItem(this.ACCESS_KEY, res.accessToken);
+      localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
     });
   }
 
   loginWithGoogleIdToken(idToken: string) {
     this.http.post<{ accessToken: string; refreshToken: string }>(
-        'http://localhost:8080/api/auth/login',
-        { idToken }
+      'http://localhost:8080/api/auth/login',
+      { idToken }
     ).subscribe(res => {
-        this.accessToken = res.accessToken;
-        this.refreshToken = res.refreshToken;
-        localStorage.setItem('accessToken', res.accessToken);
-        localStorage.setItem('refreshToken', res.refreshToken);
-        this.router.navigate(['/menu']);
-    });
-    }
+      this.accessToken = res.accessToken;
+      this.refreshToken = res.refreshToken;
 
-    isAuthenticated(): boolean {
-      const token = localStorage.getItem(this.TOKEN_KEY);
-      if (!token) return false;
-
-      // Decodifica del payload per verificarne la scadenza (se usi JWT standard)
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const now = Math.floor(Date.now() / 1000);
-        return payload.exp && payload.exp > now;
-      } catch (e) {
-        return false;
+      if (this.isBrowser()) {
+        localStorage.setItem(this.ACCESS_KEY, res.accessToken);
+        localStorage.setItem(this.REFRESH_KEY, res.refreshToken);
       }
-    }
 
+      this.router.navigate(['/menu-management']);
+    });
+  }
+
+  isAuthenticated(): boolean {
+    if (!this.isBrowser()) return false;
+
+    const token = localStorage.getItem(this.ACCESS_KEY);
+    if (!token) return false;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const now = Math.floor(Date.now() / 1000);
+      return payload.exp && payload.exp > now;
+    } catch {
+      return false;
+    }
+  }
+
+  getUserIdFromToken(): number | null {
+    if (!this.isBrowser()) return null;
+
+    const token = localStorage.getItem(this.ACCESS_KEY);
+    if (!token) return null;
+
+    try {
+      const decoded = jwtDecode<TokenPayload>(token);
+      return decoded.sub ?? null;
+    } catch (err) {
+      console.error('Errore nel decoding del token', err);
+      return null;
+    }
+  }
 }
