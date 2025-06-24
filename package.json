@@ -9,7 +9,7 @@
     "build:ssr:runner": "tsc server.ts --outDir dist --moduleResolution node --module esnext --esModuleInterop --outFile dist/server.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:front": "node dist/front/server/server.mjs"
+    "serve:ssr:front": "node dist/front/server/main.js"
   },
   "private": true,
   "dependencies": {
