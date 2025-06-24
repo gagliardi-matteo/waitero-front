@@ -3,15 +3,13 @@
   "compilerOptions": {
     "outDir": "./dist/out-tsc/server",
     "target": "ES2022",
-    "types": [],
-    "module": "NodeNext",
+    "module": "ESNext",
     "moduleResolution": "NodeNext",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "types": []
   },
   "files": [
     "src/main.server.ts"
-  ],
-  "angularCompilerOptions": {
-    "entryModule": "./src/app/app.server.module#AppServerModule"
-  }
+  ]
 }
