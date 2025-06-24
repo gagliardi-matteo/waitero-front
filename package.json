@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "build": "ng build && ng run front:server && tsc src/server.ts --outDir dist/front/server --moduleResolution node --module esnext --esModuleInterop",
+    "build": "ng build && ng run front:server && tsc server.ts --outDir dist/front/server --moduleResolution node --module esnext --esModuleInterop",
     "start": "node dist/front/server/server.mjs",        
     "serve": "node dist/front/server/main.js",             
     "serve:ssr:front": "node dist/front/server/main.js",   
