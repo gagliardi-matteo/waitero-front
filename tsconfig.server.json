@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",                        // <== CAMBIA QUESTO
+    "moduleResolution": "Node",                // <== CAMBIA QUESTO
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "rootDir": ".",                             
-    "outDir": "./dist/front/server",            
+    "rootDir": ".",
+    "outDir": "./dist/front/server",
     "types": []
   },
   "include": [
-    "server.ts", 
-    "src/main.server.ts"                        
+    "server.ts",
+    "src/main.server.ts"
   ]
 }
