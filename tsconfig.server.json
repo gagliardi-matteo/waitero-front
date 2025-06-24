@@ -10,7 +10,6 @@
     "types": []
   },
   "include": [
-    "src/server.ts",
     "src/main.server.ts"
   ]
 }

@@ -3,12 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "ng": "ng",
-    "build": "ng build && ng run front:server && tsc --project tsconfig.server.json",
-    "start": "node dist/front/server/src/server.js",  
-    "serve": "node dist/front/server/main.js",             
-    "serve:ssr:front": "node dist/front/server/main.js",   
-    "watch": "ng build --watch --configuration development",
+    "dev": "vite",
+    "build": "vite build && tsc --project tsconfig.server.json",
+    "preview": "vite preview",
+    "start": "node dist/server/server.js", 
     "test": "ng test"
   },
   "private": true,
