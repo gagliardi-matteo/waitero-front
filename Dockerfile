@@ -7,12 +7,12 @@ RUN npm install
 
 COPY . .
 
-# DEBUG: stampa contenuto della cartella
-RUN ls -R /app
-
+# Spostati esplicitamente nella directory src prima del build
+WORKDIR /app/src
 RUN npm run build
 
 FROM nginx:alpine
 COPY --from=build /app/dist/client /usr/share/nginx/html
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
