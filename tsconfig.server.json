@@ -1,15 +1,16 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
+    "outDir": "./dist/server",
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "outDir": "dist/server",
-    "types": []
+    "allowSyntheticDefaultImports": true
   },
   "include": [
+    "src/server.ts",
     "src/main.server.ts",
-    "src/server.ts"
+    "src/app/**/*.ts"
   ]
 }
