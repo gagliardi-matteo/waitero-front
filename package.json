@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "vite",
     "ng": "ng",
-    "build": "vite build && tsc --project tsconfig.server.json",
-    "start": "node dist/server/server.js",
-    "build:ssr": "cross-env BUILD_TARGET=ssr vite build && tsc --project tsconfig.server.json"
+    "build": "ng build --configuration production",         
+    "build:ssr": "vite build && tsc --project tsconfig.server.json",
+    "start": "node dist/server/server.js"
   },
   "private": true,
   "dependencies": {
