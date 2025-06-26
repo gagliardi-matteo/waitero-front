@@ -20,9 +20,9 @@
 
         <ng-container *ngIf="quantita(piatto.id) > 0; else addBtn">
           <div class="dish-add-overlay" (click)="$event.stopPropagation()">
-            <button class="round-btn" (click)="removeFromOrder(piatto)">−</button>
+            <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">−</button>
             <span class="qty-number">{{ quantita(piatto.id) }}</span>
-            <button class="round-btn" (click)="addToOrder(piatto)">+</button>
+            <button class="round-btn" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
           </div>
         </ng-container>
 
