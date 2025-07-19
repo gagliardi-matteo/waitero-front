@@ -1,12 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
 import { Piatto } from '../../models/piatto.model';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { Ristorante } from '../../models/ristorante.mode';
 import { environment } from '../../../environments/environment';
+import { AuthContextService } from '../../services/auth-context.service';
+import { OrderService } from '../../services/order.service';
 
 @Component({
   selector: 'app-menu',
@@ -19,39 +21,44 @@ export class MenuComponent implements OnInit {
   restaurantId: string = '';
   tableId: string = '';
   piatti: Piatto[] = [];
-  ordine: Piatto[] = [];
   piattiRaggruppati: [string, Piatto[]][] = [];
   ristoranteObj!: Ristorante;
+  token!: string;
 
   readonly categoriaOrder: string[] = [
     'ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'
   ];
 
-  constructor(private http: HttpClient, private route: ActivatedRoute) {}
+  constructor(private orderService: OrderService, private auth: AuthContextService, private http: HttpClient, private route: ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {
-    const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
-    const tableId = this.route.snapshot.paramMap.get('tableId');
-    const token = this.route.snapshot.paramMap.get('token');
+    const token = this.auth.tokenValue;
+    const restaurantId = this.auth.restaurantIdValue;
+    const tableId = this.auth.tableIdValue;
+
+    if (!token || !restaurantId || !tableId) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    
 
     if (!restaurantId || !tableId || !token) return;
 
-    this.http.post<{ valid: boolean }>(`${environment.apiUrl}/customer/validate-token`, {
-      token, restaurantId, tableId
-    }).subscribe(res => {
-      if (!res.valid) return;
-      this.restaurantId = restaurantId;
-      this.tableId = tableId;
-      this.loadPiatti();
-      if (typeof window !== 'undefined') {
-        history.replaceState(null, '', `/menu/${restaurantId}/${tableId}`);
-      }
-      this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`)
-      .subscribe(data => {
-        this.ristoranteObj = data;
+    this.restaurantId = restaurantId;
+    this.tableId = tableId;
+    this.loadPiatti();
+    /*if (typeof window !== 'undefined') {
+      history.replaceState(null, '', `/menu/${restaurantId}/${tableId}`);
+    }*/
+    this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`)
+    .subscribe(data => {
+      this.ristoranteObj = data;
       })
-    });
 
+  }
+
+  get ordine(): Piatto[] {
+    return this.orderService.getOrdine();
   }
 
   loadPiatti() {
@@ -77,16 +84,15 @@ export class MenuComponent implements OnInit {
   }  
 
   addToOrder(piatto: Piatto) {
-    this.ordine.push(piatto);
+    this.orderService.add(piatto);
   }
 
   removeFromOrder(piatto: Piatto) {
-    const index = this.ordine.findIndex(p => p.id === piatto.id);
-    if (index >= 0) this.ordine.splice(index, 1);
+    this.orderService.remove(piatto);
   }
 
   quantita(itemId: number): number {
-    return this.ordine.filter(p => p.id === itemId).length;
+    return this.orderService.quantita(itemId);
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {
@@ -99,7 +105,7 @@ export class MenuComponent implements OnInit {
   }
 
   openDettaglio(piatto: Piatto): void {
-    console.log('Dettaglio piatto:', piatto);
+    this.router.navigate(['menu/piatto/', piatto.id]);
   }
 
   scrollToCategory(categoria: string) {
@@ -109,6 +115,8 @@ export class MenuComponent implements OnInit {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
+
+  
 
 
 }

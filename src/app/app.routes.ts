@@ -23,7 +23,15 @@ export const routes: Routes = [
   },
   {
   path: 'menu/:restaurantId/:tableId/:token',
+    loadComponent: () => import('./pages/access/access.component').then(m => m.AccessComponent)
+  },
+  {
+  path: 'menu',
     loadComponent: () => import('./pages/menu/menu.component').then(m => m.MenuComponent)
+  },
+  {
+  path: 'menu/piatto/:dishId',
+    loadComponent: () => import('./pages/dettaglio-piatto/dettaglio-piatto.component').then(m => m.DettaglioPiattoComponent)
   }
   // altre rotte (es. menu)...
 ];

@@ -1,0 +1,19 @@
+<div *ngIf="piatto" class="detail-container">
+  <button class="back-button" (click)="goBack()">
+    <span class="material-symbols-outlined">arrow_back</span>
+  </button>
+
+  <img class="detail-image" [src]="piatto.imageUrl ? getImageUrl(piatto.imageUrl) : '/placeholder.png'" />
+
+  <h1>{{ piatto.nome }}</h1>
+  <p class="description">{{ piatto.descrizione }}</p>
+  <div class="price">{{ piatto.prezzo.toFixed(2) }} €</div>
+
+  <div class="actions">
+    <button class="round-btn" (click)="remove()">−</button>
+    <span class="qty-number">{{ quantita() }}</span>
+    <button class="round-btn" (click)="add()">+</button>
+  </div>
+
+  <button class="add-to-cart" (click)="addToCart()">Aggiungi al carrello</button>
+</div>
