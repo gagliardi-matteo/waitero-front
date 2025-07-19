@@ -13,11 +13,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0.5rem 0.5rem 0 0.5rem;
+    padding: 1.5rem 0.5rem 0 0.5rem;
   }
 
   .logo {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
   }
@@ -38,10 +38,6 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s ease;
-
-      &:hover {
-        background-color: #eaeaea;
-      }
     }
   }
 }
@@ -60,7 +56,7 @@
   margin-bottom: 3px;
   padding-left: 16px;
   color: #ac0017;
-  scroll-margin-top: 6rem;
+  scroll-margin-top: 7rem;
 }
 
 .dish-card {
