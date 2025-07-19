@@ -1,16 +1,49 @@
-.menu-header{
+.menu-header {
   width: 100%;
   background-color: #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  height: 5rem;
+  height: auto;
   display: flex;
-  justify-content: center;
-  padding-left: 0;
-  align-items: center;
-  font-size: 1rem;
-  font-weight: bold;
-  position: fixed;
+  flex-direction: column;
   z-index: 1000;
+  position: fixed;
+  top: 0;
+
+  .header-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0.5rem 0 0.5rem;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  .category-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    padding: 4px 4px 0 4px;
+
+    a {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #ac0017;
+      text-decoration: none;
+      padding: 0px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: #eaeaea;
+      }
+    }
+  }
 }
 
 .menu-container {
@@ -26,6 +59,8 @@
   margin-top: 24px;
   margin-bottom: 3px;
   padding-left: 16px;
+  color: #ac0017;
+  scroll-margin-top: 6rem;
 }
 
 .dish-card {

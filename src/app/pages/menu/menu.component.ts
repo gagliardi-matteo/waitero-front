@@ -102,5 +102,13 @@ export class MenuComponent implements OnInit {
     console.log('Dettaglio piatto:', piatto);
   }
 
+  scrollToCategory(categoria: string) {
+    const id = 'cat-' + categoria;
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
 
 }

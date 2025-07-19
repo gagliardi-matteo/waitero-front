@@ -1,10 +1,19 @@
-<div class="menu-header" *ngIf="ristoranteObj !==undefined">
-  <span>{{categoriaLabel(ristoranteObj.nome)}}</span>
+<div class="menu-header" *ngIf="ristoranteObj && piattiRaggruppati.length > 0">
+  <div class="header-wrapper">
+    <span class="logo">{{ categoriaLabel(ristoranteObj.nome) }}</span>
+    <div class="category-links">
+      <a *ngFor="let cat of piattiRaggruppati" 
+         href="javascript:void(0)" 
+         (click)="scrollToCategory(cat[0])">
+        {{ categoriaLabel(cat[0]) }}
+      </a>
+    </div>
+  </div>
 </div>
 
 <div class="menu-container">
   <div class="category" *ngFor="let group of piattiRaggruppati">
-    <h2 class="category-title">{{ categoriaLabel(group[0]) }}</h2>
+    <h2 class="category-title" [id]="'cat-' + group[0]">{{ categoriaLabel(group[0]) }}</h2>
 
     <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" (click)="openDettaglio(piatto)">
       <div class="dish-info">
