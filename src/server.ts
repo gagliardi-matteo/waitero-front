@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 const app = express();
 const port = process.env['PORT'] || 3000;
 
-const distFolder = join(process.cwd(), 'dist/client');
+const distFolder = join(process.cwd(), 'dist/front');
 const indexHtml = readFileSync(join(distFolder, 'index.html'), 'utf-8');
 
 app.use(express.static(distFolder));
