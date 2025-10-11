@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://waitero-back.onrender.com/api'
+  apiUrl: 'https://waitero-back-production.up.railway.app/api'
 };
