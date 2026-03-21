@@ -1,9 +1,19 @@
-<div class="menu-header" *ngIf="ristoranteObj && piattiRaggruppati.length > 0">
+<div class="menu-header" *ngIf="ristoranteObj">
   <div class="header-wrapper">
     <span class="logo">{{ categoriaLabel(ristoranteObj.nome) }}</span>
-    <div class="category-links">
-      <a *ngFor="let cat of piattiRaggruppati" 
-         href="javascript:void(0)" 
+
+    <div class="filter-panel">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Cerca un piatto, ingrediente o allergene"
+      />
+    </div>
+
+    <div class="category-links" *ngIf="hasVisibleDishes">
+      <a *ngFor="let cat of piattiRaggruppati"
+         href="javascript:void(0)"
          (click)="scrollToCategory(cat[0])">
         {{ categoriaLabel(cat[0]) }}
       </a>
@@ -12,6 +22,14 @@
 </div>
 
 <div class="menu-container">
+  <div class="empty-state" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <div class="empty-state" *ngIf="!errorMessage && !hasVisibleDishes">
+    Nessun piatto corrisponde ai filtri selezionati.
+  </div>
+
   <div class="category" *ngFor="let group of piattiRaggruppati">
     <h2 class="category-title" [id]="'cat-' + group[0]">{{ categoriaLabel(group[0]) }}</h2>
 
@@ -20,7 +38,10 @@
         <div>
           <div class="dish-name">{{ piatto.nome }}</div>
           <div class="dish-description">{{ piatto.descrizione }}</div>
-          <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} €</div>
+          <div class="dish-allergen-list" *ngIf="getAllergenBadges(piatto).length > 0">
+            <span class="allergen-badge" *ngFor="let allergen of getAllergenBadges(piatto); trackBy: trackBadge">{{ allergen }}</span>
+          </div>
+          <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
         </div>
       </div>
 
@@ -29,7 +50,7 @@
 
         <ng-container *ngIf="quantita(piatto.id) > 0; else addBtn">
           <div class="dish-add-overlay" (click)="$event.stopPropagation()">
-            <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">−</button>
+            <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">-</button>
             <span class="qty-number">{{ quantita(piatto.id) }}</span>
             <button class="round-btn" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
           </div>

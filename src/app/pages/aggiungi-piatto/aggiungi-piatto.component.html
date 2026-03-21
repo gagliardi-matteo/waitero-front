@@ -7,6 +7,25 @@
     <label>Descrizione</label>
     <textarea formControlName="descrizione" class="descrizione" id="descrizione"></textarea>
 
+    <label>Ingredienti</label>
+    <textarea formControlName="ingredienti" class="descrizione" placeholder="Es. pomodoro, mozzarella, basilico"></textarea>
+
+    <label>Allergeni standard</label>
+    <div class="allergen-grid">
+      <button
+        type="button"
+        class="allergen-chip"
+        *ngFor="let allergen of standardAllergens"
+        [class.active]="isAllergenSelected(allergen)"
+        (click)="toggleAllergen(allergen)"
+      >
+        {{ allergen }}
+      </button>
+    </div>
+
+    <label>Altri allergeni / note</label>
+    <textarea formControlName="allergeniCustom" class="descrizione" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
+
     <label>Categoria</label>
     <select formControlName="categoria">
       <option disabled value="">Seleziona...</option>
@@ -24,7 +43,7 @@
 
     <img *ngIf="previewUrl" [src]="previewUrl" width="150" class="preview-img" />
 
-    <button  class="add-button" type="submit" [disabled]="dishForm.invalid">Salva</button>
+    <button class="add-button" type="submit" [disabled]="dishForm.invalid">Salva</button>
     <button [routerLink]="['/menu-management']">
       Indietro
     </button>

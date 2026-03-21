@@ -8,7 +8,7 @@ import { socialAuthConfig } from './auth/auth.config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideHttpClient(withInterceptors([AuthInterceptor])), // ✅ AGGIUNGI QUESTA RIGA
+    provideHttpClient(withInterceptors([AuthInterceptor])), // aggiungi questa riga
     { provide: 'SocialAuthServiceConfig', useValue: socialAuthConfig },
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),

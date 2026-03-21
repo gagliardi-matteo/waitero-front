@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthContextService } from '../../services/auth-context.service';
-import { HttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { environment } from '../../../environments/environment';
+import { AuthContextService } from '../../services/auth-context.service';
+import { DeviceIdService } from '../../services/device-id.service';
+import { FingerprintService } from '../../services/fingerprint.service';
+import { GpsService, GpsSnapshot } from '../../services/gps.service';
+import { TableAccessService } from '../../services/table-access.service';
 
 @Component({
   selector: 'app-access',
@@ -12,39 +14,81 @@ import { environment } from '../../../environments/environment';
   templateUrl: './access.component.html',
   styleUrl: './access.component.scss'
 })
-export class AccessComponent implements OnInit{
+export class AccessComponent implements OnInit {
+  errorMessage = '';
+  accessStatus = 'Rilevazione posizione in corso...';
+  gpsSnapshot: GpsSnapshot | null = null;
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private auth: AuthContextService,
-    private http: HttpClient
-  ) {}
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private auth = inject(AuthContextService);
+  private deviceIdService = inject(DeviceIdService);
+  private fingerprintService = inject(FingerprintService);
+  private gpsService = inject(GpsService);
+  private tableAccessService = inject(TableAccessService);
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const token = this.route.snapshot.paramMap.get('token');
+    const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId');
     const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
-    const tableId = this.route.snapshot.paramMap.get('tableId');
+    const tableIdParam = this.route.snapshot.paramMap.get('tableId');
+
     if (!token) {
-      this.router.navigate(['/errore']);
+      this.errorMessage = 'Link tavolo non valido.';
       return;
     }
 
-    if (!restaurantId || !tableId || !token) return;
-    
-    this.http.post<{ valid: boolean }>(`${environment.apiUrl}/customer/validate-token`, {
-      token, restaurantId, tableId
-    }).subscribe(res => {
-      if (!res.valid) {
-        this.router.navigate(['/errore']);
-        return;
+    const deviceId = this.deviceIdService.getOrCreate();
+    const [fingerprint, gps] = await Promise.all([
+      this.fingerprintService.getVisitorId().catch(() => null),
+      this.gpsService.getCurrentPositionSafe()
+    ]);
+
+    this.gpsSnapshot = gps;
+    this.accessStatus = 'Verifica accesso tavolo in corso...';
+    console.info('GPS letto dal browser', gps);
+
+    this.tableAccessService.validateAccess({
+      tablePublicId,
+      qrToken: token,
+      restaurantId,
+      tableId: tableIdParam ? Number(tableIdParam) : null,
+      deviceId,
+      fingerprint,
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      accuracy: gps.accuracy
+    }).subscribe({
+      next: response => {
+        if (!response.allowed) {
+          this.errorMessage = response.message || 'Accesso al tavolo non consentito.';
+          this.accessStatus = `Esito backend: ${response.status}`;
+          return;
+        }
+
+        this.auth.setContext(
+          response.qrToken,
+          String(response.restaurantId),
+          String(response.tableId),
+          deviceId,
+          fingerprint
+        );
+
+        this.router.navigate(['/menu'], { replaceUrl: true });
+      },
+      error: err => {
+        console.error('Errore validazione accesso tavolo', err);
+        this.errorMessage = err.error?.message ?? 'Impossibile validare l accesso al tavolo.';
+        this.accessStatus = `HTTP ${err.status ?? 'errore sconosciuto'}`;
       }
-
-      this.auth.setContext(token, restaurantId, tableId);
-
-      // 🔁 Pulizia URL
-      this.router.navigate(['/menu'], { replaceUrl: true });
     });
   }
 
+  formatCoordinate(value: number | null): string {
+    return value == null ? 'non disponibile' : value.toFixed(6);
+  }
+
+  formatAccuracy(value: number | null): string {
+    return value == null ? 'non disponibile' : `${Math.round(value)} m`;
+  }
 }

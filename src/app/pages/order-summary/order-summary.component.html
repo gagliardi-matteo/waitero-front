@@ -1,30 +1,53 @@
 <div class="order-summary-wrapper" [class.expanded]="isExpanded">
   <div class="summary-header" (click)="toggleExpanded()">
-    <div class="badge">{{ piatti.length }}</div>
+    <div class="badge">{{ badgeCount }}</div>
     <div class="vedi-carrello-text">Vedi carrello</div>
-    <div class="prezzo">{{ totale | number: '1.2-2' }} €</div>
+    <div class="prezzo">{{ totale | number: '1.2-2' }} &euro;</div>
   </div>
 
   <div class="order-content">
     <div class="order-details">
       <h3>Il tuo ordine</h3>
-      <ul>
-        <li *ngFor="let item of piattiRaggruppati">
-          <div class="item-row">
-            <div class="info">
-              {{ item.nome }} · {{ item.prezzo | number: '1.2-2' }} €
-            </div>
-            <div class="actions">
-              <button (click)="rimuovi(item)">−</button>
-              <span>{{ quantita(item.id) }}</span>
-              <button (click)="aggiungi(item)">+</button>
-            </div>
-          </div>
-        </li>
-      </ul>
 
+      <div class="section" *ngIf="hasConfirmedItems">
+        <div class="section-title">Gia inviati</div>
+        <ul>
+          <li *ngFor="let item of confirmedItems; trackBy: trackConfirmedItem">
+            <div class="item-row sent">
+              <div class="info">
+                {{ item.nome }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;
+              </div>
+              <div class="sent-qty">x{{ item.quantita }}</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="section" *ngIf="draftGroupedItems.length > 0">
+        <div class="section-title">Da inviare</div>
+        <ul>
+          <li *ngFor="let item of draftGroupedItems; trackBy: trackDraftItem">
+            <div class="item-row">
+              <div class="info">
+                {{ item.nome }} &middot; {{ item.prezzo | number: '1.2-2' }} &euro;
+              </div>
+              <div class="actions">
+                <button (click)="rimuovi(item)">-</button>
+                <span>{{ quantita(item.id) }}</span>
+                <button (click)="aggiungi(item)">+</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="empty-state" *ngIf="!hasConfirmedItems && draftGroupedItems.length === 0">
+        Il carrello e vuoto.
+      </div>
     </div>
 
-    <button class="confirm-btn" (click)="confermaOrdine($event)">Conferma Ordine</button>
+    <button class="confirm-btn" [disabled]="draftItems.length === 0 || isSubmitting" (click)="confermaOrdine($event)">
+      {{ isSubmitting ? 'Invio...' : 'Conferma Ordine' }}
+    </button>
   </div>
 </div>

@@ -41,6 +41,25 @@
     }
   }
 
+  .allergen-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .allergen-chip {
+    margin-top: 0;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    background: #f4e7e4;
+    color: #7c3b2f;
+
+    &.active {
+      background: #ac0017;
+      color: white;
+    }
+  }
+
   .add-button{
     float: right;
   }

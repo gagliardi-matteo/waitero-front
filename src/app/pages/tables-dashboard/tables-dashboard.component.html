@@ -1,0 +1,77 @@
+<div class="content tables-dashboard-page">
+  <div class="page-header">
+    <div>
+      <h1>Sala Live</h1>
+      <p>Stato in tempo reale dei tavoli del ristorante con accesso rapido agli ordini attivi.</p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="ghost-btn" (click)="loadDashboard()">Aggiorna</button>
+      <button type="button" class="primary-btn" [routerLink]="['/tables']">Gestisci tavoli</button>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <button
+      type="button"
+      *ngFor="let filter of filters"
+      class="filter-chip"
+      [class.active]="selectedFilter === filter.value"
+      (click)="selectedFilter = filter.value"
+    >
+      {{ filter.label }}
+      <span>{{ countBy(filter.value) }}</span>
+    </button>
+  </div>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="empty-state" *ngIf="!loading && filteredCards.length === 0">
+    Nessun tavolo corrisponde al filtro selezionato.
+  </div>
+
+  <div class="dashboard-grid" *ngIf="filteredCards.length > 0">
+    <article class="dashboard-card" *ngFor="let card of filteredCards; trackBy: trackByTable">
+      <div class="card-head">
+        <div>
+          <div class="table-number">Tavolo {{ card.table.numero }}</div>
+          <div class="table-name">{{ card.table.nome }}</div>
+        </div>
+        <span class="status-pill" [ngClass]="statusClass(card)">{{ statusLabel(card) }}</span>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <span class="metric-label">Coperti</span>
+          <strong>{{ card.table.coperti }}</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">Articoli</span>
+          <strong>{{ card.itemCount }}</strong>
+        </div>
+        <div class="metric-box highlight">
+          <span class="metric-label">Totale</span>
+          <strong>{{ card.total | number: '1.2-2' }} &euro;</strong>
+        </div>
+      </div>
+
+      <div class="order-summary" *ngIf="card.activeOrder; else freeStateTpl">
+        <p>Ordine #{{ card.activeOrder.id }} {{ card.activeOrder.status }}</p>
+        <p>Aggiornato {{ card.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+      </div>
+      <ng-template #freeStateTpl>
+        <div class="order-summary muted">
+          <p *ngIf="card.state === 'INACTIVE'; else freeTpl">Tavolo non disponibile per i clienti.</p>
+          <ng-template #freeTpl>
+            <p>Nessun ordine attivo al momento.</p>
+          </ng-template>
+          <p>Aggiornato {{ card.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+      </ng-template>
+
+      <div class="card-actions">
+        <button type="button" class="ghost-btn" [routerLink]="['/tables']">Apri tavolo</button>
+        <button type="button" class="primary-btn" *ngIf="card.activeOrder" (click)="openOrder(card)">Dettaglio ordine</button>
+      </div>
+    </article>
+  </div>
+</div>

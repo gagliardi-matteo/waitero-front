@@ -1,0 +1,103 @@
+<div class="content tables-page">
+  <div class="page-header">
+    <div>
+      <h1>Gestione Tavoli</h1>
+      <p>Crea, aggiorna e distribuisci i link di accesso per ogni tavolo del ristorante.</p>
+    </div>
+  </div>
+
+  <div class="tables-layout">
+    <section class="table-form-card">
+      <div class="card-head">
+        <h2>{{ editingTableId === null ? 'Nuovo tavolo' : 'Modifica tavolo' }}</h2>
+        <button *ngIf="editingTableId !== null" type="button" class="ghost-btn" (click)="cancelEdit()">Annulla</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label>
+          Numero tavolo
+          <input type="number" min="1" formControlName="numero" />
+        </label>
+        <p class="field-error" *ngIf="numeroControl.touched && numeroControl.invalid">Inserisci un numero tavolo maggiore di zero.</p>
+
+        <label>
+          Nome
+          <input type="text" formControlName="nome" placeholder="Sala interna 1" />
+        </label>
+        <p class="field-error" *ngIf="nomeControl.touched && nomeControl.invalid">Il nome del tavolo e obbligatorio.</p>
+
+        <label>
+          Coperti
+          <input type="number" min="1" formControlName="coperti" />
+        </label>
+        <p class="field-error" *ngIf="copertiControl.touched && copertiControl.invalid">Inserisci almeno un coperto.</p>
+
+        <label class="checkbox-row">
+          <input type="checkbox" formControlName="attivo" />
+          Tavolo attivo
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="primary-btn" [disabled]="saving">
+            {{ editingTableId === null ? 'Crea tavolo' : 'Salva modifiche' }}
+          </button>
+        </div>
+      </form>
+
+      <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    </section>
+
+    <section class="table-list-card">
+      <div class="card-head">
+        <h2>Tavoli configurati</h2>
+        <span class="badge">{{ tables.length }}</span>
+      </div>
+
+      <div class="empty-state" *ngIf="!loading && tables.length === 0">
+        Nessun tavolo configurato.
+      </div>
+
+      <div class="tables-grid" *ngIf="tables.length > 0">
+        <article class="table-card" *ngFor="let table of tables">
+          <div class="table-top">
+            <div>
+              <div class="table-number">Tavolo {{ table.numero }}</div>
+              <div class="table-name">{{ table.nome }}</div>
+            </div>
+            <span class="status-chip" [class.inactive]="!table.attivo">
+              {{ table.attivo ? 'Attivo' : 'Disattivo' }}
+            </span>
+          </div>
+
+          <div class="qr-panel">
+            <div class="qr-frame" *ngIf="qrImageByTableId[table.id]; else qrLoadingTpl">
+              <img [src]="qrImageByTableId[table.id]" [alt]="'QR Tavolo ' + table.numero" />
+            </div>
+            <ng-template #qrLoadingTpl>
+              <div class="qr-frame placeholder">
+                <span>{{ qrLoadingByTableId[table.id] ? 'Genero QR...' : 'QR non disponibile' }}</span>
+              </div>
+            </ng-template>
+          </div>
+
+          <div class="table-meta">{{ table.coperti }} coperti</div>
+
+          <a class="access-link" [href]="buildAccessUrl(table)" target="_blank" rel="noopener">
+            {{ buildAccessUrl(table) }}
+          </a>
+
+          <div class="table-actions">
+            <button type="button" class="ghost-btn" (click)="copyAccessLink(table)">
+              {{ copiedTableId === table.id ? 'Copiato' : 'Copia link' }}
+            </button>
+            <button type="button" class="ghost-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">Scarica QR</button>
+            <button type="button" class="ghost-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa QR</button>
+            <button type="button" class="ghost-btn" (click)="regenerateToken(table)">Rigenera link</button>
+            <button type="button" class="ghost-btn" (click)="editTable(table)">Modifica</button>
+            <button type="button" class="danger-btn" (click)="deleteTable(table)">Elimina</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+</div>

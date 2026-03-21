@@ -1,28 +1,81 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { Piatto } from '../models/piatto.model';
+import { CustomerDraftItem, CustomerOrder, CustomerOrderItem } from '../models/customer-order.model';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private ordine: Piatto[] = [];
+  private draftCounts = new Map<number, number>();
+  private catalog = new Map<number, Piatto>();
+  private confirmedOrder: CustomerOrder | null = null;
+  private contextKey: string | null = null;
+
+  syncContext(contextKey: string) {
+    if (this.contextKey === contextKey) {
+      return;
+    }
+
+    this.contextKey = contextKey;
+    this.resetState();
+  }
+
+  setCatalog(piatti: Piatto[]) {
+    this.catalog = new Map(piatti.map(piatto => [piatto.id, piatto]));
+  }
+
+  setDraft(items: CustomerDraftItem[]) {
+    this.draftCounts.clear();
+    for (const item of items) {
+      if (item.quantity > 0) {
+        this.draftCounts.set(item.dishId, item.quantity);
+      }
+    }
+  }
+
+  getDraftPayload(): Array<{ dishId: number; quantity: number }> {
+    return Array.from(this.draftCounts.entries())
+      .filter(([, quantity]) => quantity > 0)
+      .map(([dishId, quantity]) => ({ dishId, quantity }));
+  }
 
   getOrdine(): Piatto[] {
-    return this.ordine;
-  }
-
-  add(piatto: Piatto) {
-    this.ordine.push(piatto);
-  }
-
-  remove(piatto: Piatto) {
-    const i = this.ordine.findIndex(p => p.id === piatto.id);
-    if (i >= 0) this.ordine.splice(i, 1);
+    const result: Piatto[] = [];
+    for (const [dishId, quantity] of this.draftCounts.entries()) {
+      const piatto = this.catalog.get(dishId);
+      if (!piatto) continue;
+      for (let i = 0; i < quantity; i++) {
+        result.push(piatto);
+      }
+    }
+    return result;
   }
 
   quantita(id: number): number {
-    return this.ordine.filter(p => p.id === id).length;
+    return this.draftCounts.get(id) ?? 0;
   }
 
-  clear() {
-    this.ordine = [];
+  clearDraft() {
+    this.draftCounts.clear();
+  }
+
+  setConfirmedOrder(order: CustomerOrder | null) {
+    this.confirmedOrder = order;
+  }
+
+  getConfirmedOrder(): CustomerOrder | null {
+    return this.confirmedOrder;
+  }
+
+  getConfirmedItems(): CustomerOrderItem[] {
+    return this.confirmedOrder?.items ?? [];
+  }
+
+  getConfirmedTotal(): number {
+    return this.confirmedOrder?.totale ?? 0;
+  }
+
+  resetState() {
+    this.draftCounts.clear();
+    this.catalog.clear();
+    this.confirmedOrder = null;
   }
 }

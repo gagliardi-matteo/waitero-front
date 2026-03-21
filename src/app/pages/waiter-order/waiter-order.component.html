@@ -1,0 +1,71 @@
+<div class="content waiter-order-page">
+  <div class="page-header">
+    <div>
+      <h1>Comanda Cameriere</h1>
+      <p>Inserisci manualmente l'ordine per un tavolo quando il cliente non usa il telefono.</p>
+    </div>
+    <button type="button" class="ghost-btn" [routerLink]="['/tables-dashboard']">Torna alla sala</button>
+  </div>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="waiter-layout" *ngIf="!loading">
+    <section class="composer-card">
+      <label class="table-picker">
+        Tavolo
+        <select [(ngModel)]="selectedTableId" [ngModelOptions]="{ standalone: true }">
+          <option [ngValue]="null">Seleziona un tavolo</option>
+          <option *ngFor="let table of tables" [ngValue]="table.id">Tavolo {{ table.numero }} {{ table.nome }}</option>
+        </select>
+      </label>
+
+      <div *ngFor="let group of groupedDishes" class="category-block">
+        <h2>{{ group[0] }}</h2>
+        <div class="dish-grid">
+          <article class="dish-card" *ngFor="let dish of group[1]; trackBy: trackDish">
+            <div>
+              <div class="dish-name">{{ dish.nome }}</div>
+              <p class="dish-description">{{ dish.descrizione }}</p>
+              <div class="dish-price">{{ dish.prezzo | number: '1.2-2' }} &euro;</div>
+            </div>
+            <div class="qty-controls">
+              <button type="button" class="qty-btn" (click)="decrease(dish)">-</button>
+              <span>{{ getQuantity(dish.id) }}</span>
+              <button type="button" class="qty-btn" (click)="increase(dish)">+</button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <aside class="summary-card">
+      <h2>Riepilogo ordine</h2>
+      <p class="summary-table" *ngIf="selectedTable; else noTableTpl">
+        Tavolo {{ selectedTable.numero }} {{ selectedTable.nome }}
+      </p>
+      <ng-template #noTableTpl>
+        <p class="summary-table">Nessun tavolo selezionato</p>
+      </ng-template>
+
+      <div class="summary-empty" *ngIf="selectedItems.length === 0">
+        Nessun piatto aggiunto.
+      </div>
+
+      <div class="summary-list" *ngIf="selectedItems.length > 0">
+        <div class="summary-item" *ngFor="let item of selectedItems">
+          <span>{{ item.quantity }}x {{ item.dish.nome }}</span>
+          <strong>{{ item.dish.prezzo * item.quantity | number: '1.2-2' }} &euro;</strong>
+        </div>
+      </div>
+
+      <div class="summary-total">
+        <span>{{ totalItems }} articoli</span>
+        <strong>{{ total | number: '1.2-2' }} &euro;</strong>
+      </div>
+
+      <button type="button" class="primary-btn" [disabled]="saving" (click)="submit()">
+        {{ saving ? 'Invio...' : 'Invia al tavolo' }}
+      </button>
+    </aside>
+  </div>
+</div>

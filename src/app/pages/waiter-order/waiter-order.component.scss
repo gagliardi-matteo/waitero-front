@@ -1,0 +1,174 @@
+.waiter-order-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  padding: 2rem;
+}
+
+.waiter-layout {
+  display: grid;
+  grid-template-columns: 1.6fr minmax(280px, 360px);
+  gap: 1.25rem;
+}
+
+.composer-card,
+.summary-card,
+.dish-card {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.composer-card,
+.summary-card {
+  padding: 1.4rem;
+  border-radius: 24px;
+}
+
+.table-picker,
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+
+.page-header p,
+.summary-table,
+.summary-empty,
+.error,
+.dish-description {
+  color: var(--text-muted);
+}
+
+.table-picker {
+  flex-direction: column;
+  align-items: stretch;
+  font-weight: 600;
+}
+
+select {
+  margin-top: 0.45rem;
+  border-radius: 14px;
+  padding: 0.8rem 0.9rem;
+}
+
+.category-block {
+  margin-top: 1.4rem;
+}
+
+.dish-grid {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+
+.dish-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 20px;
+}
+
+.dish-name,
+.dish-price {
+  font-weight: 700;
+}
+
+.dish-description {
+  margin: 0.35rem 0;
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qty-btn,
+.primary-btn,
+.ghost-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.qty-btn,
+.primary-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+.qty-btn {
+  min-width: 44px;
+}
+
+.primary-btn {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.ghost-btn {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.summary-list {
+  margin-top: 1rem;
+}
+
+.summary-item,
+.summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.summary-item {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-total {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.05rem;
+}
+
+.error {
+  color: var(--danger);
+}
+
+@media (max-width: 960px) {
+  .waiter-order-page {
+    padding: 1rem;
+  }
+
+  .waiter-layout,
+  .page-header {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dish-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .qty-controls {
+    justify-content: center;
+  }
+}

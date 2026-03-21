@@ -1,6 +1,6 @@
 <div class="content">
   <div class="page-header">
-    <h1>Gestione Menù</h1>
+    <h1>Gestione Menu</h1>
     <button class="add-button" [routerLink]="['/add-dish']">
       <span class="plus-icon">+</span> Inserisci Piatto
     </button>
@@ -10,11 +10,22 @@
     <h2 class="category-title">{{ entry[0] }}</h2>
     <div class="menu-grid">
       <div class="menu-card" *ngFor="let item of entry[1]">
-        <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
+        <a class="card-link" [routerLink]="['/ristoratore/piatto', item.id]">
+          <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
+        </a>
         <div class="info">
           <div class="category-label">{{ item.categoria }}</div>
-          <div class="name">{{ item.nome }}</div>
-          <div class="price">{{ item.prezzo }}€</div>
+          <a class="card-link info-link" [routerLink]="['/ristoratore/piatto', item.id]">
+            <div class="name">{{ item.nome }}</div>
+            <div class="description" *ngIf="item.descrizione">{{ item.descrizione }}</div>
+            <div class="ingredients" *ngIf="item.ingredienti">
+              <strong>Ingredienti:</strong> {{ item.ingredienti }}
+            </div>
+          </a>
+          <div class="dish-allergen-list" *ngIf="getAllergenBadges(item).length > 0">
+            <span class="allergen-badge" *ngFor="let allergen of getAllergenBadges(item); trackBy: trackBadge">{{ allergen }}</span>
+          </div>
+          <div class="price">{{ item.prezzo }}&euro;</div>
           <div class="actions">
             <button class="edit-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]">
               <span class="material-symbols-outlined">edit</span>

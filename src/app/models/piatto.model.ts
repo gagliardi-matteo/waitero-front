@@ -7,4 +7,5 @@ export interface Piatto {
   categoria: string;
   imageUrl: string | null;
   ingredienti?: string;
+  allergeni?: string;
 }

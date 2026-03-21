@@ -1,0 +1,90 @@
+<div class="content">
+  <div class="page-header">
+    <div>
+      <h1>Ordini</h1>
+      <p>Monitoraggio ordini attivi e archivio degli ordini chiusi.</p>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <label class="filter-field">
+      <span>Cerca</span>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="ID ordine, tavolo o stato"
+      />
+    </label>
+
+    <label class="filter-field">
+      <span>Stato</span>
+      <select [(ngModel)]="selectedStatus">
+        <option value="ALL">Tutti</option>
+        <option *ngFor="let status of availableStatuses" [value]="status">{{ status }}</option>
+      </select>
+    </label>
+
+    <button type="button" class="reset-btn" (click)="resetFilters()">Reset</button>
+  </div>
+
+  <div class="section-block">
+    <div class="section-head">
+      <h2>Attivi</h2>
+      <span>{{ filteredActiveOrders.length }}</span>
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading && filteredActiveOrders.length === 0">
+      Nessun ordine attivo al momento.
+    </div>
+
+    <div class="orders-grid" *ngIf="filteredActiveOrders.length > 0">
+      <button class="order-card" *ngFor="let order of filteredActiveOrders; trackBy: trackOrder" (click)="openOrder(order)">
+        <div class="card-top">
+          <span class="status">{{ order.status }}</span>
+          <span class="table">Tavolo {{ order.tableId }}</span>
+        </div>
+
+        <div class="card-main">
+          <div class="order-id">Ordine #{{ order.id }}</div>
+          <div class="meta">{{ getItemCount(order) }} articoli {{ order.totale | number: '1.2-2' }} &euro;</div>
+        </div>
+
+        <div class="card-bottom">
+          <span>Aggiornato {{ order.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div class="section-block history">
+    <div class="section-head">
+      <h2>Passati</h2>
+      <span>{{ filteredHistoryOrders.length }}</span>
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading && filteredHistoryOrders.length === 0">
+      Nessun ordine passato disponibile.
+    </div>
+
+    <div class="orders-grid history-grid" *ngIf="filteredHistoryOrders.length > 0">
+      <button class="order-card history-card" *ngFor="let order of filteredHistoryOrders; trackBy: trackOrder" (click)="openOrder(order)">
+        <div class="card-top">
+          <span class="status paid">{{ order.status }}</span>
+          <span class="table">Tavolo {{ order.tableId }}</span>
+        </div>
+
+        <div class="card-main">
+          <div class="order-id">Ordine #{{ order.id }}</div>
+          <div class="meta">{{ getItemCount(order) }} articoli {{ order.totale | number: '1.2-2' }} &euro;</div>
+        </div>
+
+        <div class="card-bottom">
+          <span *ngIf="order.paidAt; else updatedTpl">Chiuso {{ order.paidAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+          <ng-template #updatedTpl>
+            <span>Aggiornato {{ order.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+          </ng-template>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

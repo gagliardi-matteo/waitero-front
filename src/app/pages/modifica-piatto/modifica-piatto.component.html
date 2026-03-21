@@ -14,6 +14,29 @@
       </label>
 
       <label>
+        Ingredienti
+        <textarea formControlName="ingredienti" placeholder="Es. pomodoro, mozzarella, basilico"></textarea>
+      </label>
+
+      <label>Allergeni standard</label>
+      <div class="allergen-grid">
+        <button
+          type="button"
+          class="allergen-chip"
+          *ngFor="let allergen of standardAllergens"
+          [class.active]="isAllergenSelected(allergen)"
+          (click)="toggleAllergen(allergen)"
+        >
+          {{ allergen }}
+        </button>
+      </div>
+
+      <label>
+        Altri allergeni / note
+        <textarea formControlName="allergeniCustom" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
+      </label>
+
+      <label>
         Categoria
         <select formControlName="categoria">
             <option [ngValue]="null">Seleziona...</option>

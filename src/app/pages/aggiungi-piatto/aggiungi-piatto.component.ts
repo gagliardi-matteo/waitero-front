@@ -2,10 +2,10 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
-import { response } from 'express';
 import { AuthService } from '../../auth/AuthService';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../environments/environment';
+import { STANDARD_ALLERGENS, buildStoredAllergens } from '../../shared/allergens';
 
 @Component({
   selector: 'app-add-dish',
@@ -18,6 +18,8 @@ export class AddDishComponent {
   dishForm: FormGroup;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
+  standardAllergens = [...STANDARD_ALLERGENS];
+  selectedAllergens = new Set<string>();
 
   constructor(
     private fb: FormBuilder,
@@ -29,7 +31,14 @@ export class AddDishComponent {
       nome: ['', Validators.required],
       categoria: ['', Validators.required],
       prezzo: [0, [Validators.required, Validators.min(0)]],
-      descrizione: ['']
+      descrizione: [''],
+      ingredienti: [''],
+      allergeni: [''],
+      allergeniCustom: ['']
+    });
+
+    this.dishForm.get('allergeniCustom')?.valueChanges.subscribe(() => {
+      this.syncAllergensField();
     });
   }
 
@@ -46,8 +55,26 @@ export class AddDishComponent {
     }
   }
 
+  toggleAllergen(allergen: string): void {
+    if (this.selectedAllergens.has(allergen)) {
+      this.selectedAllergens.delete(allergen);
+    } else {
+      this.selectedAllergens.add(allergen);
+    }
+    this.syncAllergensField();
+  }
+
+  isAllergenSelected(allergen: string): boolean {
+    return this.selectedAllergens.has(allergen);
+  }
+
   onSubmit(): void {
     if (this.dishForm.invalid) return;
+    const allergeni = buildStoredAllergens(
+      [...this.selectedAllergens],
+      this.dishForm.get('allergeniCustom')?.value
+    );
+    this.dishForm.patchValue({ allergeni }, { emitEvent: false });
 
     const userId = this.authService.getUserIdFromToken();
     if (!userId) {
@@ -55,10 +82,14 @@ export class AddDishComponent {
       return;
     }
 
+    const rawValues = this.dishForm.getRawValue();
     const dto = {
-      ...this.dishForm.value,
-      categoria: this.dishForm.value.categoria.toUpperCase()
+      ...rawValues,
+      categoria: rawValues.categoria.toUpperCase(),
+      ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
+      allergeni: this.normalizeOptionalText(allergeni)
     };
+    delete dto.allergeniCustom;
 
     const formData = new FormData();
     formData.append('dto', new Blob([JSON.stringify(dto)], { type: 'application/json' }));
@@ -75,5 +106,20 @@ export class AddDishComponent {
     });
   }
 
+  private normalizeOptionalText(value: string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private syncAllergensField(): void {
+    const allergeni = buildStoredAllergens(
+      [...this.selectedAllergens],
+      this.dishForm.get('allergeniCustom')?.value
+    );
+    this.dishForm.patchValue({ allergeni }, { emitEvent: false });
+  }
 }
 

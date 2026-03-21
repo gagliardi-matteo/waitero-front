@@ -41,6 +41,27 @@ textarea {
   min-height: 100px;
 }
 
+.allergen-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.allergen-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  background: #f4e7e4;
+  color: #7c3b2f;
+  font-weight: 700;
+  cursor: pointer;
+
+  &.active {
+    background: #ac0017;
+    color: white;
+  }
+}
+
 button[type='submit'] {
   background-color: #ac0017;
   color: #fff;
@@ -94,4 +115,3 @@ button[type='submit']:hover:not([disabled]) {
     }
   }
 }
-

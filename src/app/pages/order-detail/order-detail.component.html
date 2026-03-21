@@ -1,0 +1,125 @@
+<div class="content" *ngIf="order as currentOrder">
+  <div class="page-header">
+    <button class="back-button" (click)="goBack()">&larr; Torna agli ordini</button>
+    <div>
+      <h1>Ordine #{{ currentOrder.id }}</h1>
+      <p>Tavolo {{ currentOrder.tableId }} &middot; {{ itemCount }} articoli</p>
+    </div>
+    <div class="status-box">
+      <span class="status" [class.partial]="currentOrder.status === 'PARZIALMENTE_PAGATO'" [class.paid]="isPaid">{{ currentOrder.status }}</span>
+      <span>{{ currentOrder.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+      <span *ngIf="currentOrder.paymentMode">Ultima registrazione {{ currentOrder.paymentMode }}</span>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <section class="panel">
+      <h2>Piatti inviati</h2>
+      <div class="item-list">
+        <div class="item-row" *ngFor="let item of currentOrder.items">
+          <div>
+            <div class="name">{{ item.nome }}</div>
+            <div class="meta">{{ item.quantita }} x {{ item.prezzoUnitario | number: '1.2-2' }} &euro;</div>
+            <div class="meta status-line">Pagati {{ item.paidQuantity }} &middot; Residui {{ item.remainingQuantity }}</div>
+          </div>
+          <div class="subtotal">{{ item.subtotale | number: '1.2-2' }} &euro;</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel summary-panel">
+      <h2>Riepilogo POS</h2>
+      <!--
+      <div class="pos-note">
+        Questo pannello non esegue il pagamento. Mostra solo quanto inserire sul POS o in cassa e registra manualmente il saldo dopo conferma operatore.
+      </div>
+      -->
+      <div class="summary-row">
+        <span>Totale ordine</span>
+        <strong>{{ currentOrder.totale | number: '1.2-2' }} &euro;</strong>
+      </div>
+      <div class="summary-row">
+        <span>Gia registrato come saldato</span>
+        <strong>{{ currentOrder.paidAmount | number: '1.2-2' }} &euro;</strong>
+      </div>
+      <div class="summary-row remaining">
+        <span>Da inserire su POS</span>
+        <strong>{{ currentOrder.remainingAmount | number: '1.2-2' }} &euro;</strong>
+      </div>
+      <div class="summary-row">
+        <span>Creato il</span>
+        <span>{{ currentOrder.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="summary-row">
+        <span>Aggiornato il</span>
+        <span>{{ currentOrder.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="summary-row" *ngIf="currentOrder.paidAt">
+        <span>Chiuso il</span>
+        <span>{{ currentOrder.paidAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+
+      <div class="payment-actions">
+        <label for="participantName">Partecipante opzionale</label>
+        <input id="participantName" type="text" [(ngModel)]="participantName" placeholder="Es. Marco" />
+
+        <button class="pay-button" [disabled]="isPaid || isPaying || currentOrder.remainingAmount <= 0" (click)="payFull()">
+          {{ isPaid ? 'Ordine saldato' : (isPaying ? 'Registrazione...' : 'Segna residuo come saldato') }}
+        </button>
+
+        <div class="split-box" *ngIf="!isPaid">
+          <label for="partialAmount">Quota libera da inserire su POS</label>
+          <input id="partialAmount" type="number" min="0.01" step="0.01" [(ngModel)]="partialAmount" />
+          <div class="split-actions">
+            <button class="secondary-button" [disabled]="isPaying || !partialAmount || partialAmount <= 0" (click)="payPartial('PARTIAL')">
+              Registra quota libera come saldata
+            </button>
+          </div>
+        </div>
+
+        <div class="item-split-box" *ngIf="!isPaid">
+          <h3>Split per piatto</h3>
+          <div class="item-split-row" *ngFor="let item of currentOrder.items">
+            <div class="item-split-info">
+              <div class="name">{{ item.nome }}</div>
+              <div class="meta">Residui {{ item.remainingQuantity }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;</div>
+            </div>
+            <input
+              type="number"
+              min="0"
+              [max]="item.remainingQuantity"
+              [ngModel]="getSelectedQuantity(item)"
+              (ngModelChange)="setSelectedQuantity(item, $event)"
+            />
+          </div>
+          <div class="summary-row split-total">
+            <span>Totale da inserire su POS</span>
+            <strong>{{ selectedSplitTotal | number: '1.2-2' }} &euro;</strong>
+          </div>
+          <button class="secondary-button" [disabled]="isPaying || !hasSplitSelection" (click)="paySplitByItems()">
+            Registra selezione split come saldata
+          </button>
+        </div>
+      </div>
+
+      <div class="payment-history" *ngIf="currentOrder.payments.length > 0">
+        <h3>Storico registrazioni saldo</h3>
+        <div class="history-row" *ngFor="let payment of currentOrder.payments">
+          <div>
+            <div class="history-mode">
+              {{ payment.paymentMode }}
+              <span *ngIf="payment.participantName">&middot; {{ payment.participantName }}</span>
+            </div>
+            <div class="history-date">{{ payment.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+            <div class="history-allocations" *ngIf="payment.allocations.length > 0">
+              <span *ngFor="let allocation of payment.allocations">
+                {{ allocation.itemName }} x{{ allocation.quantity }}
+              </span>
+            </div>
+          </div>
+          <strong>{{ payment.amount | number: '1.2-2' }} &euro;</strong>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+<div class="access-shell">
+  <div class="access-card">
+    <h1>WaiterO</h1>
+    <p class="status">{{ accessStatus }}</p>
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+    <div class="gps-debug" *ngIf="gpsSnapshot as gps">
+      <h2>Coordinate lette</h2>
+      <p><strong>Latitudine:</strong> {{ formatCoordinate(gps.latitude) }}</p>
+      <p><strong>Longitudine:</strong> {{ formatCoordinate(gps.longitude) }}</p>
+      <p><strong>Accuratezza:</strong> {{ formatAccuracy(gps.accuracy) }}</p>
+    </div>
+  </div>
+</div>

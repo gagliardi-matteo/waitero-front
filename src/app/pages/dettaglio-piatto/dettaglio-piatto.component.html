@@ -1,4 +1,12 @@
-<div *ngIf="piatto" class="detail-container">
+<div *ngIf="errorMessage" class="detail-container">
+  <div class="info-box warning">
+    <h3>Errore</h3>
+    <p>{{ errorMessage }}</p>
+  </div>
+  <button class="add-to-cart" (click)="goBack()">Torna al menu</button>
+</div>
+
+<div *ngIf="!errorMessage && piatto" class="detail-container">
   <button class="back-button" (click)="goBack()">
     <span class="material-symbols-outlined">arrow_back</span>
   </button>
@@ -7,10 +15,22 @@
 
   <h1>{{ piatto.nome }}</h1>
   <p class="description">{{ piatto.descrizione }}</p>
-  <div class="price">{{ piatto.prezzo.toFixed(2) }} €</div>
+  <div class="price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
+
+  <div class="info-box" *ngIf="piatto.ingredienti">
+    <h3>Ingredienti</h3>
+    <p>{{ piatto.ingredienti }}</p>
+  </div>
+
+  <div class="info-box warning" *ngIf="allergenBadges.length > 0">
+    <h3>Allergeni</h3>
+    <div class="badge-list">
+      <span class="allergen-badge" *ngFor="let allergen of allergenBadges">{{ allergen }}</span>
+    </div>
+  </div>
 
   <div class="actions">
-    <button class="round-btn" (click)="remove()">−</button>
+    <button class="round-btn" (click)="remove()">-</button>
     <span class="qty-number">{{ quantita() }}</span>
     <button class="round-btn" (click)="add()">+</button>
   </div>

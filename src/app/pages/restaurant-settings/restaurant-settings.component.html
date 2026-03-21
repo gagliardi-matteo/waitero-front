@@ -1,0 +1,126 @@
+<div class="content restaurant-settings-page">
+  <div class="page-header">
+    <div>
+      <h1>Impostazioni Ristorante</h1>
+      <p>Configura indirizzo, raggio di accesso cliente e orari di servizio.</p>
+    </div>
+  </div>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+
+  <div class="settings-layout" *ngIf="!loading">
+    <section class="settings-card">
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label>
+          Nome ristorante
+          <input type="text" formControlName="nome" />
+        </label>
+
+        <label class="address-field">
+          Indirizzo
+          <input type="text" formControlName="address" placeholder="Via, numero civico" autocomplete="off" />
+          <div class="address-suggestions" *ngIf="addressSuggestions.length > 0">
+            <button type="button" *ngFor="let suggestion of addressSuggestions; trackBy: trackSuggestion" (click)="applySuggestion(suggestion)">
+              <strong>
+                {{ suggestion.address }}
+                <span class="precision-badge" *ngIf="suggestion.hasStreetNumber">Civico verificato</span>
+              </strong>
+              <span>{{ suggestion.city }}</span>
+              <small>{{ suggestion.formattedAddress }}</small>
+            </button>
+          </div>
+          <small class="helper" *ngIf="searchingAddress">Ricerca Google in corso...</small>
+          <small class="helper">Per salvare devi selezionare un suggerimento Google con civico verificato.</small>
+        </label>
+
+        <label>
+          Citta
+          <input type="text" formControlName="city" placeholder="Comune" />
+        </label>
+
+        <label>
+          Raggio consentito (metri)
+          <input type="number" formControlName="allowedRadiusMeters" min="20" max="500" />
+        </label>
+
+        <div class="hours-header">
+          <h2>Orari di servizio</h2>
+          <button type="button" class="ghost-btn" (click)="addSlot()">Aggiungi fascia</button>
+        </div>
+
+        <div class="duplicate-panel" *ngIf="duplicateSourceIndex !== null">
+          <div>
+            <strong>{{ duplicateMode === 'day' ? 'Duplica giorno' : 'Duplica fascia' }}</strong>
+            <p>{{ duplicateSourceLabel }}</p>
+          </div>
+          <div class="duplicate-days">
+            <button
+              type="button"
+              class="day-chip"
+              *ngFor="let day of weekdays"
+              [class.active]="isDuplicateTargetSelected(day.value)"
+              (click)="toggleDuplicateTarget(day.value)">
+              {{ day.label }}
+            </button>
+          </div>
+          <div class="duplicate-actions">
+            <button type="button" class="ghost-btn" (click)="cancelDuplicate()">Annulla</button>
+            <button type="button" class="primary-btn" (click)="applyDuplicate()">Applica duplicazione</button>
+          </div>
+        </div>
+
+        <div class="hours-list" formArrayName="serviceHours">
+          <div class="hour-row" *ngFor="let slot of serviceHoursArray.controls; let i = index" [formGroupName]="i">
+            <select formControlName="dayOfWeek">
+              <option *ngFor="let day of weekdays" [value]="day.value">{{ day.label }}</option>
+            </select>
+            <input type="time" formControlName="startTime" />
+            <input type="time" formControlName="endTime" />
+            <div class="row-actions">
+              <button type="button" class="ghost-btn compact-btn" (click)="startDuplicate(i, 'slot')">Duplica fascia</button>
+              <button type="button" class="ghost-btn compact-btn" (click)="startDuplicate(i, 'day')">Duplica giorno</button>
+              <button type="button" class="danger-btn compact-btn" (click)="removeSlot(i)">Rimuovi</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="primary-btn" [disabled]="saving">
+          {{ saving ? 'Salvataggio...' : 'Salva impostazioni' }}
+        </button>
+      </form>
+    </section>
+
+    <aside class="map-card">
+      <h2>Posizione rilevata</h2>
+      <p *ngIf="settings?.formattedAddress">{{ settings?.formattedAddress }}</p>
+      <p *ngIf="!settings?.formattedAddress">Salva un indirizzo per vedere la posizione geocodificata.</p>
+
+      <div class="map-frame" *ngIf="mapEmbedUrl() as mapUrl; else noMapTpl">
+        <iframe [src]="mapUrl" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <ng-template #noMapTpl>
+        <div class="map-placeholder">Nessuna mappa disponibile</div>
+      </ng-template>
+
+      <div class="meta-grid" *ngIf="settings">
+        <div>
+          <span class="meta-label">Latitudine</span>
+          <strong>{{ settings.latitude ?? '-' }}</strong>
+        </div>
+        <div>
+          <span class="meta-label">Longitudine</span>
+          <strong>{{ settings.longitude ?? '-' }}</strong>
+        </div>
+        <div>
+          <span class="meta-label">Raggio</span>
+          <strong>{{ settings.allowedRadiusMeters ?? '-' }} m</strong>
+        </div>
+        <div>
+          <span class="meta-label">Fasce attive</span>
+          <strong>{{ settings.serviceHours.length }}</strong>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

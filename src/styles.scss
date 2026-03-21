@@ -1,60 +1,102 @@
-/* You can add global styles to this file, and also import other style files */
-/* 1. Use a more-intuitive box-sizing model */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-muted: #f3f3f5;
+  --surface-soft: #f8f8fa;
+  --text: #111111;
+  --text-muted: #6b7280;
+  --text-soft: #8a8f98;
+  --border: rgba(17, 24, 39, 0.1);
+  --border-strong: rgba(17, 24, 39, 0.16);
+  --accent: #0f9d58;
+  --accent-strong: #0b7a44;
+  --accent-soft: rgba(15, 157, 88, 0.12);
+  --danger: #d4183d;
+  --danger-soft: rgba(212, 24, 61, 0.1);
+  --warning: #c57a10;
+  --warning-soft: rgba(197, 122, 16, 0.12);
+  --shadow-sm: 0 10px 24px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --sidebar-width: 248px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
-/* 2. Remove default margin */
 * {
   margin: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* 3. Enable keyword animations */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    interpolate-size: allow-keywords;
-  }
+html {
+  font-size: 16px;
 }
 
 body {
-  /* 4. Add accessible line-height */
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(15, 157, 88, 0.09), transparent 32%),
+    linear-gradient(180deg, #fcfcfc 0%, #f5f5f7 100%);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
   line-height: 1.5;
-  /* 5. Improve text rendering */
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* 6. Improve media defaults */
 img, picture, video, canvas, svg {
   display: block;
   max-width: 100%;
 }
 
-/* 7. Inherit fonts for form controls */
 input, button, textarea, select {
   font: inherit;
 }
 
-/* 8. Avoid text overflows */
+button {
+  color: inherit;
+}
+
 p, h1, h2, h3, h4, h5, h6 {
   overflow-wrap: break-word;
 }
 
-/* 9. Improve line wrapping */
 p {
   text-wrap: pretty;
 }
+
 h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
 }
 
-/*
-  10. Create a root stacking context
-*/
 #root, #__next {
   isolation: isolate;
 }
 
-/*INIZIO CSS*/
-body {
-  font-family: 'Inter', sans-serif;
+input,
+select,
+textarea {
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(15, 157, 88, 0.28);
+  outline-offset: 2px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }

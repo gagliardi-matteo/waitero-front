@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { AuthService } from '../../auth/AuthService';
-import { NgIf, NgFor, CommonModule } from '@angular/common';
+import { NgIf, CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [NgIf, CommonModule],
+  imports: [NgIf, CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
@@ -15,5 +16,4 @@ export class SidebarComponent {
   isLoggedIn(): boolean {
     return this.authService.isAuthenticated();
   }
-
 }

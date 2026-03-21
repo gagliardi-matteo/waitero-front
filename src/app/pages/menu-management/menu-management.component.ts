@@ -6,6 +6,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../../auth/AuthService';
 import { Piatto } from '../../models/piatto.model';
 import { environment } from '../../../environments/environment';
+import { splitStoredAllergens } from '../../shared/allergens';
 
 @Component({
   selector: 'app-menu-management',
@@ -75,12 +76,17 @@ export class MenuManagementComponent implements OnInit {
 
     return sortedEntries;
   }
+  getAllergenBadges(piatto: Piatto): string[] {
+    const parsed = splitStoredAllergens(piatto.allergeni);
+    return [...parsed.standard, ...parsed.custom];
+  }
 
-
-
+  trackBadge(index: number, allergen: string): string {
+    return allergen;
+  }
   getImageUrl(imageUrl: string | null | undefined): string {
     if (!imageUrl || imageUrl.trim() === '') {
-      return '/placeholder.png'; // ✅ immagine locale fallback
+      return '/placeholder.png'; // immagine locale fallback
     }
     return `${environment.apiUrl}/image/images/${imageUrl}`;
   }

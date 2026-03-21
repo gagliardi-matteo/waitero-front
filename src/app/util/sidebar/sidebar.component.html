@@ -1,18 +1,29 @@
-<!-- sidebar.component.html -->
 <nav class="sidebar" *ngIf="isLoggedIn()">
   <div class="logo">WaiterO</div>
   <ul>
-    <li routerLink="/orders">
+    <li routerLink="/tables-dashboard" routerLinkActive="active">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span class="label">Sala</span>
+    </li>
+    <li routerLink="/waiter-order" routerLinkActive="active">
+      <span class="material-symbols-outlined">playlist_add</span>
+      <span class="label">Comanda</span>
+    </li>
+    <li routerLink="/orders" routerLinkActive="active">
       <span class="material-symbols-outlined">receipt_long</span>
       <span class="label">Ordini</span>
     </li>
-    <li routerLink="/menu" class="active">
+    <li routerLink="/menu-management" routerLinkActive="active">
       <span class="material-symbols-outlined">local_dining</span>
-      <span class="label">Menù</span>
+      <span class="label">Menu</span>
     </li>
-    <li routerLink="/qrcode">
-      <span class="material-symbols-outlined">qr_code</span>
-      <span class="label">QR Code</span>
+    <li routerLink="/tables" routerLinkActive="active">
+      <span class="material-symbols-outlined">table_restaurant</span>
+      <span class="label">Tavoli</span>
+    </li>
+    <li routerLink="/restaurant-settings" routerLinkActive="active">
+      <span class="material-symbols-outlined">storefront</span>
+      <span class="label">Locale</span>
     </li>
     <li routerLink="/payments">
       <span class="material-symbols-outlined">payments</span>
