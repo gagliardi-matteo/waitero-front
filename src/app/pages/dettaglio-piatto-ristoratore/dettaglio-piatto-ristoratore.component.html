@@ -18,9 +18,11 @@
   <p class="description" *ngIf="piatto.descrizione">{{ piatto.descrizione }}</p>
   <div class="price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
 
-  <div class="info-box" *ngIf="piatto.ingredienti">
+  <div class="info-box" *ngIf="ingredientRows.length > 0">
     <h3>Ingredienti</h3>
-    <p>{{ piatto.ingredienti }}</p>
+    <ul>
+      <li *ngFor="let ingredient of ingredientRows">{{ ingredient }}</li>
+    </ul>
   </div>
 
   <div class="info-box warning" *ngIf="allergenBadges.length > 0">

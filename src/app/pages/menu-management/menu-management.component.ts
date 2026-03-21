@@ -1,8 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SidebarComponent } from '../../util/sidebar/sidebar.component';
 import { RouterModule } from '@angular/router';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../auth/AuthService';
 import { Piatto } from '../../models/piatto.model';
 import { environment } from '../../../environments/environment';
@@ -18,6 +17,7 @@ import { splitStoredAllergens } from '../../shared/allergens';
 export class MenuManagementComponent implements OnInit {
   piatti: Piatto[] = [];
   userId: number | null = null;
+  deletingDishId: number | null = null;
 
   constructor(
     private http: HttpClient,
@@ -31,11 +31,33 @@ export class MenuManagementComponent implements OnInit {
       return;
     }
 
-    this.http.get<Piatto[]>(`${environment.apiUrl}/menu/piattiRistoratore/${this.userId}`)
-      .subscribe({
-        next: (data: any[]) => this.piatti = data,
-        error: (err) => console.error('Errore caricamento piatti:', err)
-      });
+    this.loadPiatti();
+  }
+
+  deleteDish(item: Piatto, event: Event): void {
+    event.stopPropagation();
+
+    if (this.deletingDishId === item.id) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Vuoi eliminare il piatto "${item.nome}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingDishId = item.id;
+    this.http.delete<void>(`${environment.apiUrl}/menu/piatti/${item.id}`).subscribe({
+      next: () => {
+        this.piatti = this.piatti.filter(piatto => piatto.id !== item.id);
+        this.deletingDishId = null;
+      },
+      error: err => {
+        console.error('Errore eliminazione piatto:', err);
+        this.deletingDishId = null;
+        alert(err.error?.message ?? 'Impossibile eliminare il piatto.');
+      }
+    });
   }
 
   get menuByCategory(): [string, Piatto[]][] {
@@ -63,19 +85,15 @@ export class MenuManagementComponent implements OnInit {
       map.get(categoria)!.push(item);
     }
 
-    const sortedEntries: [string, Piatto[]][] = Array.from(map.entries())
+    return Array.from(map.entries())
       .sort((a, b) => {
         const indexA = categoriaOrder.indexOf(a[0]);
         const indexB = categoriaOrder.indexOf(b[0]);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       })
-      .map(([categoria, items]) => {
-        const sortedItems = items.sort((a, b) => a.id - b.id);
-        return [categoria, sortedItems] as [string, Piatto[]];
-      });
-
-    return sortedEntries;
+      .map(([categoria, items]) => [categoria, items.sort((a, b) => a.id - b.id)] as [string, Piatto[]]);
   }
+
   getAllergenBadges(piatto: Piatto): string[] {
     const parsed = splitStoredAllergens(piatto.allergeni);
     return [...parsed.standard, ...parsed.custom];
@@ -84,11 +102,19 @@ export class MenuManagementComponent implements OnInit {
   trackBadge(index: number, allergen: string): string {
     return allergen;
   }
+
   getImageUrl(imageUrl: string | null | undefined): string {
     if (!imageUrl || imageUrl.trim() === '') {
-      return '/placeholder.png'; // immagine locale fallback
+      return '/placeholder.png';
     }
     return `${environment.apiUrl}/image/images/${imageUrl}`;
   }
 
+  private loadPiatti(): void {
+    this.http.get<Piatto[]>(`${environment.apiUrl}/menu/piattiRistoratore/${this.userId}`)
+      .subscribe({
+        next: data => this.piatti = data,
+        error: err => console.error('Errore caricamento piatti:', err)
+      });
+  }
 }

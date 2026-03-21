@@ -55,6 +55,21 @@ export class DettaglioPiattoComponent implements OnInit {
     return [...parsed.standard, ...parsed.custom];
   }
 
+  get ingredientRows(): string[] {
+    if (!this.piatto) {
+      return [];
+    }
+    const structured = this.piatto.ingredientiStrutturati ?? [];
+    if (structured.length > 0) {
+      return structured
+        .filter(item => !!item.nome?.trim())
+        .map(item => item.grammi != null ? `${item.nome} (${item.grammi} g)` : item.nome);
+    }
+    return this.piatto.ingredienti
+      ? this.piatto.ingredienti.split(',').map(item => item.trim()).filter(Boolean)
+      : [];
+  }
+
   getImageUrl(imageUrl: string | null | undefined): string {
     return (!imageUrl || imageUrl.trim() === '') ? '/placeholder.png' :
       `${environment.apiUrl}/image/images/${imageUrl}`;

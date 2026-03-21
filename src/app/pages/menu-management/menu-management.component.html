@@ -27,10 +27,10 @@
           </div>
           <div class="price">{{ item.prezzo }}&euro;</div>
           <div class="actions">
-            <button class="edit-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]">
+            <button class="edit-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]" (click)="$event.stopPropagation()">
               <span class="material-symbols-outlined">edit</span>
             </button>
-            <button class="delete-btn">
+            <button class="delete-btn" [disabled]="deletingDishId === item.id" (click)="deleteDish(item, $event)">
               <span class="material-symbols-outlined">delete</span>
             </button>
           </div>

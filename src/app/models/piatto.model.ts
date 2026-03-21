@@ -1,3 +1,9 @@
+export interface IngredienteStrutturato {
+  nome: string;
+  categoria?: string | null;
+  grammi?: number | null;
+}
+
 export interface Piatto {
   id: number;
   nome: string;
@@ -8,4 +14,5 @@ export interface Piatto {
   imageUrl: string | null;
   ingredienti?: string;
   allergeni?: string;
+  ingredientiStrutturati?: IngredienteStrutturato[];
 }
