@@ -1,10 +1,14 @@
-﻿import { Component, Input, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { OrderService } from '../../services/order.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { CustomerOrderItem } from '../../models/customer-order.model';
+import { MenuCatalogService } from '../../services/menu-catalog.service';
+import { rankDishes } from '../../shared/menu-ranking';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-order-summary',
@@ -13,15 +17,22 @@ import { CustomerOrderItem } from '../../models/customer-order.model';
   templateUrl: './order-summary.component.html',
   styleUrls: ['./order-summary.component.scss']
 })
-export class OrderSummaryComponent {
+export class OrderSummaryComponent implements OnInit {
   @Input() piatti: Piatto[] = [];
 
   isExpanded = false;
   isSubmitting = false;
+  rankedCatalog: Piatto[] = [];
 
   private orderState = inject(OrderService);
   private auth = inject(AuthContextService);
   private customerOrderService = inject(CustomerOrderService);
+  private http = inject(HttpClient);
+  private menuCatalogService = inject(MenuCatalogService);
+
+  ngOnInit(): void {
+    this.loadCatalogIfNeeded();
+  }
 
   get confirmedItems(): CustomerOrderItem[] {
     return this.orderState.getConfirmedItems();
@@ -50,6 +61,22 @@ export class OrderSummaryComponent {
   get badgeCount(): number {
     const confirmedCount = this.confirmedItems.reduce((acc, item) => acc + item.quantita, 0);
     return confirmedCount + this.draftItems.length;
+  }
+
+  get cartUpsellSuggestion(): Piatto | null {
+    return this.getCartUpsell();
+  }
+
+  get cartUpsellMessage(): string {
+    const suggestion = this.cartUpsellSuggestion;
+    if (!suggestion) {
+      return '';
+    }
+    const category = (suggestion.categoria ?? '').toUpperCase();
+    if (category === 'BEVANDA') {
+      return 'Ti manca solo una bevanda';
+    }
+    return 'Completa il tuo ordine con un contorno';
   }
 
   toggleExpanded() {
@@ -117,6 +144,11 @@ export class OrderSummaryComponent {
       });
   }
 
+  aggiungiUpsell(piatto: Piatto, event: Event): void {
+    event.stopPropagation();
+    this.aggiungi(piatto);
+  }
+
   quantita(id: number): number {
     return this.orderState.quantita(id);
   }
@@ -137,5 +169,54 @@ export class OrderSummaryComponent {
       }
     });
     return Array.from(mappa.values());
+  }
+
+  getCartUpsell(): Piatto | null {
+    if (this.rankedCatalog.length === 0) {
+      return null;
+    }
+
+    const cartDishIds = new Set<number>([
+      ...this.draftGroupedItems.map(item => item.id),
+      ...this.confirmedItems.map(item => item.dishId)
+    ]);
+
+    const cartDishes = this.rankedCatalog.filter(item => cartDishIds.has(item.id));
+    if (cartDishes.length === 0) {
+      return null;
+    }
+
+    const hasBeverage = cartDishes.some(item => (item.categoria ?? '').toUpperCase() === 'BEVANDA');
+    if (!hasBeverage) {
+      return this.rankedCatalog.find(item => (item.categoria ?? '').toUpperCase() === 'BEVANDA' && !cartDishIds.has(item.id)) ?? null;
+    }
+
+    if (cartDishes.length === 1) {
+      return this.rankedCatalog.find(item => (item.categoria ?? '').toUpperCase() === 'CONTORNO' && !cartDishIds.has(item.id)) ?? null;
+    }
+
+    return null;
+  }
+
+  private loadCatalogIfNeeded(): void {
+    const restaurantId = this.auth.restaurantIdValue;
+    if (!restaurantId) {
+      return;
+    }
+
+    const cached = this.menuCatalogService.getCatalog(restaurantId);
+    if (cached.length > 0) {
+      this.rankedCatalog = cached;
+      return;
+    }
+
+    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${restaurantId}`)
+      .subscribe({
+        next: piatti => {
+          this.rankedCatalog = rankDishes(piatti);
+          this.menuCatalogService.setCatalog(restaurantId, this.rankedCatalog);
+        },
+        error: err => console.error('Errore caricamento catalogo carrello', err)
+      });
   }
 }

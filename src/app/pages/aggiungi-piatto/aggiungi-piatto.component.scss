@@ -64,3 +64,14 @@
     float: right;
   }
 }
+
+.recommend-checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recommend-checkbox input {
+  width: auto;
+}
+

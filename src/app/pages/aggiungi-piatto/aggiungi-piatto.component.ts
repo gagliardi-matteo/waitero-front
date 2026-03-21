@@ -34,7 +34,8 @@ export class AddDishComponent {
       descrizione: [''],
       ingredienti: [''],
       allergeni: [''],
-      allergeniCustom: ['']
+      allergeniCustom: [''],
+      consigliato: [false]
     });
 
     this.dishForm.get('allergeniCustom')?.valueChanges.subscribe(() => {
@@ -87,7 +88,8 @@ export class AddDishComponent {
       ...rawValues,
       categoria: rawValues.categoria.toUpperCase(),
       ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
-      allergeni: this.normalizeOptionalText(allergeni)
+      allergeni: this.normalizeOptionalText(allergeni),
+      consigliato: !!rawValues.consigliato
     };
     delete dto.allergeniCustom;
 
@@ -122,4 +124,3 @@ export class AddDishComponent {
     this.dishForm.patchValue({ allergeni }, { emitEvent: false });
   }
 }
-

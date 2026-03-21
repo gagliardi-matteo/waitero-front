@@ -10,6 +10,11 @@
     <label>Ingredienti finali del piatto</label>
     <textarea formControlName="ingredienti" class="descrizione" placeholder="Lascia vuoto per usare i suggerimenti automatici, oppure inserisci la tua ricetta separando gli ingredienti con una virgola"></textarea>
 
+    <label class="recommend-checkbox">
+      <input type="checkbox" formControlName="consigliato" />
+      Mostra questo piatto tra i consigliati per il cliente
+    </label>
+
     <label>Allergeni standard</label>
     <div class="allergen-grid">
       <button

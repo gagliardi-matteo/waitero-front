@@ -12,6 +12,8 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
+import { byScoreDesc, rankDishes } from '../../shared/menu-ranking';
+import { MenuCatalogService } from '../../services/menu-catalog.service';
 
 @Component({
   selector: 'app-menu',
@@ -30,6 +32,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   searchTerm = '';
   selectedCategory = 'ALL';
   errorMessage = '';
+  recommendedDishes: Piatto[] = [];
   private eventSource: EventSource | null = null;
 
   readonly categoriaOrder: string[] = [
@@ -42,7 +45,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     private auth: AuthContextService,
     private http: HttpClient,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private menuCatalogService: MenuCatalogService
   ) {}
 
   ngOnInit(): void {
@@ -94,14 +98,17 @@ export class MenuComponent implements OnInit, OnDestroy {
       .subscribe({
         next: data => {
           this.errorMessage = '';
-          this.piatti = data;
-          this.orderService.setCatalog(data);
+          this.piatti = rankDishes(data);
+          this.recommendedDishes = this.buildRecommendedDishes(this.piatti);
+          this.orderService.setCatalog(this.piatti);
+          this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
           this.applyFilters();
         },
         error: err => {
           console.error('Errore caricamento menu cliente', err);
           this.piatti = [];
           this.piattiRaggruppati = [];
+          this.recommendedDishes = [];
           this.errorMessage = err.error?.message ?? 'Menu non disponibile.';
         }
       });
@@ -184,7 +191,25 @@ export class MenuComponent implements OnInit, OnDestroy {
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(piatto);
     }
-    return this.categoriaOrder.filter(cat => map.has(cat)).map(cat => [cat, map.get(cat)!]);
+    return this.categoriaOrder
+      .filter(cat => map.has(cat))
+      .map(cat => [cat, [...map.get(cat)!].sort(byScoreDesc)]);
+  }
+
+  private buildRecommendedDishes(piatti: Piatto[]): Piatto[] {
+    const recommended = new Map<number, Piatto>();
+
+    piatti.filter(piatto => piatto.consigliato).forEach(piatto => {
+      recommended.set(piatto.id, piatto);
+    });
+
+    piatti.slice(0, 3).forEach(piatto => {
+      if (!recommended.has(piatto.id)) {
+        recommended.set(piatto.id, piatto);
+      }
+    });
+
+    return Array.from(recommended.values()).sort(byScoreDesc);
   }
 
   categoriaLabel(cat: string): string {

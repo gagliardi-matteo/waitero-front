@@ -38,4 +38,17 @@
   </div>
 
   <button class="add-to-cart" (click)="addToCart()">Aggiungi al carrello</button>
+
+  <div class="info-box upsell-box" *ngIf="upsellSuggestions.length > 0">
+    <h3>Perfetto con:</h3>
+    <div class="upsell-list">
+      <div class="upsell-item" *ngFor="let suggestion of upsellSuggestions">
+        <div>
+          <strong>{{ suggestion.nome }}</strong>
+          <div>{{ suggestion.prezzo.toFixed(2) }} &euro;</div>
+        </div>
+        <button class="round-btn" (click)="addSuggestion(suggestion)">+</button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -22,6 +22,10 @@
               <strong>Ingredienti:</strong> {{ item.ingredienti }}
             </div>
           </a>
+          <label class="recommended-toggle" (click)="$event.stopPropagation()">
+            <input type="checkbox" [checked]="!!item.consigliato" [disabled]="togglingRecommendedId === item.id" (change)="toggleRecommended(item, $event)" />
+            Consigliato al cliente
+          </label>
           <div class="dish-allergen-list" *ngIf="getAllergenBadges(item).length > 0">
             <span class="allergen-badge" *ngFor="let allergen of getAllergenBadges(item); trackBy: trackBadge">{{ allergen }}</span>
           </div>

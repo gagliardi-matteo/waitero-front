@@ -46,6 +46,14 @@
       </div>
     </div>
 
+    <div class="cart-upsell" *ngIf="cartUpsellSuggestion as suggestion">
+      <div>
+        <div class="cart-upsell-title">{{ cartUpsellMessage }}</div>
+        <div class="cart-upsell-item">{{ suggestion.nome }} &middot; {{ suggestion.prezzo | number: '1.2-2' }} &euro;</div>
+      </div>
+      <button class="cart-upsell-btn" (click)="aggiungiUpsell(suggestion, $event)">+</button>
+    </div>
+
     <button class="confirm-btn" [disabled]="draftItems.length === 0 || isSubmitting" (click)="confermaOrdine($event)">
       {{ isSubmitting ? 'Invio...' : 'Conferma Ordine' }}
     </button>

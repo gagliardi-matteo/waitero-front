@@ -41,6 +41,7 @@ export class ModificaPiattoComponent implements OnInit {
       allergeniCustom: [''],
       prezzo: [0, [Validators.required, Validators.min(0)]],
       disponibile: [true],
+      consigliato: [false],
       imageUrl: [''],
       categoria: [null, Validators.required],
     });
@@ -59,6 +60,7 @@ export class ModificaPiattoComponent implements OnInit {
         this.selectedAllergens = new Set(parsedAllergens.standard);
         this.form.patchValue({
           ...piatto,
+          consigliato: !!piatto.consigliato,
           allergeniCustom: parsedAllergens.custom.join(', ')
         });
         this.syncAllergensField();
@@ -94,7 +96,8 @@ export class ModificaPiattoComponent implements OnInit {
     const values = {
       ...rawValues,
       ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
-      allergeni: this.normalizeOptionalText(allergeni)
+      allergeni: this.normalizeOptionalText(allergeni),
+      consigliato: !!rawValues.consigliato
     };
     delete values.allergeniCustom;
 
@@ -159,4 +162,3 @@ export class ModificaPiattoComponent implements OnInit {
     this.form.patchValue({ allergeni }, { emitEvent: false });
   }
 }
-

@@ -30,12 +30,49 @@
     Nessun piatto corrisponde ai filtri selezionati.
   </div>
 
+  <section class="recommended-section" *ngIf="!errorMessage && recommendedDishes.length > 0">
+    <div class="recommended-header">
+      <h2>Consigliati per te</h2>
+      <p>I piatti piu forti del menu in questo momento.</p>
+    </div>
+
+    <div class="recommended-grid">
+      <div class="dish-card recommended-card" *ngFor="let piatto of recommendedDishes; trackBy: trackById" (click)="openDettaglio(piatto)">
+        <div class="dish-info">
+          <div>
+            <span class="dish-badge" *ngIf="piatto.badge">{{ piatto.badge }}</span>
+            <div class="dish-name">{{ piatto.nome }}</div>
+            <div class="dish-description">{{ piatto.descrizione }}</div>
+            <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
+          </div>
+        </div>
+
+        <div class="dish-image-container">
+          <img class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
+
+          <ng-container *ngIf="quantita(piatto.id) > 0; else recommendedAddBtn">
+            <div class="dish-add-overlay" (click)="$event.stopPropagation()">
+              <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">-</button>
+              <span class="qty-number">{{ quantita(piatto.id) }}</span>
+              <button class="round-btn" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
+            </div>
+          </ng-container>
+
+          <ng-template #recommendedAddBtn>
+            <button class="add-button-overlay" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="category" *ngFor="let group of piattiRaggruppati">
     <h2 class="category-title" [id]="'cat-' + group[0]">{{ categoriaLabel(group[0]) }}</h2>
 
     <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" (click)="openDettaglio(piatto)">
       <div class="dish-info">
         <div>
+          <span class="dish-badge" *ngIf="piatto.badge">{{ piatto.badge }}</span>
           <div class="dish-name">{{ piatto.nome }}</div>
           <div class="dish-description">{{ piatto.descrizione }}</div>
           <div class="dish-allergen-list" *ngIf="getAllergenBadges(piatto).length > 0">

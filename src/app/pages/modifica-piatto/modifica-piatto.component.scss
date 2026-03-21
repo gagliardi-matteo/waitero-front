@@ -115,3 +115,14 @@ button[type='submit']:hover:not([disabled]) {
     }
   }
 }
+
+.recommend-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recommend-checkbox input {
+  width: auto;
+}
+

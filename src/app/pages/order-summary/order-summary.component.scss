@@ -48,7 +48,8 @@ $peekHeight: 4.75rem;
   h3,
   .section-title,
   .sent-qty,
-  .actions span {
+  .actions span,
+  .cart-upsell-title {
     font-weight: 700;
   }
 
@@ -146,6 +147,34 @@ $peekHeight: 4.75rem;
         text-align: center;
       }
     }
+  }
+
+  .cart-upsell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #d8eadc;
+    border-radius: 18px;
+    background: #f4fbf5;
+  }
+
+  .cart-upsell-item {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .cart-upsell-btn {
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
   }
 
   .confirm-btn {

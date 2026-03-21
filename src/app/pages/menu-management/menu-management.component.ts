@@ -18,6 +18,7 @@ export class MenuManagementComponent implements OnInit {
   piatti: Piatto[] = [];
   userId: number | null = null;
   deletingDishId: number | null = null;
+  togglingRecommendedId: number | null = null;
 
   constructor(
     private http: HttpClient,
@@ -56,6 +57,33 @@ export class MenuManagementComponent implements OnInit {
         console.error('Errore eliminazione piatto:', err);
         this.deletingDishId = null;
         alert(err.error?.message ?? 'Impossibile eliminare il piatto.');
+      }
+    });
+  }
+
+  toggleRecommended(item: Piatto, event: Event): void {
+    event.stopPropagation();
+    if (this.togglingRecommendedId === item.id) {
+      return;
+    }
+
+    const nextValue = !item.consigliato;
+    const payload: Piatto = {
+      ...item,
+      consigliato: nextValue,
+      disponibile: item.disponibile ?? true
+    };
+
+    this.togglingRecommendedId = item.id;
+    this.http.put<Piatto>(`${environment.apiUrl}/menu/piatti/${item.id}`, payload).subscribe({
+      next: () => {
+        item.consigliato = nextValue;
+        this.togglingRecommendedId = null;
+      },
+      error: err => {
+        console.error('Errore aggiornamento consigliato:', err);
+        this.togglingRecommendedId = null;
+        alert(err.error?.message ?? 'Impossibile aggiornare il piatto consigliato.');
       }
     });
   }
