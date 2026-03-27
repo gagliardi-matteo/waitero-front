@@ -8,8 +8,6 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
-import { MenuCatalogService } from '../../services/menu-catalog.service';
-import { rankDishes } from '../../shared/menu-ranking';
 
 @Component({
   selector: 'app-dettaglio-piatto',
@@ -21,7 +19,6 @@ import { rankDishes } from '../../shared/menu-ranking';
 export class DettaglioPiattoComponent implements OnInit {
 
   piatto!: Piatto;
-  piatti: Piatto[] = [];
   upsellSuggestions: Piatto[] = [];
   errorMessage = '';
 
@@ -31,22 +28,19 @@ export class DettaglioPiattoComponent implements OnInit {
     private auth: AuthContextService,
     private router: Router,
     private orderService: OrderService,
-    private customerOrderService: CustomerOrderService,
-    private menuCatalogService: MenuCatalogService
+    private customerOrderService: CustomerOrderService
   ) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('dishId');
     if (!id) return;
 
-    this.loadCatalogIfNeeded();
-
     this.http.get<Piatto>(`${environment.apiUrl}/customer/dettaglio-piatto/${id}`)
       .subscribe({
         next: p => {
           this.errorMessage = '';
           this.piatto = p;
-          this.updateUpsellSuggestions();
+          this.loadUpsellSuggestions();
         },
         error: err => {
           console.error('Errore caricamento dettaglio piatto', err);
@@ -134,55 +128,22 @@ export class DettaglioPiattoComponent implements OnInit {
     this.router.navigate(['/menu']);
   }
 
-  private loadCatalogIfNeeded(): void {
+  private loadUpsellSuggestions(): void {
     const restaurantId = this.auth.restaurantIdValue;
-    if (!restaurantId) {
-      return;
-    }
-
-    const cached = this.menuCatalogService.getCatalog(restaurantId);
-    if (cached.length > 0) {
-      this.piatti = cached;
-      this.updateUpsellSuggestions();
-      return;
-    }
-
-    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${restaurantId}`)
-      .subscribe({
-        next: piatti => {
-          this.piatti = rankDishes(piatti);
-          this.menuCatalogService.setCatalog(restaurantId, this.piatti);
-          this.updateUpsellSuggestions();
-        },
-        error: err => console.error('Errore caricamento catalogo upsell', err)
-      });
-  }
-
-  private updateUpsellSuggestions(): void {
-    if (!this.piatto || this.piatti.length === 0) {
+    if (!this.piatto || !restaurantId) {
       this.upsellSuggestions = [];
       return;
     }
-    this.upsellSuggestions = this.getUpsellSuggestions(this.piatto);
-  }
 
-  private getUpsellSuggestions(piatto: Piatto): Piatto[] {
-    const currentCategory = (piatto.categoria ?? '').toUpperCase();
-    const candidates = this.piatti.filter(candidate => candidate.id !== piatto.id);
-
-    let suggestions: Piatto[] = [];
-    if (currentCategory === 'PRIMO' || currentCategory === 'PIZZA') {
-      suggestions = candidates.filter(candidate => (candidate.categoria ?? '').toUpperCase() === 'BEVANDA');
-    } else if (currentCategory === 'SECONDO') {
-      suggestions = candidates.filter(candidate => (candidate.categoria ?? '').toUpperCase() === 'CONTORNO');
-    } else if (currentCategory === 'DOLCE') {
-      suggestions = candidates.filter(candidate => {
-        const category = (candidate.categoria ?? '').toUpperCase();
-        const name = candidate.nome.toLowerCase();
-        return category === 'BEVANDA' && (name.includes('caffe') || name.includes('caff'));
+    this.customerOrderService.getUpsellSuggestions(this.piatto.id, restaurantId)
+      .subscribe({
+        next: suggestions => {
+          this.upsellSuggestions = suggestions.filter(suggestion => suggestion.id !== this.piatto.id).slice(0, 2);
+        },
+        error: err => {
+          console.error('Errore caricamento upsell piatto', err);
+          this.upsellSuggestions = [];
+        }
       });
-    }
-
-    return suggestions.slice(0, 2);
   }
 }

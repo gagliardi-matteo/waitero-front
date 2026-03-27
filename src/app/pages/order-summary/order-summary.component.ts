@@ -1,37 +1,43 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+﻿import { Component, DoCheck, Input, OnInit, inject } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { OrderService } from '../../services/order.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { CustomerOrderItem } from '../../models/customer-order.model';
-import { MenuCatalogService } from '../../services/menu-catalog.service';
-import { rankDishes } from '../../shared/menu-ranking';
-import { environment } from '../../../environments/environment';
+import { catchError, forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-order-summary',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './order-summary.component.html',
   styleUrls: ['./order-summary.component.scss']
 })
-export class OrderSummaryComponent implements OnInit {
+export class OrderSummaryComponent implements OnInit, DoCheck {
   @Input() piatti: Piatto[] = [];
 
   isExpanded = false;
   isSubmitting = false;
-  rankedCatalog: Piatto[] = [];
+  noteCucina = '';
+  cartUpsellSuggestions: Piatto[] = [];
 
   private orderState = inject(OrderService);
   private auth = inject(AuthContextService);
   private customerOrderService = inject(CustomerOrderService);
-  private http = inject(HttpClient);
-  private menuCatalogService = inject(MenuCatalogService);
+  private lastCartSignature = '';
 
   ngOnInit(): void {
-    this.loadCatalogIfNeeded();
+    this.refreshCartUpsellSuggestions();
+  }
+
+  ngDoCheck(): void {
+    const signature = this.buildCartSignature();
+    if (signature !== this.lastCartSignature) {
+      this.lastCartSignature = signature;
+      this.refreshCartUpsellSuggestions();
+    }
   }
 
   get confirmedItems(): CustomerOrderItem[] {
@@ -63,20 +69,18 @@ export class OrderSummaryComponent implements OnInit {
     return confirmedCount + this.draftItems.length;
   }
 
-  get cartUpsellSuggestion(): Piatto | null {
-    return this.getCartUpsell();
-  }
-
   get cartUpsellMessage(): string {
-    const suggestion = this.cartUpsellSuggestion;
-    if (!suggestion) {
+    if (this.cartUpsellSuggestions.length === 0) {
       return '';
     }
-    const category = (suggestion.categoria ?? '').toUpperCase();
-    if (category === 'BEVANDA') {
+    const firstCategory = (this.cartUpsellSuggestions[0].categoria ?? '').toUpperCase();
+    if (firstCategory === 'BEVANDA') {
       return 'Ti manca solo una bevanda';
     }
-    return 'Completa il tuo ordine con un contorno';
+    if (firstCategory === 'CONTORNO') {
+      return 'Completa il tuo ordine con un contorno';
+    }
+    return 'Potrebbe piacerti anche';
   }
 
   toggleExpanded() {
@@ -104,11 +108,13 @@ export class OrderSummaryComponent implements OnInit {
       token,
       restaurantId,
       tableId,
+      noteCucina: this.normalizedKitchenNote,
       items: draftPayload
     }).subscribe({
       next: order => {
         this.orderState.setConfirmedOrder(order);
         this.orderState.clearDraft();
+        this.noteCucina = '';
         this.isSubmitting = false;
       },
       error: err => {
@@ -171,52 +177,83 @@ export class OrderSummaryComponent implements OnInit {
     return Array.from(mappa.values());
   }
 
-  getCartUpsell(): Piatto | null {
-    if (this.rankedCatalog.length === 0) {
-      return null;
+  private get normalizedKitchenNote(): string | undefined {
+    const normalized = this.noteCucina.trim();
+    if (!normalized) {
+      return undefined;
     }
-
-    const cartDishIds = new Set<number>([
-      ...this.draftGroupedItems.map(item => item.id),
-      ...this.confirmedItems.map(item => item.dishId)
-    ]);
-
-    const cartDishes = this.rankedCatalog.filter(item => cartDishIds.has(item.id));
-    if (cartDishes.length === 0) {
-      return null;
-    }
-
-    const hasBeverage = cartDishes.some(item => (item.categoria ?? '').toUpperCase() === 'BEVANDA');
-    if (!hasBeverage) {
-      return this.rankedCatalog.find(item => (item.categoria ?? '').toUpperCase() === 'BEVANDA' && !cartDishIds.has(item.id)) ?? null;
-    }
-
-    if (cartDishes.length === 1) {
-      return this.rankedCatalog.find(item => (item.categoria ?? '').toUpperCase() === 'CONTORNO' && !cartDishIds.has(item.id)) ?? null;
-    }
-
-    return null;
+    return normalized.length > 1000 ? normalized.slice(0, 1000) : normalized;
   }
 
-  private loadCatalogIfNeeded(): void {
+  private refreshCartUpsellSuggestions(): void {
     const restaurantId = this.auth.restaurantIdValue;
-    if (!restaurantId) {
+    const dishIds = this.getCartDishIds();
+    if (!restaurantId || dishIds.length === 0) {
+      this.cartUpsellSuggestions = [];
       return;
     }
 
-    const cached = this.menuCatalogService.getCatalog(restaurantId);
-    if (cached.length > 0) {
-      this.rankedCatalog = cached;
-      return;
-    }
+    forkJoin(
+      dishIds.map(dishId => this.customerOrderService.getUpsellSuggestions(dishId, restaurantId)
+        .pipe(catchError(err => {
+          console.error('Errore caricamento upsell carrello', err);
+          return of([] as Piatto[]);
+        }))))
+      .subscribe(resultSets => {
+        const cartDishIdSet = new Set<number>(dishIds);
+        const aggregated = new Map<number, { dish: Piatto; hits: number; bestRank: number }>();
 
-    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${restaurantId}`)
-      .subscribe({
-        next: piatti => {
-          this.rankedCatalog = rankDishes(piatti);
-          this.menuCatalogService.setCatalog(restaurantId, this.rankedCatalog);
-        },
-        error: err => console.error('Errore caricamento catalogo carrello', err)
+        resultSets.forEach((suggestions, sourceIndex) => {
+          suggestions.forEach((suggestion, suggestionIndex) => {
+            if (cartDishIdSet.has(suggestion.id)) {
+              return;
+            }
+            const current = aggregated.get(suggestion.id);
+            const rank = (sourceIndex * 10) + suggestionIndex;
+            if (current) {
+              current.hits += 1;
+              current.bestRank = Math.min(current.bestRank, rank);
+              return;
+            }
+            aggregated.set(suggestion.id, {
+              dish: suggestion,
+              hits: 1,
+              bestRank: rank
+            });
+          });
+        });
+
+        this.cartUpsellSuggestions = Array.from(aggregated.values())
+          .sort((left, right) => {
+            if (right.hits !== left.hits) {
+              return right.hits - left.hits;
+            }
+            if (left.bestRank !== right.bestRank) {
+              return left.bestRank - right.bestRank;
+            }
+            return left.dish.prezzo - right.dish.prezzo;
+          })
+          .map(entry => entry.dish)
+          .slice(0, 2);
       });
+  }
+
+  private getCartDishIds(): number[] {
+    return Array.from(new Set<number>([
+      ...this.draftGroupedItems.map(item => item.id),
+      ...this.confirmedItems.map(item => item.dishId)
+    ]));
+  }
+
+  private buildCartSignature(): string {
+    const confirmedSignature = this.confirmedItems
+      .map(item => `${item.dishId}:${item.quantita}`)
+      .sort()
+      .join('|');
+    const draftSignature = this.draftGroupedItems
+      .map(item => `${item.id}:${this.quantita(item.id)}`)
+      .sort()
+      .join('|');
+    return `${confirmedSignature}#${draftSignature}`;
   }
 }

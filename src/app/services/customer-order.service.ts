@@ -1,14 +1,17 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { CustomerDraft, CustomerOrder } from '../models/customer-order.model';
 import { AuthContextService } from './auth-context.service';
+import { Piatto } from '../models/piatto.model';
 
 interface SubmitOrderPayload {
   token: string;
   restaurantId: string;
   tableId: string;
+  noteCucina?: string;
   items: Array<{
     dishId: number;
     quantity: number;
@@ -19,6 +22,7 @@ interface SubmitOrderPayload {
 export class CustomerOrderService {
   private http = inject(HttpClient);
   private auth = inject(AuthContextService);
+  private router = inject(Router);
 
   getCurrentOrder(token: string, restaurantId: string, tableId: string): Observable<CustomerOrder> {
     const params = this.withAccessMetadata(new HttpParams()
@@ -26,7 +30,8 @@ export class CustomerOrderService {
       .set('restaurantId', restaurantId)
       .set('tableId', tableId));
 
-    return this.http.get<CustomerOrder>(`${environment.apiUrl}/customer/orders/current`, { params });
+    return this.http.get<CustomerOrder>(`${environment.apiUrl}/customer/orders/current`, { params })
+      .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 
   getCurrentDraft(token: string, restaurantId: string, tableId: string): Observable<CustomerDraft> {
@@ -35,7 +40,8 @@ export class CustomerOrderService {
       .set('restaurantId', restaurantId)
       .set('tableId', tableId));
 
-    return this.http.get<CustomerDraft>(`${environment.apiUrl}/customer/orders/draft`, { params });
+    return this.http.get<CustomerDraft>(`${environment.apiUrl}/customer/orders/draft`, { params })
+      .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 
   mutateDraft(token: string, restaurantId: string, tableId: string, dishId: number, delta: number): Observable<CustomerDraft> {
@@ -47,7 +53,12 @@ export class CustomerOrderService {
       delta,
       deviceId: this.auth.deviceIdValue,
       fingerprint: this.auth.fingerprintValue
-    });
+    }).pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
+  }
+
+  getUpsellSuggestions(dishId: number, restaurantId: string): Observable<Piatto[]> {
+    const params = new HttpParams().set('restaurantId', restaurantId);
+    return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/upsell/${dishId}`, { params });
   }
 
   connectToTableStream(token: string, restaurantId: string, tableId: string): EventSource | null {
@@ -75,7 +86,7 @@ export class CustomerOrderService {
       ...payload,
       deviceId: this.auth.deviceIdValue,
       fingerprint: this.auth.fingerprintValue
-    });
+    }).pipe(catchError(err => this.handleTableAccessError(err, payload.token, payload.restaurantId, payload.tableId)));
   }
 
   private withAccessMetadata(params: HttpParams): HttpParams {
@@ -90,5 +101,15 @@ export class CustomerOrderService {
     }
 
     return params;
+  }
+
+  private handleTableAccessError(err: any, token: string, restaurantId: string, tableId: string) {
+    const message = err?.error?.message ?? '';
+    if (typeof message === 'string' && message.includes('Accesso tavolo non autorizzato')) {
+      this.auth.clear();
+      void this.router.navigate(['/menu', restaurantId, tableId, token], { replaceUrl: true });
+    }
+
+    return throwError(() => err);
   }
 }

@@ -1,6 +1,9 @@
-<div class="menu-header" *ngIf="ristoranteObj">
+﻿<div class="menu-header" *ngIf="ristoranteObj">
   <div class="header-wrapper">
-    <span class="logo">{{ categoriaLabel(ristoranteObj.nome) }}</span>
+    <div class="brand-lockup">
+      <img class="brand-logo" src="assets/brand/logo_b.svg" alt="WaiterO" />
+      <span class="logo">{{ ristoranteObj.nome }}</span>
+    </div>
 
     <div class="filter-panel">
       <input

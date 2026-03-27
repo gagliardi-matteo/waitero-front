@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+﻿import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import QRCode from 'qrcode';
@@ -13,6 +13,10 @@ import { TableService } from '../../services/table.service';
   styleUrl: './tables-management.component.scss'
 })
 export class TablesManagementComponent {
+  private static readonly QR_LOGO_SRC = 'assets/brand/logo_b.png';
+  private static readonly QR_SIZE = 280;
+  private static readonly QR_LOGO_RATIO = 0.22;
+
   tables: RestaurantTable[] = [];
   loading = true;
   saving = false;
@@ -252,20 +256,83 @@ export class TablesManagementComponent {
 
     this.qrLoadingByTableId[table.id] = true;
     try {
-      this.qrImageByTableId[table.id] = await QRCode.toDataURL(this.buildAccessUrl(table), {
-        width: 280,
+      const qrBaseImage = await QRCode.toDataURL(this.buildAccessUrl(table), {
+        width: TablesManagementComponent.QR_SIZE,
         margin: 2,
+        errorCorrectionLevel: 'H',
         color: {
           dark: '#111827',
           light: '#FFFFFF'
         }
       });
+      this.qrImageByTableId[table.id] = await this.composeQrWithLogo(qrBaseImage);
     } catch (err) {
       console.error('Errore generazione QR tavolo', err);
       this.errorMessage = 'Generazione QR non riuscita.';
     } finally {
       this.qrLoadingByTableId[table.id] = false;
     }
+  }
+
+  private async composeQrWithLogo(qrDataUrl: string): Promise<string> {
+    const qrImage = await this.loadImage(qrDataUrl);
+    const logoImage = await this.loadImage(TablesManagementComponent.QR_LOGO_SRC);
+    const canvas = window.document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Canvas context non disponibile');
+    }
+
+    canvas.width = qrImage.width;
+    canvas.height = qrImage.height;
+    context.drawImage(qrImage, 0, 0);
+
+    const logoSize = Math.round(canvas.width * TablesManagementComponent.QR_LOGO_RATIO);
+    const padding = Math.round(logoSize * 0.22);
+    const frameSize = logoSize + (padding * 2);
+    const frameX = Math.round((canvas.width - frameSize) / 2);
+    const frameY = Math.round((canvas.height - frameSize) / 2);
+    const logoX = Math.round((canvas.width - logoSize) / 2);
+    const logoY = Math.round((canvas.height - logoSize) / 2);
+    const radius = Math.round(frameSize * 0.22);
+
+    context.fillStyle = '#FFFFFF';
+    this.roundRect(context, frameX, frameY, frameSize, frameSize, radius);
+    context.fill();
+    context.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  private loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`Impossibile caricare immagine: ${src}`));
+      image.src = src;
+    });
+  }
+
+  private roundRect(
+    context: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number
+  ): void {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.lineTo(x + width - radius, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + radius);
+    context.lineTo(x + width, y + height - radius);
+    context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    context.lineTo(x + radius, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - radius);
+    context.lineTo(x, y + radius);
+    context.quadraticCurveTo(x, y, x + radius, y);
+    context.closePath();
   }
 
   private resetForm(): void {
@@ -284,4 +351,3 @@ export class TablesManagementComponent {
     return isPlatformBrowser(this.platformId);
   }
 }
-

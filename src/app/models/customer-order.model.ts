@@ -45,6 +45,7 @@ export interface CustomerOrder {
   tableId: number;
   status: string;
   paymentMode: string | null;
+  noteCucina: string | null;
   paidAt: string | null;
   createdAt: string;
   updatedAt: string;

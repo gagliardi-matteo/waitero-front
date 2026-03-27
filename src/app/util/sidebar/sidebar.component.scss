@@ -1,4 +1,4 @@
-.sidebar {
+﻿.sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   width: var(--sidebar-width);
@@ -11,10 +11,13 @@
   .logo {
     margin-bottom: 1.5rem;
     padding: 0.35rem 0.6rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    color: var(--text);
+
+    img {
+      display: block;
+      width: 136px;
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   ul {

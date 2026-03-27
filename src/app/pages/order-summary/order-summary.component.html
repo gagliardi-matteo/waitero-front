@@ -1,4 +1,4 @@
-<div class="order-summary-wrapper" [class.expanded]="isExpanded">
+﻿<div class="order-summary-wrapper" [class.expanded]="isExpanded">
   <div class="summary-header" (click)="toggleExpanded()">
     <div class="badge">{{ badgeCount }}</div>
     <div class="vedi-carrello-text">Vedi carrello</div>
@@ -41,17 +41,34 @@
         </ul>
       </div>
 
+      <div class="section" *ngIf="draftGroupedItems.length > 0">
+        <div class="section-title">Note per la cucina</div>
+        <label class="kitchen-note-box" for="kitchenNote">
+          <textarea
+            id="kitchenNote"
+            [(ngModel)]="noteCucina"
+            maxlength="1000"
+            placeholder="Es. senza cipolla, cottura media, servire insieme"
+          ></textarea>
+          <span class="kitchen-note-hint">Queste note verranno inviate alla cucina insieme all'ordine.</span>
+        </label>
+      </div>
+
       <div class="empty-state" *ngIf="!hasConfirmedItems && draftGroupedItems.length === 0">
         Il carrello e vuoto.
       </div>
     </div>
 
-    <div class="cart-upsell" *ngIf="cartUpsellSuggestion as suggestion">
-      <div>
+    <div class="cart-upsell" *ngIf="cartUpsellSuggestions.length > 0">
+      <div class="cart-upsell-copy">
         <div class="cart-upsell-title">{{ cartUpsellMessage }}</div>
-        <div class="cart-upsell-item">{{ suggestion.nome }} &middot; {{ suggestion.prezzo | number: '1.2-2' }} &euro;</div>
+        <div class="cart-upsell-list">
+          <div class="cart-upsell-row" *ngFor="let suggestion of cartUpsellSuggestions">
+            <span class="cart-upsell-item">{{ suggestion.nome }} &middot; {{ suggestion.prezzo | number: '1.2-2' }} &euro;</span>
+            <button class="cart-upsell-btn" (click)="aggiungiUpsell(suggestion, $event)">+</button>
+          </div>
+        </div>
       </div>
-      <button class="cart-upsell-btn" (click)="aggiungiUpsell(suggestion, $event)">+</button>
     </div>
 
     <button class="confirm-btn" [disabled]="draftItems.length === 0 || isSubmitting" (click)="confermaOrdine($event)">

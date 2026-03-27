@@ -1,4 +1,4 @@
-<div class="content" *ngIf="order as currentOrder">
+﻿<div class="content" *ngIf="order as currentOrder">
   <div class="page-header">
     <button class="back-button" (click)="goBack()">&larr; Torna agli ordini</button>
     <div>
@@ -15,6 +15,10 @@
   <div class="detail-grid">
     <section class="panel">
       <h2>Piatti inviati</h2>
+      <div class="kitchen-note" *ngIf="currentOrder.noteCucina">
+        <div class="kitchen-note-title">Note cucina</div>
+        <p>{{ currentOrder.noteCucina }}</p>
+      </div>
       <div class="item-list">
         <div class="item-row" *ngFor="let item of currentOrder.items">
           <div>
@@ -29,11 +33,6 @@
 
     <section class="panel summary-panel">
       <h2>Riepilogo POS</h2>
-      <!--
-      <div class="pos-note">
-        Questo pannello non esegue il pagamento. Mostra solo quanto inserire sul POS o in cassa e registra manualmente il saldo dopo conferma operatore.
-      </div>
-      -->
       <div class="summary-row">
         <span>Totale ordine</span>
         <strong>{{ currentOrder.totale | number: '1.2-2' }} &euro;</strong>
