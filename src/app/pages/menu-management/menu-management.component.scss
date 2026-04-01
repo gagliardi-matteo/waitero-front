@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
-
 .content {
   min-height: 100vh;
   padding: 2rem;
@@ -7,7 +5,7 @@
 
   .page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1.6rem;
@@ -16,6 +14,14 @@
       font-size: 2rem;
       letter-spacing: -0.05em;
       color: var(--text);
+    }
+
+    .page-subtitle {
+      margin-top: 0.35rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+      max-width: 720px;
     }
 
     .add-button {
@@ -37,12 +43,25 @@
     margin-bottom: 2rem;
   }
 
-  .category-title {
+  .category-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     margin-bottom: 0.9rem;
+  }
+
+  .category-title {
     font-size: 1.2rem;
     font-weight: 700;
     color: var(--text);
     letter-spacing: -0.03em;
+  }
+
+  .category-count {
+    color: var(--text-soft);
+    font-size: 0.85rem;
+    font-weight: 700;
   }
 
   .menu-grid {
@@ -91,7 +110,8 @@
     }
 
     .description,
-    .ingredients {
+    .ingredients,
+    .primary-insight {
       margin-bottom: 0.55rem;
       color: var(--text-muted);
       font-size: 0.9rem;
@@ -102,8 +122,43 @@
       color: var(--text);
     }
 
+    .dish-metrics,
+    .dish-insights,
+    .price-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+
+    .dish-metrics span,
+    .insight-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.22rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .dish-metrics span {
+      background: var(--surface-soft);
+      color: var(--text-muted);
+    }
+
+    .insight-pill {
+      background: #eef8ef;
+      color: #236b38;
+    }
+
+    .price-row {
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 0;
+    }
+
     .price {
-      margin-bottom: 0.7rem;
       font-weight: 700;
       color: var(--text);
     }
@@ -132,16 +187,18 @@
       gap: 0.45rem;
 
       button {
-        width: 40px;
-        height: 40px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-height: 40px;
+        padding: 0 0.85rem;
         border: 1px solid var(--border);
         border-radius: 999px;
         background: var(--surface-soft);
         color: var(--text-muted);
         cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 700;
       }
 
       .edit-btn:hover {
@@ -159,13 +216,13 @@
   .content {
     padding: 1rem;
 
-    .page-header {
+    .page-header,
+    .category-heading {
       flex-direction: column;
       align-items: stretch;
     }
   }
 }
-
 
 .recommended-toggle {
   display: flex;
@@ -179,4 +236,3 @@
 .recommended-toggle input {
   width: auto;
 }
-

@@ -1,4 +1,4 @@
-﻿import { Component, DoCheck, Input, OnInit, inject } from '@angular/core';
+import { Component, DoCheck, Input, OnInit, inject } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +6,7 @@ import { OrderService } from '../../services/order.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { CustomerOrderItem } from '../../models/customer-order.model';
-import { catchError, forkJoin, of } from 'rxjs';
+import { TrackingService } from '../../services/tracking.service';
 
 @Component({
   selector: 'app-order-summary',
@@ -26,6 +26,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
   private orderState = inject(OrderService);
   private auth = inject(AuthContextService);
   private customerOrderService = inject(CustomerOrderService);
+  private trackingService = inject(TrackingService);
   private lastCartSignature = '';
 
   ngOnInit(): void {
@@ -80,6 +81,9 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
     if (firstCategory === 'CONTORNO') {
       return 'Completa il tuo ordine con un contorno';
     }
+    if (firstCategory === 'DOLCE') {
+      return 'Chiudi il pasto con un dolce';
+    }
     return 'Potrebbe piacerti anche';
   }
 
@@ -132,7 +136,16 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
 
     this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, 1)
       .subscribe({
-        next: draft => this.orderState.setDraft(draft.items),
+        next: draft => {
+          this.orderState.setDraft(draft.items);
+          this.trackingService.trackEvent('add_to_cart', {
+            dishId: piatto.id,
+            metadata: {
+              page: 'order-summary',
+              quantity: this.quantita(piatto.id)
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -145,7 +158,16 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
 
     this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, -1)
       .subscribe({
-        next: draft => this.orderState.setDraft(draft.items),
+        next: draft => {
+          this.orderState.setDraft(draft.items);
+          this.trackingService.trackEvent('remove_from_cart', {
+            dishId: piatto.id,
+            metadata: {
+              page: 'order-summary',
+              quantity: this.quantita(piatto.id)
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -193,48 +215,18 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
       return;
     }
 
-    forkJoin(
-      dishIds.map(dishId => this.customerOrderService.getUpsellSuggestions(dishId, restaurantId)
-        .pipe(catchError(err => {
+    this.customerOrderService.getCartUpsellSuggestions(dishIds, restaurantId)
+      .subscribe({
+        next: suggestions => {
+          const cartDishIdSet = new Set<number>(dishIds);
+          this.cartUpsellSuggestions = suggestions
+            .filter(suggestion => !cartDishIdSet.has(suggestion.id))
+            .slice(0, 2);
+        },
+        error: err => {
           console.error('Errore caricamento upsell carrello', err);
-          return of([] as Piatto[]);
-        }))))
-      .subscribe(resultSets => {
-        const cartDishIdSet = new Set<number>(dishIds);
-        const aggregated = new Map<number, { dish: Piatto; hits: number; bestRank: number }>();
-
-        resultSets.forEach((suggestions, sourceIndex) => {
-          suggestions.forEach((suggestion, suggestionIndex) => {
-            if (cartDishIdSet.has(suggestion.id)) {
-              return;
-            }
-            const current = aggregated.get(suggestion.id);
-            const rank = (sourceIndex * 10) + suggestionIndex;
-            if (current) {
-              current.hits += 1;
-              current.bestRank = Math.min(current.bestRank, rank);
-              return;
-            }
-            aggregated.set(suggestion.id, {
-              dish: suggestion,
-              hits: 1,
-              bestRank: rank
-            });
-          });
-        });
-
-        this.cartUpsellSuggestions = Array.from(aggregated.values())
-          .sort((left, right) => {
-            if (right.hits !== left.hits) {
-              return right.hits - left.hits;
-            }
-            if (left.bestRank !== right.bestRank) {
-              return left.bestRank - right.bestRank;
-            }
-            return left.dish.prezzo - right.dish.prezzo;
-          })
-          .map(entry => entry.dish)
-          .slice(0, 2);
+          this.cartUpsellSuggestions = [];
+        }
       });
   }
 

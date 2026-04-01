@@ -1,0 +1,136 @@
+.autopilot-panel {
+  margin-bottom: 1.6rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
+.autopilot-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h2,
+h3 {
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  margin-bottom: 0.35rem;
+  font-size: 1.3rem;
+}
+
+h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+p,
+small {
+  color: var(--text-muted);
+}
+
+p {
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.autopilot-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.autopilot-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.autopilot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.autopilot-card,
+.category-plan-card {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+
+.autopilot-card.warning {
+  background: #fff8ef;
+}
+
+.dish-chip-list,
+.category-plan-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dish-chip,
+.category-plan {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dish-chip span,
+.category-name,
+.spotlight {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.category-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.category-order span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.category-order .spotlight {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+@media (max-width: 900px) {
+  .autopilot-header,
+  .autopilot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .autopilot-header {
+    display: grid;
+  }
+}

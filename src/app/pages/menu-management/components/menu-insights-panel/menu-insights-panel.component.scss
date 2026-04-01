@@ -1,0 +1,51 @@
+.insights-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+
+.insight-card {
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
+
+.insight-card.warning {
+  background: #fff8ef;
+}
+
+.insight-card.soft {
+  background: #f4fbf5;
+}
+
+.insight-label {
+  margin-bottom: 0.35rem;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.insight-value {
+  margin-bottom: 0.35rem;
+  color: var(--text);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .insights-panel {
+    grid-template-columns: 1fr;
+  }
+}

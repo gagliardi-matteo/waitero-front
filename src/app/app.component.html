@@ -1,7 +1,7 @@
 <div class="layout">
-  <app-sidebar *ngIf="isLoggedIn()"></app-sidebar>
+  <app-sidebar *ngIf="showSidebar()"></app-sidebar>
 
-  <div class="content" [class.with-sidebar]="isLoggedIn()">
+  <div class="content" [class.with-sidebar]="showSidebar()">
     <router-outlet></router-outlet>
   </div>
 </div>

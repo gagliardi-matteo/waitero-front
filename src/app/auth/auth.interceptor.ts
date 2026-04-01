@@ -16,6 +16,14 @@ function isPublicApiRequest(url: string): boolean {
   return PUBLIC_API_PATTERNS.some(pattern => url.includes(pattern));
 }
 
+function isCustomerRoute(platformId: object): boolean {
+  if (!isPlatformBrowser(platformId)) {
+    return false;
+  }
+  const path = window.location.pathname.toLowerCase();
+  return path === '/menu' || path.startsWith('/menu/');
+}
+
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const platformId = inject(PLATFORM_ID);
@@ -27,6 +35,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const requiresRestaurantAuth = !isPublicApiRequest(req.url);
+  const onCustomerRoute = isCustomerRoute(platformId);
 
   const cloned = token && requiresRestaurantAuth
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
@@ -34,7 +43,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(cloned).pipe(
     catchError(err => {
-      if (requiresRestaurantAuth && (err.status === 401 || err.status === 403)) {
+      if (!onCustomerRoute && requiresRestaurantAuth && (err.status === 401 || err.status === 403)) {
         router.navigate(['/login']);
       }
       return throwError(() => err);

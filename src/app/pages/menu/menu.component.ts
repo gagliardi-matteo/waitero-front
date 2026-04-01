@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -14,6 +14,7 @@ import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
 import { byScoreDesc, rankDishes } from '../../shared/menu-ranking';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
+import { TrackingService } from '../../services/tracking.service';
 
 @Component({
   selector: 'app-menu',
@@ -34,6 +35,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   errorMessage = '';
   recommendedDishes: Piatto[] = [];
   private eventSource: EventSource | null = null;
+  private enteredAt = Date.now();
+  private lastScrollBucket = 0;
 
   readonly categoriaOrder: string[] = [
     'ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'
@@ -46,19 +49,46 @@ export class MenuComponent implements OnInit, OnDestroy {
     private http: HttpClient,
     private route: ActivatedRoute,
     private router: Router,
-    private menuCatalogService: MenuCatalogService
+    private menuCatalogService: MenuCatalogService,
+    private trackingService: TrackingService
   ) {}
 
   ngOnInit(): void {
-    const token = this.auth.tokenValue;
-    const restaurantId = this.auth.restaurantIdValue;
-    const tableId = this.auth.tableIdValue;
+    const token = this.route.snapshot.queryParamMap.get('token') ?? this.auth.tokenValue;
+    const restaurantId = this.route.snapshot.queryParamMap.get('restaurantId') ?? this.auth.restaurantIdValue;
+    const tableId = this.route.snapshot.queryParamMap.get('tableId') ?? this.auth.tableIdValue;
+    const tablePublicId = this.route.snapshot.queryParamMap.get('tablePublicId') ?? this.auth.tablePublicIdValue;
+
+    if (token && restaurantId && tableId) {
+      this.auth.setContext(
+        token,
+        restaurantId,
+        tableId,
+        this.auth.deviceIdValue ?? 'browser-device',
+        this.auth.fingerprintValue,
+        tablePublicId
+      );
+    }
 
     if (!token || !restaurantId || !tableId) {
-      this.router.navigate(['/login']);
+      const qrToken = this.route.snapshot.queryParamMap.get('token') ?? this.auth.qrTokenValue;
+      const qrTablePublicId = this.route.snapshot.queryParamMap.get('tablePublicId') ?? this.auth.tablePublicIdValue;
+
+      if (qrToken && qrTablePublicId) {
+        this.router.navigate(['/menu', qrTablePublicId, qrToken], { replaceUrl: true });
+        return;
+      }
+
+      if (qrToken && restaurantId && tableId) {
+        this.router.navigate(['/menu', restaurantId, tableId, qrToken], { replaceUrl: true });
+        return;
+      }
+
+      this.errorMessage = 'Accesso tavolo non disponibile. Scansiona di nuovo il QR del tavolo.';
       return;
     }
 
+    this.enteredAt = Date.now();
     this.token = token;
     this.restaurantId = restaurantId;
     this.tableId = tableId;
@@ -77,6 +107,40 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.eventSource?.close();
+    this.trackingService.trackTimeSpent(this.enteredAt, {
+      metadata: {
+        page: 'menu',
+        searchTerm: this.searchTerm || null,
+        selectedCategory: this.selectedCategory
+      }
+    });
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const doc = document.documentElement;
+    const scrollableHeight = doc.scrollHeight - window.innerHeight;
+    if (scrollableHeight <= 0) {
+      return;
+    }
+
+    const progress = Math.round((window.scrollY / scrollableHeight) * 100);
+    const bucket = Math.min(100, Math.floor(progress / 25) * 25);
+    if (bucket < 25 || bucket <= this.lastScrollBucket) {
+      return;
+    }
+
+    this.lastScrollBucket = bucket;
+    this.trackingService.trackEvent('scroll', {
+      metadata: {
+        page: 'menu',
+        progress: bucket
+      }
+    });
   }
 
   get ordine(): Piatto[] {
@@ -219,7 +283,16 @@ export class MenuComponent implements OnInit, OnDestroy {
   addToOrder(piatto: Piatto) {
     this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, 1)
       .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
+        next: draft => {
+          this.orderService.setDraft(draft.items);
+          this.trackingService.trackEvent('add_to_cart', {
+            dishId: piatto.id,
+            metadata: {
+              page: 'menu',
+              quantity: this.quantita(piatto.id)
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -227,7 +300,16 @@ export class MenuComponent implements OnInit, OnDestroy {
   removeFromOrder(piatto: Piatto) {
     this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, -1)
       .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
+        next: draft => {
+          this.orderService.setDraft(draft.items);
+          this.trackingService.trackEvent('remove_from_cart', {
+            dishId: piatto.id,
+            metadata: {
+              page: 'menu',
+              quantity: this.quantita(piatto.id)
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -237,8 +319,13 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {
-    return (!imageUrl || imageUrl.trim() === '') ? '/placeholder.png' :
-      `${environment.apiUrl}/image/images/${imageUrl}`;
+    if (!imageUrl || imageUrl.trim() === '') {
+      return '/placeholder.png';
+    }
+    if (/^(https?:)?\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
+      return imageUrl;
+    }
+    return `${environment.apiUrl}/image/images/${imageUrl}`;
   }
 
   trackById(index: number, item: Piatto): number {
@@ -250,6 +337,13 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   openDettaglio(piatto: Piatto): void {
+    this.trackingService.trackEvent('click_dish', {
+      dishId: piatto.id,
+      metadata: {
+        page: 'menu',
+        category: piatto.categoria ?? null
+      }
+    });
     this.router.navigate(['/menu/piatto', piatto.id]);
   }
 

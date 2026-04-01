@@ -1,6 +1,6 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { CustomerDraft, CustomerOrder } from '../models/customer-order.model';
@@ -59,6 +59,19 @@ export class CustomerOrderService {
   getUpsellSuggestions(dishId: number, restaurantId: string): Observable<Piatto[]> {
     const params = new HttpParams().set('restaurantId', restaurantId);
     return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/upsell/${dishId}`, { params });
+  }
+
+  getCartUpsellSuggestions(dishIds: number[], restaurantId: string): Observable<Piatto[]> {
+    if (dishIds.length === 0) {
+      return of([]);
+    }
+
+    let params = new HttpParams().set('restaurantId', restaurantId);
+    dishIds.forEach(dishId => {
+      params = params.append('dishIds', String(dishId));
+    });
+
+    return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/upsell/cart-suggestions`, { params });
   }
 
   connectToTableStream(token: string, restaurantId: string, tableId: string): EventSource | null {

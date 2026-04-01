@@ -16,6 +16,12 @@ export interface Piatto {
   allergeni?: string;
   ingredientiStrutturati?: IngredienteStrutturato[];
   numeroOrdini?: number;
+  views?: number;
+  clicks?: number;
+  addToCart?: number;
+  viewToCartRate?: number;
+  viewToOrderRate?: number;
+  performanceLabel?: string | null;
   score?: number;
   badge?: string | null;
   consigliato?: boolean;

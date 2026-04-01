@@ -4,23 +4,39 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Per i test locali usa il backend su `http://localhost:8080` tramite proxy Angular:
 
-## Code scaffolding
+```bash
+npm run dev
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+oppure:
+
+```bash
+npm run start:local
+```
+
+Apri poi `http://localhost:4200/`.
+
+## Local backend target
+
+In sviluppo il frontend usa `proxy.conf.json`, quindi tutte le chiamate `/api/*` vengono inoltrate al backend locale su `http://localhost:8080`.
+
+Prima di testare assicurati che il backend WaiterO sia attivo in locale.
 
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm run build
+```
+
+La build production usa `environment.prod.ts` e punta al backend production.
 
 ## Running unit tests
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+```bash
+ng test
+```
 
 ## Further help
 

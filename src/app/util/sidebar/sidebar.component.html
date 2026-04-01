@@ -1,4 +1,4 @@
-﻿<nav class="sidebar" *ngIf="isLoggedIn()">
+<nav class="sidebar" *ngIf="isLoggedIn()">
   <div class="logo">
     <img src="assets/brand/logo_b.svg" alt="WaiterO" />
   </div>
@@ -6,6 +6,10 @@
     <li routerLink="/tables-dashboard" routerLinkActive="active">
       <span class="material-symbols-outlined">dashboard</span>
       <span class="label">Sala</span>
+    </li>
+    <li routerLink="/analytics" routerLinkActive="active">
+      <span class="material-symbols-outlined">monitoring</span>
+      <span class="label">Analytics</span>
     </li>
     <li routerLink="/waiter-order" routerLinkActive="active">
       <span class="material-symbols-outlined">playlist_add</span>

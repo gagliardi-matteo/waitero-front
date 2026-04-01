@@ -1,0 +1,49 @@
+<section class="autopilot-panel">
+  <div class="autopilot-header">
+    <div>
+      <div class="eyebrow">Autopilot menu</div>
+      <h2>Azioni suggerite dai dati</h2>
+      <p>Non cambia il layout delle card: ti segnala solo cosa spingere, cosa rivedere e dove mettere in evidenza i piatti forti.</p>
+    </div>
+    <button class="autopilot-btn" [disabled]="applyingAutopilot || recommendedCandidates.length === 0" (click)="emitApply($event)">
+      {{ applyingAutopilot ? 'Applico...' : 'Applica consigliati automatici' }}
+    </button>
+  </div>
+
+  <div class="autopilot-grid">
+    <div class="autopilot-card">
+      <h3>Da spingere</h3>
+      <div class="dish-chip-list" *ngIf="recommendedCandidates.length > 0; else noRecommended">
+        <div class="dish-chip" *ngFor="let item of recommendedCandidates; trackBy: trackDish">
+          <span>{{ item.nome }}</span>
+          <small>{{ item.categoria }}</small>
+        </div>
+      </div>
+      <ng-template #noRecommended><p>Nessun candidato nuovo da marcare come consigliato.</p></ng-template>
+    </div>
+
+    <div class="autopilot-card warning">
+      <h3>Da rivedere</h3>
+      <div class="dish-chip-list" *ngIf="optimizationQueue.length > 0; else noOptimization">
+        <div class="dish-chip" *ngFor="let item of optimizationQueue; trackBy: trackDish">
+          <span>{{ item.nome }}</span>
+          <small>Molto visto, poco ordinato</small>
+        </div>
+      </div>
+      <ng-template #noOptimization><p>Nessun piatto critico in questo momento.</p></ng-template>
+    </div>
+  </div>
+
+  <div class="category-plan-card" *ngIf="categoryPlans.length > 0">
+    <h3>Ordine consigliato per categoria</h3>
+    <div class="category-plan-list">
+      <div class="category-plan" *ngFor="let plan of categoryPlans; trackBy: trackPlan">
+        <div class="category-name">{{ plan.categoria }}</div>
+        <div class="category-order">
+          <span class="spotlight" *ngIf="plan.spotlight">{{ plan.spotlight.nome }}</span>
+          <span *ngFor="let item of plan.nextDishes; trackBy: trackDish">{{ item.nome }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

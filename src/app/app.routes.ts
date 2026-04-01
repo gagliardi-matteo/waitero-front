@@ -22,6 +22,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'analytics',
+    loadComponent: () => import('./pages/analytics-dashboard/analytics-dashboard.component').then(m => m.AnalyticsDashboardComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'waiter-order',
     loadComponent: () => import('./pages/waiter-order/waiter-order.component').then(m => m.WaiterOrderComponent),
     canActivate: [authGuard]
@@ -73,4 +78,3 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/menu/menu.component').then(m => m.MenuComponent)
   }
 ];
-

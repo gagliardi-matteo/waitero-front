@@ -38,6 +38,8 @@ export class AccessComponent implements OnInit {
       return;
     }
 
+    this.auth.setPendingAccess(token, tablePublicId, restaurantId, tableIdParam);
+
     const deviceId = this.deviceIdService.getOrCreate();
     const [fingerprint, gps] = await Promise.all([
       this.fingerprintService.getVisitorId().catch(() => null),
@@ -71,10 +73,19 @@ export class AccessComponent implements OnInit {
           String(response.restaurantId),
           String(response.tableId),
           deviceId,
-          fingerprint
+          fingerprint,
+          response.tablePublicId
         );
 
-        this.router.navigate(['/menu'], { replaceUrl: true });
+        this.router.navigate(['/menu'], {
+          replaceUrl: true,
+          queryParams: {
+            restaurantId: response.restaurantId,
+            tableId: response.tableId,
+            token: response.qrToken,
+            tablePublicId: response.tablePublicId
+          }
+        });
       },
       error: err => {
         console.error('Errore validazione accesso tavolo', err);

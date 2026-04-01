@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from './util/sidebar/sidebar.component';
 import { AuthService } from './auth/AuthService';
 import { NgIf } from '@angular/common';
@@ -13,8 +13,14 @@ import { NgIf } from '@angular/common';
 })
 export class AppComponent {
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   isLoggedIn(): boolean {
     return this.authService.isAuthenticated();
+  }
+
+  showSidebar(): boolean {
+    const url = this.router.url.toLowerCase();
+    return this.isLoggedIn() && !(url === '/menu' || url.startsWith('/menu/'));
   }
 }

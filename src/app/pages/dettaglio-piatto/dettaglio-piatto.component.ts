@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -8,6 +8,7 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
+import { TrackingService } from '../../services/tracking.service';
 
 @Component({
   selector: 'app-dettaglio-piatto',
@@ -16,11 +17,12 @@ import { splitStoredAllergens } from '../../shared/allergens';
   templateUrl: './dettaglio-piatto.component.html',
   styleUrl: './dettaglio-piatto.component.scss'
 })
-export class DettaglioPiattoComponent implements OnInit {
+export class DettaglioPiattoComponent implements OnInit, OnDestroy {
 
   piatto!: Piatto;
   upsellSuggestions: Piatto[] = [];
   errorMessage = '';
+  private enteredAt = Date.now();
 
   constructor(
     private route: ActivatedRoute,
@@ -28,18 +30,27 @@ export class DettaglioPiattoComponent implements OnInit {
     private auth: AuthContextService,
     private router: Router,
     private orderService: OrderService,
-    private customerOrderService: CustomerOrderService
+    private customerOrderService: CustomerOrderService,
+    private trackingService: TrackingService
   ) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('dishId');
     if (!id) return;
 
+    this.enteredAt = Date.now();
     this.http.get<Piatto>(`${environment.apiUrl}/customer/dettaglio-piatto/${id}`)
       .subscribe({
         next: p => {
           this.errorMessage = '';
           this.piatto = p;
+          this.trackingService.trackEvent('view_dish', {
+            dishId: p.id,
+            metadata: {
+              page: 'dish-detail',
+              category: p.categoria ?? null
+            }
+          });
           this.loadUpsellSuggestions();
         },
         error: err => {
@@ -47,6 +58,19 @@ export class DettaglioPiattoComponent implements OnInit {
           this.errorMessage = err.error?.message ?? 'Dettaglio piatto non disponibile.';
         }
       });
+  }
+
+  ngOnDestroy(): void {
+    if (!this.piatto) {
+      return;
+    }
+
+    this.trackingService.trackTimeSpent(this.enteredAt, {
+      dishId: this.piatto.id,
+      metadata: {
+        page: 'dish-detail'
+      }
+    });
   }
 
   get allergenBadges(): string[] {
@@ -85,7 +109,16 @@ export class DettaglioPiattoComponent implements OnInit {
 
     this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, 1)
       .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
+        next: draft => {
+          this.orderService.setDraft(draft.items);
+          this.trackingService.trackEvent('add_to_cart', {
+            dishId: this.piatto.id,
+            metadata: {
+              page: 'dish-detail',
+              quantity: this.quantita()
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -98,7 +131,16 @@ export class DettaglioPiattoComponent implements OnInit {
 
     this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, -1)
       .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
+        next: draft => {
+          this.orderService.setDraft(draft.items);
+          this.trackingService.trackEvent('remove_from_cart', {
+            dishId: this.piatto.id,
+            metadata: {
+              page: 'dish-detail',
+              quantity: this.quantita()
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -111,7 +153,16 @@ export class DettaglioPiattoComponent implements OnInit {
 
     this.customerOrderService.mutateDraft(token, restaurantId, tableId, suggestion.id, 1)
       .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
+        next: draft => {
+          this.orderService.setDraft(draft.items);
+          this.trackingService.trackEvent('add_to_cart', {
+            dishId: suggestion.id,
+            metadata: {
+              page: 'upsell',
+              sourceDishId: this.piatto?.id ?? null
+            }
+          });
+        },
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
