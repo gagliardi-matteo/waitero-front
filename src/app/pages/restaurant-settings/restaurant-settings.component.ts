@@ -357,6 +357,10 @@ export class RestaurantSettingsComponent {
       this.googlePlacesReady = Promise.resolve();
       return this.googlePlacesReady;
     }
+    if (!environment.googleMapsApiKey) {
+      this.googlePlacesReady = Promise.reject(new Error('Google Maps API key is missing'));
+      return this.googlePlacesReady;
+    }
 
     this.googlePlacesReady = new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -497,3 +501,4 @@ export class RestaurantSettingsComponent {
     });
   }
 }
+

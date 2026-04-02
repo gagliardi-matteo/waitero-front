@@ -30,7 +30,16 @@ Prima di testare assicurati che il backend WaiterO sia attivo in locale.
 npm run build
 ```
 
-La build production usa `environment.prod.ts` e punta al backend production.
+La build production genera `src/environments/environment.prod.generated.ts` durante `prebuild`.
+
+Variabili richieste in produzione:
+
+```bash
+WAITERO_API_URL=https://waitero-back-production-f19d.up.railway.app/api
+GOOGLE_MAPS_API_KEY=la_tua_browser_key_limitata_al_dominio_vercel
+```
+
+Su Vercel imposta entrambe come Environment Variables. La Google Maps key non deve piu stare nei file versionati.
 
 ## Running unit tests
 

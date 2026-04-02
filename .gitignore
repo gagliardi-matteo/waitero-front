@@ -40,3 +40,21 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Sensitive local config
+.env
+.env.*
+!.env.example
+!.env.template
+
+/src/environments/environment.local.ts
+/src/environments/environment.*.local.ts
+/src/environments/environment.secrets.ts
+/src/environments/environment.*.secrets.ts
+
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+google-credentials*.json

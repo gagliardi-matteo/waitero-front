@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/prepare-prod-environment.mjs",
     "dev": "ng serve --configuration development --proxy-config proxy.conf.json",
     "start:local": "ng serve --configuration development --proxy-config proxy.conf.json",
     "ng": "ng",
