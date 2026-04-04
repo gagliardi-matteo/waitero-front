@@ -1,77 +1,126 @@
-.add-dish-form {
-  max-width: 500px;
-  margin: 2rem auto;
-  background: white;
+.dish-form-page {
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 
-  h2 {
-    margin-bottom: 1.5rem;
-    color: #3E2C23;
-  }
+.dish-form-card {
+  width: min(880px, 100%);
+  margin: 0 auto;
+  padding: 1.6rem;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+}
 
-  label {
-    display: block;
-    margin-top: 1rem;
-    margin-bottom: 0.3rem;
-    color: #2E2E2E;
-  }
+.form-header {
+  margin-bottom: 1.4rem;
+}
 
-  input, select, textarea {
-    width: 100%;
-    padding: 0.6rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-  }
+.eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.65rem;
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
-  button {
-    margin-top: 1.5rem;
-    background: #ac0017;
-    color: white;
-    padding: 0.6rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
+.form-header p,
+label span {
+  color: var(--text-muted);
+}
 
-    &:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-  }
+form {
+  display: grid;
+  gap: 1rem;
+}
 
-  .allergen-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
+.form-section {
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+}
 
-  .allergen-chip {
-    margin-top: 0;
-    padding: 0.5rem 0.85rem;
-    border-radius: 999px;
-    background: #f4e7e4;
-    color: #7c3b2f;
+.form-section h2 {
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
 
-    &.active {
-      background: #ac0017;
-      color: white;
-    }
-  }
+label {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 600;
+}
 
-  .add-button{
-    float: right;
+.allergen-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.allergen-chip {
+  min-height: 40px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-weight: 700;
+
+  &.active {
+    border-color: rgba(216, 122, 44, 0.3);
+    background: var(--accent-soft);
+    color: var(--accent-strong);
   }
 }
 
 .recommend-checkbox {
-  display: flex !important;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
 }
 
 .recommend-checkbox input {
   width: auto;
+  min-height: auto;
 }
 
+.compact-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.preview-img {
+  width: min(280px, 100%);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .dish-form-page {
+    padding: 1rem;
+  }
+
+  .dish-form-card {
+    padding: 1rem;
+  }
+
+  .compact-grid,
+  .form-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}

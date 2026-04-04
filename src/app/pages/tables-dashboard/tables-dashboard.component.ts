@@ -61,6 +61,22 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return this.cards.filter(card => card.state === this.selectedFilter);
   }
 
+  get occupiedCount(): number {
+    return this.countBy('OPEN') + this.countBy('PARTIAL');
+  }
+
+  get activeOrdersCount(): number {
+    return this.cards.filter(card => !!card.activeOrder).length;
+  }
+
+  get totalRevenue(): number {
+    return this.cards.reduce((sum, card) => sum + card.total, 0);
+  }
+
+  get averageTicket(): number {
+    return this.activeOrdersCount === 0 ? 0 : this.totalRevenue / this.activeOrdersCount;
+  }
+
   countBy(filter: TableDashboardFilter): number {
     if (filter === 'ALL') {
       return this.cards.length;

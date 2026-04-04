@@ -63,6 +63,42 @@ export class DettaglioPiattoRistoratoreComponent implements OnInit {
       : [];
   }
 
+  get orderCount(): number {
+    return this.piatto?.numeroOrdini ?? 0;
+  }
+
+  get viewCount(): number {
+    return this.piatto?.views ?? 0;
+  }
+
+  get conversionRate(): number {
+    if (this.piatto?.viewToOrderRate != null) {
+      return this.piatto.viewToOrderRate;
+    }
+    if (this.viewCount > 0) {
+      return this.orderCount / this.viewCount;
+    }
+    return 0;
+  }
+
+  get revenueValue(): number {
+    if (!this.piatto) {
+      return 0;
+    }
+    return this.orderCount * this.piatto.prezzo;
+  }
+
+  get statusLabel(): string {
+    return this.piatto?.disponibile ? 'Disponibile' : 'Non disponibile';
+  }
+
+  get categoryPriceLabel(): string {
+    if (!this.piatto) {
+      return '';
+    }
+    return `${this.capitalize(this.piatto.categoria)} €${this.piatto.prezzo.toFixed(2)}`;
+  }
+
   getImageUrl(imageUrl: string | null | undefined): string {
     return (!imageUrl || imageUrl.trim() === '')
       ? '/placeholder.png'
@@ -71,5 +107,12 @@ export class DettaglioPiattoRistoratoreComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/menu-management']);
+  }
+
+  private capitalize(value: string | null | undefined): string {
+    if (!value) {
+      return 'Piatto';
+    }
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   }
 }

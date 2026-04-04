@@ -1,6 +1,9 @@
-﻿<div class="content" *ngIf="order as currentOrder">
-  <div class="page-header">
+<div class="content" *ngIf="order as currentOrder">
+  <div class="detail-topbar">
     <button class="back-button" (click)="goBack()">&larr; Torna agli ordini</button>
+  </div>
+
+  <div class="page-header">
     <div>
       <h1>Ordine #{{ currentOrder.id }}</h1>
       <p>Tavolo {{ currentOrder.tableId }} &middot; {{ itemCount }} articoli</p>
@@ -12,9 +15,26 @@
     </div>
   </div>
 
+  <div class="summary-strip">
+    <article class="summary-chip-card">
+      <span>Totale ordine</span>
+      <strong>{{ currentOrder.totale | number: '1.2-2' }} &euro;</strong>
+    </article>
+    <article class="summary-chip-card success">
+      <span>Registrato come pagato</span>
+      <strong>{{ currentOrder.paidAmount | number: '1.2-2' }} &euro;</strong>
+    </article>
+    <article class="summary-chip-card accent">
+      <span>Residuo POS</span>
+      <strong>{{ currentOrder.remainingAmount | number: '1.2-2' }} &euro;</strong>
+    </article>
+  </div>
+
   <div class="detail-grid">
     <section class="panel">
-      <h2>Piatti inviati</h2>
+      <div class="panel-headline">
+        <h2>Piatti inviati</h2>
+      </div>
       <div class="kitchen-note" *ngIf="currentOrder.noteCucina">
         <div class="kitchen-note-title">Note cucina</div>
         <p>{{ currentOrder.noteCucina }}</p>
@@ -32,7 +52,9 @@
     </section>
 
     <section class="panel summary-panel">
-      <h2>Riepilogo POS</h2>
+      <div class="panel-headline">
+        <h2>Riepilogo POS</h2>
+      </div>
       <div class="summary-row">
         <span>Totale ordine</span>
         <strong>{{ currentOrder.totale | number: '1.2-2' }} &euro;</strong>

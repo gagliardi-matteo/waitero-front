@@ -22,8 +22,14 @@ export class MenuAutopilotPanelComponent {
   @Input() applyingAutopilot = false;
   @Output() applyRecommended = new EventEmitter<Event>();
 
+  expanded = true;
+
   emitApply(event: Event): void {
     this.applyRecommended.emit(event);
+  }
+
+  toggleExpanded(): void {
+    this.expanded = !this.expanded;
   }
 
   trackDish(index: number, item: Piatto): number {

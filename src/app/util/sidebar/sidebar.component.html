@@ -1,6 +1,12 @@
 <nav class="sidebar" *ngIf="isLoggedIn()">
-  <div class="logo">
-    <img src="assets/brand/logo_b.svg" alt="WaiterO" />
+  <div class="brand">
+    <div class="brand-mark">
+      <img src="assets/brand/logo_b.svg" alt="WaiterO" />
+    </div>
+    <div class="brand-copy">
+      <strong>WaiterO</strong>
+      <span>Backoffice ristorante</span>
+    </div>
   </div>
   <ul>
     <li routerLink="/tables-dashboard" routerLinkActive="active">
@@ -31,9 +37,8 @@
       <span class="material-symbols-outlined">storefront</span>
       <span class="label">Locale</span>
     </li>
-    <li routerLink="/payments">
-      <span class="material-symbols-outlined">payments</span>
-      <span class="label">Pagamenti</span>
-    </li>
   </ul>
+  <div class="sidebar-footer">
+    <span>Pannello operativo</span>
+  </div>
 </nav>

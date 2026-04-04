@@ -22,6 +22,7 @@ export class WaiterOrderComponent implements OnInit {
   tables: RestaurantTable[] = [];
   dishes: Piatto[] = [];
   selectedTableId: number | null = null;
+  selectedCategory = 'ALL';
   loading = true;
   saving = false;
   errorMessage = '';
@@ -50,6 +51,22 @@ export class WaiterOrderComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  get categories(): string[] {
+    const set = new Set<string>(this.dishes.map(dish => (dish.categoria || 'ALTRO').toUpperCase()));
+    const sorted = Array.from(set).sort((a, b) => {
+      const indexA = this.categoriaOrder.indexOf(a);
+      const indexB = this.categoriaOrder.indexOf(b);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+    return ['ALL', ...sorted];
+  }
+
+  get filteredDishes(): Piatto[] {
+    return this.dishes
+      .filter(dish => this.selectedCategory === 'ALL' || (dish.categoria || 'ALTRO').toUpperCase() === this.selectedCategory)
+      .sort((a, b) => a.nome.localeCompare(b.nome));
   }
 
   get groupedDishes(): [string, Piatto[]][] {
@@ -87,6 +104,10 @@ export class WaiterOrderComponent implements OnInit {
 
   get selectedTable(): RestaurantTable | undefined {
     return this.tables.find(table => table.id === this.selectedTableId);
+  }
+
+  selectTable(tableId: number): void {
+    this.selectedTableId = tableId;
   }
 
   increase(dish: Piatto): void {

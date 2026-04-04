@@ -34,6 +34,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   selectedCategory = 'ALL';
   errorMessage = '';
   recommendedDishes: Piatto[] = [];
+  recommendedExpanded = true;
   private eventSource: EventSource | null = null;
   private enteredAt = Date.now();
   private lastScrollBucket = 0;
@@ -221,6 +222,10 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.searchTerm = '';
     this.selectedCategory = 'ALL';
     this.applyFilters();
+  }
+
+  toggleRecommendedSection(): void {
+    this.recommendedExpanded = !this.recommendedExpanded;
   }
 
   isCategoryActive(category: string): boolean {

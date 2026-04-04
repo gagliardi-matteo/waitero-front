@@ -1,8 +1,12 @@
 <div class="menu-header" *ngIf="ristoranteObj">
   <div class="header-wrapper">
-    <div class="brand-lockup">
-      <img class="brand-logo" src="assets/brand/logo_b.svg" alt="WaiterO" />
-      <span class="logo">{{ ristoranteObj.nome }}</span>
+    <div class="brand brand-cliente">
+      <div class="brand-mark">
+        <img src="assets/brand/logo_b.svg" alt="WaiterO" />
+      </div>
+      <div class="brand-copy brand-cliente">
+        <strong>WaiterO</strong>
+      </div>
     </div>
 
     <div class="filter-panel">
@@ -36,10 +40,12 @@
   <section class="recommended-section" *ngIf="!errorMessage && recommendedDishes.length > 0">
     <div class="recommended-header">
       <h2>Consigliati per te</h2>
-      <p>I piatti piu forti del menu in questo momento.</p>
+      <button class="ghost-btn" type="button" (click)="toggleRecommendedSection()" [attr.aria-expanded]="recommendedExpanded">
+        <span class="material-symbols-outlined">{{ recommendedExpanded ? 'expand_less' : 'expand_more' }}</span>
+      </button>
     </div>
 
-    <div class="recommended-grid">
+    <div class="recommended-grid" *ngIf="recommendedExpanded">
       <div class="dish-card recommended-card" *ngFor="let piatto of recommendedDishes; trackBy: trackById" (click)="openDettaglio(piatto)">
         <div class="dish-info">
           <div>

@@ -1,18 +1,22 @@
-$orderHeight: 86dvh;
-$peekHeight: 4.75rem;
+$orderHeight: 84dvh;
+$peekHeight: 4.5rem;
 
 .order-summary-wrapper {
   position: fixed;
   inset: auto 0 0;
+  width: min(100%, 540px);
+  margin: 0 auto;
+  left: 0;
+  right: 0;
   height: $orderHeight;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(255,255,255,.98);
+  background: rgba(255, 255, 255, 0.98);
   color: var(--text);
   border-top: 1px solid var(--border);
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -18px 42px rgba(15,23,42,.14);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -18px 42px rgba(15, 23, 42, 0.14);
   transform: translateY(calc(100% - #{$peekHeight}));
   transition: transform .28s ease;
   z-index: 60;
@@ -33,18 +37,24 @@ $peekHeight: 4.75rem;
   }
 
   .badge {
-    min-width: 2.35rem;
-    height: 2.35rem;
-    padding: 0 .45rem;
+    min-width: 2.2rem;
+    height: 2.2rem;
     display: grid;
     place-items: center;
     border-radius: 999px;
     background: var(--accent);
     color: #fff;
-    font: 700 .86rem/1 inherit;
+    font: 700 .84rem/1 inherit;
   }
 
-  .vedi-carrello-text,.prezzo,h3,.section-title,.sent-qty,.actions span,.cart-upsell-title { font-weight: 700; }
+  .vedi-carrello-text,
+  .prezzo,
+  h3,
+  .section-title,
+  .sent-qty,
+  .actions span,
+  .cart-upsell-title { font-weight: 700; }
+
   .vedi-carrello-text { text-align: center; font-size: 1rem; }
   .prezzo { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -67,8 +77,8 @@ $peekHeight: 4.75rem;
   }
 
   .order-details::-webkit-scrollbar { display: none; }
-  h3 { margin-bottom: 1rem; font-size: 1.1rem; letter-spacing: -.03em; }
-  .section { margin-bottom: 1.15rem; }
+  h3 { margin-bottom: 1rem; font-size: 1.05rem; letter-spacing: -.03em; }
+  .section { margin-bottom: 1rem; }
   .section-title {
     margin-bottom: .55rem;
     color: var(--text-soft);
@@ -98,8 +108,8 @@ $peekHeight: 4.75rem;
       gap: .55rem;
 
       button {
-        width: 2.15rem;
-        height: 2.15rem;
+        width: 2.05rem;
+        height: 2.05rem;
         border: 1px solid var(--border);
         border-radius: 999px;
         background: var(--surface-soft);
@@ -107,7 +117,7 @@ $peekHeight: 4.75rem;
         font-size: 1rem;
       }
 
-      span { width: 1.4rem; text-align: center; }
+      span { width: 1.3rem; text-align: center; }
     }
   }
 
@@ -132,9 +142,9 @@ $peekHeight: 4.75rem;
 
   .cart-upsell {
     padding: .9rem 1rem;
-    border: 1px solid #d8eadc;
+    border: 1px solid rgba(216, 122, 44, 0.2);
     border-radius: 18px;
-    background: #f4fbf5;
+    background: #fff8ef;
   }
 
   .cart-upsell-row {
@@ -142,18 +152,19 @@ $peekHeight: 4.75rem;
     align-items: center;
     justify-content: space-between;
     gap: .75rem;
+    margin-top: 1em;
   }
 
   .cart-upsell-item { color: var(--text-muted); font-size: .9rem; }
 
   .cart-upsell-btn {
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 2.2rem;
+    height: 2.2rem;
     border: 0;
     border-radius: 999px;
     background: var(--accent);
     color: #fff;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 700;
     flex-shrink: 0;
   }
@@ -164,7 +175,7 @@ $peekHeight: 4.75rem;
     padding: .95rem;
     background: var(--accent);
     color: #fff;
-    box-shadow: 0 14px 28px rgba(15,157,88,.24);
+    box-shadow: 0 14px 28px rgba(216,122,44,.24);
 
     &:disabled { opacity: .55; box-shadow: none; }
   }

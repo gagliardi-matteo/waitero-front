@@ -1,4 +1,4 @@
-﻿import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import QRCode from 'qrcode';
@@ -51,6 +51,18 @@ export class TablesManagementComponent {
 
   get copertiControl() {
     return this.form.controls.coperti;
+  }
+
+  get activeTablesCount(): number {
+    return this.tables.filter(table => table.attivo).length;
+  }
+
+  get inactiveTablesCount(): number {
+    return this.tables.length - this.activeTablesCount;
+  }
+
+  get totalSeats(): number {
+    return this.tables.reduce((sum, table) => sum + table.coperti, 0);
   }
 
   loadTables(): void {

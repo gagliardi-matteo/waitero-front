@@ -1,56 +1,95 @@
-<div class="add-dish-form">
-  <h2>Aggiungi Piatto</h2>
-  <form [formGroup]="dishForm" (ngSubmit)="onSubmit()">
-    <label>Nome</label>
-    <input type="text" formControlName="nome" />
-
-    <label>Descrizione</label>
-    <textarea formControlName="descrizione" class="descrizione" id="descrizione"></textarea>
-
-    <label>Ingredienti finali del piatto</label>
-    <textarea formControlName="ingredienti" class="descrizione" placeholder="Lascia vuoto per usare i suggerimenti automatici, oppure inserisci la tua ricetta separando gli ingredienti con una virgola"></textarea>
-
-    <label class="recommend-checkbox">
-      <input type="checkbox" formControlName="consigliato" />
-      Mostra questo piatto tra i consigliati per il cliente
-    </label>
-
-    <label>Allergeni standard</label>
-    <div class="allergen-grid">
-      <button
-        type="button"
-        class="allergen-chip"
-        *ngFor="let allergen of standardAllergens"
-        [class.active]="isAllergenSelected(allergen)"
-        (click)="toggleAllergen(allergen)"
-      >
-        {{ allergen }}
-      </button>
+<div class="dish-form-page">
+  <div class="dish-form-card">
+    <div class="form-header">
+      <div>
+        <span class="eyebrow">Menu Management</span>
+        <h1 class="page-title">Aggiungi Piatto</h1>
+        <p>Crea una nuova scheda menu mantenendo lo stesso flusso funzionale esistente.</p>
+      </div>
     </div>
 
-    <label>Altri allergeni / note</label>
-    <textarea formControlName="allergeniCustom" class="descrizione" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
+    <form [formGroup]="dishForm" (ngSubmit)="onSubmit()">
+      <section class="form-section">
+        <h2>Dati principali</h2>
 
-    <label>Categoria</label>
-    <select formControlName="categoria">
-      <option disabled value="">Seleziona...</option>
-      <option>Primo</option>
-      <option>Secondo</option>
-      <option>Dolce</option>
-      <option>Contorno</option>
-    </select>
+        <label>
+          <span>Nome</span>
+          <input type="text" formControlName="nome" />
+        </label>
 
-    <label>Prezzo</label>
-    <input type="number" formControlName="prezzo" min="0" />
+        <label>
+          <span>Descrizione</span>
+          <textarea formControlName="descrizione" class="descrizione" id="descrizione"></textarea>
+        </label>
 
-    <label>Immagine</label>
-    <input type="file" (change)="onFileSelected($event)" />
+        <label>
+          <span>Ingredienti finali del piatto</span>
+          <textarea formControlName="ingredienti" class="descrizione" placeholder="Lascia vuoto per usare i suggerimenti automatici, oppure inserisci la tua ricetta separando gli ingredienti con una virgola"></textarea>
+        </label>
+      </section>
 
-    <img *ngIf="previewUrl" [src]="previewUrl" width="150" class="preview-img" />
+      <section class="form-section">
+        <h2>Scoperta e allergeni</h2>
 
-    <button class="add-button" type="submit" [disabled]="dishForm.invalid">Salva</button>
-    <button [routerLink]="['/menu-management']">
-      Indietro
-    </button>
-  </form>
+        <label class="recommend-checkbox">
+          <input type="checkbox" formControlName="consigliato" />
+          <span>Mostra questo piatto tra i consigliati per il cliente</span>
+        </label>
+
+        <label>
+          <span>Allergeni standard</span>
+        </label>
+        <div class="allergen-grid">
+          <button
+            type="button"
+            class="allergen-chip"
+            *ngFor="let allergen of standardAllergens"
+            [class.active]="isAllergenSelected(allergen)"
+            (click)="toggleAllergen(allergen)"
+          >
+            {{ allergen }}
+          </button>
+        </div>
+
+        <label>
+          <span>Altri allergeni / note</span>
+          <textarea formControlName="allergeniCustom" class="descrizione" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
+        </label>
+      </section>
+
+      <section class="form-section compact-grid">
+        <label>
+          <span>Categoria</span>
+          <select formControlName="categoria">
+            <option disabled value="">Seleziona...</option>
+            <option>Primo</option>
+            <option>Secondo</option>
+            <option>Dolce</option>
+            <option>Contorno</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Prezzo</span>
+          <input type="number" formControlName="prezzo" min="0" />
+        </label>
+      </section>
+
+      <section class="form-section">
+        <h2>Immagine</h2>
+
+        <label>
+          <span>Carica immagine</span>
+          <input type="file" (change)="onFileSelected($event)" />
+        </label>
+
+        <img *ngIf="previewUrl" [src]="previewUrl" width="150" class="preview-img" />
+      </section>
+
+      <div class="form-actions">
+        <button class="ghost-btn" type="button" [routerLink]="['/menu-management']">Indietro</button>
+        <button class="primary-btn" type="submit" [disabled]="dishForm.invalid">Salva</button>
+      </div>
+    </form>
+  </div>
 </div>

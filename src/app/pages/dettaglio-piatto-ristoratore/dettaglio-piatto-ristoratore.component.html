@@ -1,46 +1,110 @@
-<div *ngIf="errorMessage" class="detail-container">
-  <div class="info-box warning">
-    <h3>Errore</h3>
+<div *ngIf="errorMessage" class="detail-page detail-page--error">
+  <div class="page-titlebar">
+    <h1>Dettaglio piatto</h1>
     <p>{{ errorMessage }}</p>
   </div>
-  <button class="primary-btn" (click)="goBack()">Torna al menu</button>
+  <button class="secondary-btn" type="button" (click)="goBack()">Torna al menu</button>
 </div>
 
-<div *ngIf="!errorMessage && piatto" class="detail-container">
-  <button class="back-button" (click)="goBack()">
+<div *ngIf="!errorMessage && piatto" class="detail-page">
+  <header class="page-titlebar">
+    <h1>Dettaglio piatto</h1>
+    <p>{{ piatto.nome }}</p>
+  </header>
+
+  <button class="back-link" type="button" (click)="goBack()">
     <span class="material-symbols-outlined">arrow_back</span>
+    <span>Torna al menu</span>
   </button>
 
-  <img class="detail-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
-
-  <div class="category-label">{{ piatto.categoria }}</div>
-  <h1>{{ piatto.nome }}</h1>
-  <p class="description" *ngIf="piatto.descrizione">{{ piatto.descrizione }}</p>
-  <div class="price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
-
-  <div class="info-box" *ngIf="ingredientRows.length > 0">
-    <h3>Ingredienti</h3>
-    <ul>
-      <li *ngFor="let ingredient of ingredientRows">{{ ingredient }}</li>
-    </ul>
-  </div>
-
-  <div class="info-box warning" *ngIf="allergenBadges.length > 0">
-    <h3>Allergeni</h3>
-    <div class="badge-list">
-      <span class="allergen-badge" *ngFor="let allergen of allergenBadges">{{ allergen }}</span>
+  <section class="hero-card">
+    <div class="hero-media">
+      <img [src]="getImageUrl(piatto.imageUrl)" [alt]="piatto.nome" />
     </div>
-  </div>
 
-  <div class="status-row">
-    <span class="status-badge" [class.unavailable]="!piatto.disponibile">
-      {{ piatto.disponibile ? 'Disponibile' : 'Non disponibile' }}
-    </span>
-  </div>
+    <div class="hero-copy">
+      <div class="hero-heading">
+        <h2>{{ piatto.nome }}</h2>
+        <span class="recommended-badge" *ngIf="piatto.consigliato">
+          <span class="material-symbols-outlined">local_fire_department</span>
+          Consigliato
+        </span>
+      </div>
+      <p class="hero-meta">{{ categoryPriceLabel }}</p>
+      <p class="hero-description">{{ piatto.descrizione || 'Nessuna descrizione disponibile.' }}</p>
+    </div>
 
-  <div class="actions">
-    <button class="secondary-btn" (click)="goBack()">Chiudi</button>
-    <a class="primary-btn" [routerLink]="['/ristoratore/piatto/modifica', piatto.id]">Modifica piatto</a>
-  </div>
+    <div class="hero-actions">
+      <a class="action-btn action-btn--primary" [routerLink]="['/ristoratore/piatto/modifica', piatto.id]">
+        <span class="material-symbols-outlined">edit_square</span>
+        <span>Modifica</span>
+      </a>
+      <button class="action-btn" type="button" (click)="goBack()" aria-label="Torna al menu">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-head">
+        <span>Ordini totali</span>
+        <span class="material-symbols-outlined">shopping_cart</span>
+      </div>
+      <strong class="tabular-nums">{{ orderCount }}</strong>
+      <small>{{ orderCount > 0 ? 'Piatti venduti complessivi' : 'Nessun ordine registrato' }}</small>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-head">
+        <span>Visualizzazioni</span>
+        <span class="material-symbols-outlined">visibility</span>
+      </div>
+      <strong class="tabular-nums">{{ viewCount }}</strong>
+      <small>{{ viewCount > 0 ? 'Aperture della scheda nel menu' : 'Nessuna visualizzazione registrata' }}</small>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-head">
+        <span>Conversione</span>
+        <span class="material-symbols-outlined">trending_up</span>
+      </div>
+      <strong class="tabular-nums">{{ conversionRate | percent:'1.0-0' }}</strong>
+      <small>{{ conversionRate > 0 ? 'Dal menu all�ordine' : 'In attesa di dati di conversione' }}</small>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-head">
+        <span>Revenue</span>
+        <span class="material-symbols-outlined">monitoring</span>
+      </div>
+      <strong class="tabular-nums">&euro;{{ revenueValue | number:'1.0-0' }}</strong>
+      <small>{{ revenueValue > 0 ? 'Stima ricavi generati' : 'Ricavi non ancora disponibili' }}</small>
+    </article>
+  </section>
+
+  <section class="detail-grid">
+    <article class="info-panel">
+      <h3>Ingredienti</h3>
+      <div class="tag-list" *ngIf="ingredientRows.length > 0; else noIngredients">
+        <span class="tag" *ngFor="let ingredient of ingredientRows">{{ ingredient }}</span>
+      </div>
+      <ng-template #noIngredients>
+        <p>Nessun ingrediente inserito.</p>
+      </ng-template>
+    </article>
+
+    <article class="info-panel info-panel--warning">
+      <h3>Allergeni</h3>
+      <div class="tag-list" *ngIf="allergenBadges.length > 0; else noAllergens">
+        <span class="tag tag--warning" *ngFor="let allergen of allergenBadges">
+          <span class="material-symbols-outlined">warning</span>
+          {{ allergen }}
+        </span>
+      </div>
+      <ng-template #noAllergens>
+        <p>Nessun allergene dichiarato.</p>
+      </ng-template>
+    </article>
+  </section>
 </div>
-

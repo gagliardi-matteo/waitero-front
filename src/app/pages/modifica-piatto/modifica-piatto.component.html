@@ -1,81 +1,103 @@
-<div class="modifica-container">
-  <div class="form-card">
-    <h1 class="title">Modifica Piatto</h1>
+<div class="dish-form-page">
+  <div class="dish-form-card">
+    <div class="form-header">
+      <div>
+        <span class="eyebrow">Menu Management</span>
+        <h1 class="page-title">Modifica Piatto</h1>
+        <p>Aggiorna contenuti, disponibilita e asset visivi senza cambiare il flusso esistente.</p>
+      </div>
+    </div>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <label>
-        Nome
-        <input type="text" formControlName="nome" />
-      </label>
+      <section class="form-section">
+        <h2>Dati principali</h2>
 
-      <label>
-        Descrizione
-        <textarea formControlName="descrizione"></textarea>
-      </label>
+        <label>
+          <span>Nome</span>
+          <input type="text" formControlName="nome" />
+        </label>
 
-      <label>
-        Ingredienti finali del piatto
-        <textarea formControlName="ingredienti" placeholder="Qui puoi aggiungere o togliere ingredienti dalla ricetta proposta, separandoli con una virgola"></textarea>
-      </label>
+        <label>
+          <span>Descrizione</span>
+          <textarea formControlName="descrizione"></textarea>
+        </label>
 
-      <label class="recommend-checkbox">
-        <input type="checkbox" formControlName="consigliato" />
-        Mostra questo piatto tra i consigliati per il cliente
-      </label>
+        <label>
+          <span>Ingredienti finali del piatto</span>
+          <textarea formControlName="ingredienti" placeholder="Qui puoi aggiungere o togliere ingredienti dalla ricetta proposta, separandoli con una virgola"></textarea>
+        </label>
+      </section>
 
-      <label>Allergeni standard</label>
-      <div class="allergen-grid">
-        <button
-          type="button"
-          class="allergen-chip"
-          *ngFor="let allergen of standardAllergens"
-          [class.active]="isAllergenSelected(allergen)"
-          (click)="toggleAllergen(allergen)"
-        >
-          {{ allergen }}
-        </button>
-      </div>
+      <section class="form-section">
+        <h2>Scoperta e disponibilita</h2>
 
-      <label>
-        Altri allergeni / note
-        <textarea formControlName="allergeniCustom" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
-      </label>
+        <label class="recommend-checkbox">
+          <input type="checkbox" formControlName="consigliato" />
+          <span>Mostra questo piatto tra i consigliati per il cliente</span>
+        </label>
 
-      <label>
-        Categoria
-        <select formControlName="categoria">
+        <label class="disponibile-checkbox">
+          <input type="checkbox" formControlName="disponibile" />
+          <span>Disponibile</span>
+        </label>
+
+        <label>
+          <span>Allergeni standard</span>
+        </label>
+        <div class="allergen-grid">
+          <button
+            type="button"
+            class="allergen-chip"
+            *ngFor="let allergen of standardAllergens"
+            [class.active]="isAllergenSelected(allergen)"
+            (click)="toggleAllergen(allergen)"
+          >
+            {{ allergen }}
+          </button>
+        </div>
+
+        <label>
+          <span>Altri allergeni / note</span>
+          <textarea formControlName="allergeniCustom" placeholder="Es. tracce di pistacchio, contaminazione crociata"></textarea>
+        </label>
+      </section>
+
+      <section class="form-section compact-grid">
+        <label>
+          <span>Categoria</span>
+          <select formControlName="categoria">
             <option [ngValue]="null">Seleziona...</option>
             <option *ngFor="let cat of categorie" [ngValue]="cat[0]">{{ cat[1] }}</option>
-        </select>
-      </label>
+          </select>
+        </label>
 
-      <label>
-        Prezzo
-        <input type="number" formControlName="prezzo" />
-      </label>
+        <label>
+          <span>Prezzo</span>
+          <input type="number" formControlName="prezzo" />
+        </label>
+      </section>
 
-      <label>
-        Immagine attuale
-        <img
-            class="preview-img"
-            [src]="imagePreviewUrl || imageUrlOriginale"
-        />
-      </label>
+      <section class="form-section">
+        <h2>Immagine</h2>
 
-      <label>
-        Carica nuova immagine
-        <input type="file" #fileInput (change)="onImageSelected($event)" />
-      </label>
-      <div *ngIf="nuovaImmagine" class="image-cancel">
-        <button type="button" (click)="annullaNuovaImmagine()">Annulla immagine selezionata</button>
+        <label>
+          <span>Immagine attuale</span>
+          <img class="preview-img" [src]="imagePreviewUrl || imageUrlOriginale" />
+        </label>
+
+        <label>
+          <span>Carica nuova immagine</span>
+          <input type="file" #fileInput (change)="onImageSelected($event)" />
+        </label>
+
+        <div *ngIf="nuovaImmagine" class="image-cancel">
+          <button class="ghost-btn" type="button" (click)="annullaNuovaImmagine()">Annulla immagine selezionata</button>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="primary-btn" type="submit" [disabled]="form.invalid">Salva modifiche</button>
       </div>
-
-      <label class="disponibile-checkbox">
-        <input type="checkbox" formControlName="disponibile" />
-        Disponibile
-      </label>
-
-      <button type="submit" [disabled]="form.invalid">Salva modifiche</button>
     </form>
   </div>
 </div>

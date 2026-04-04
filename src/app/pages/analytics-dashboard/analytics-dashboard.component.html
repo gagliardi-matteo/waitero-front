@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <h1>Analytics</h1>
-      <p>Panoramica operativa del funnel digitale del locale: traffico, conversione e valore medio ordine.</p>
+      <p>Performance del ristorante.</p>
     </div>
     <div class="page-actions">
       <button type="button" class="ghost-btn" (click)="loadOverview()">Aggiorna</button>
@@ -11,218 +11,92 @@
   </div>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-
   <div class="loading-card" *ngIf="loading">Caricamento metriche in corso...</div>
 
   <ng-container *ngIf="!loading && overview as data">
-    <div class="hero-grid">
-      <article class="hero-card accent">
-        <span class="eyebrow">Conversione</span>
+    <div class="kpi-row">
+      <article class="kpi-card">
+        <span>Conversione</span>
         <strong>{{ conversionRate | percent:'1.1-1' }}</strong>
-        <p>{{ trafficQualityLabel }}</p>
       </article>
-
-      <article class="hero-card warning">
-        <span class="eyebrow">Dropoff</span>
-        <strong>{{ dropoffRate | percent:'1.1-1' }}</strong>
-        <p>Quota di sessioni che non arrivano all'ordine.</p>
-      </article>
-
-      <article class="hero-card success">
-        <span class="eyebrow">Scontrino medio</span>
+      <article class="kpi-card">
+        <span>Scontrino medio</span>
         <strong>{{ averageOrderValue | number:'1.2-2' }} &euro;</strong>
-        <p>{{ revenueSignalLabel }}</p>
       </article>
-    </div>
-
-    <div class="metrics-grid">
-      <article class="metric-card">
-        <span class="metric-label">Visualizzazioni piatti</span>
-        <strong>{{ data.views | number:'1.0-0' }}</strong>
-        <p>Interazioni di scoperta sul menu.</p>
-      </article>
-
-      <article class="metric-card">
-        <span class="metric-label">Sessioni tracciate</span>
-        <strong>{{ data.sessions | number:'1.0-0' }}</strong>
-        <p>Visitatori distinti del menu digitale.</p>
-      </article>
-
-      <article class="metric-card">
-        <span class="metric-label">Ordini inviati</span>
+      <article class="kpi-card">
+        <span>Ordini totali</span>
         <strong>{{ data.orders | number:'1.0-0' }}</strong>
-        <p>Ordini confermati dal canale digitale.</p>
       </article>
+      <article class="kpi-card">
+        <span>Drop-off rate</span>
+        <strong>{{ dropoffRate | percent:'1.1-1' }}</strong>
+      </article>
+    </div>
 
-      <article class="metric-card">
-        <span class="metric-label">Top performer</span>
+    <section class="simple-panel funnel-panel">
+      <h3>Funnel digitale</h3>
+      <div class="funnel-list">
+        <div class="funnel-step" *ngFor="let step of funnelSteps; trackBy: trackStep">
+          <div class="step-labels">
+            <span>{{ step.label }}</span>
+            <small>{{ step.value | number:'1.0-0' }}</small>
+          </div>
+          <div class="step-bar-shell">
+            <div class="step-bar" [style.width.%]="step.ratio * 100"></div>
+          </div>
+          <strong>{{ (step.ratio * 100) | number:'1.0-0' }}%</strong>
+        </div>
+      </div>
+    </section>
+
+    <div class="kpi-row secondary">
+      <article class="kpi-card small">
+        <span>Coperti serviti</span>
+        <strong>{{ data.sessions | number:'1.0-0' }}</strong>
+      </article>
+      <article class="kpi-card small">
+        <span>Visualizzazioni menu</span>
+        <strong>{{ data.views | number:'1.0-0' }}</strong>
+      </article>
+      <article class="kpi-card small">
+        <span>Top performer</span>
         <strong>{{ topPerformerCount | number:'1.0-0' }}</strong>
-        <p>Piatti che convertono bene tra attenzione e ordine.</p>
-      </article>
-
-      <article class="metric-card">
-        <span class="metric-label">Benchmark alerts</span>
-        <strong>{{ benchmarkAlertCount | number:'1.0-0' }}</strong>
-        <p>Scostamenti utili rispetto a categoria e media locale.</p>
-      </article>
-
-      <article class="metric-card">
-        <span class="metric-label">Revenue opportunities</span>
-        <strong>{{ revenueOpportunityCount | number:'1.0-0' }}</strong>
-        <p>Leve attive su prezzo, bundle e posizionamento.</p>
       </article>
     </div>
 
-    <div class="insights-grid">
-      <section class="panel funnel-panel">
-        <div class="panel-head">
-          <div>
-            <h2>Funnel digitale</h2>
-            <p>Confronto rapido tra attenzione, sessioni e ordini.</p>
-          </div>
-        </div>
-
-        <div class="funnel-list">
-          <div class="funnel-step" *ngFor="let step of funnelSteps; trackBy: trackStep">
-            <div class="step-head">
-              <span>{{ step.label }}</span>
-              <strong>{{ step.value | number:'1.0-0' }}</strong>
-            </div>
-            <div class="step-bar-shell">
-              <div class="step-bar" [style.width.%]="step.ratio * 100"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel actions-panel">
-        <div class="panel-head">
-          <div>
-            <h2>Lettura operativa</h2>
-            <p>Primi segnali da usare per i prossimi step della platform.</p>
-          </div>
-        </div>
-
-        <ul class="action-list">
-          <li *ngIf="data.views > 0 && conversionRate < 0.1">Il menu genera attenzione ma converte poco: conviene lavorare su ranking piatti e upsell.</li>
-          <li *ngIf="data.sessions > 0 && dropoffRate > 0.7">Il dropoff è alto: ha senso analizzare percorso, scroll e piatti che non entrano mai nel carrello.</li>
-          <li *ngIf="averageOrderValue < 18">Lo scontrino medio è basso: il prossimo step naturale è suggerire bevande, contorni e bundle.</li>
-          <li *ngIf="opportunityCount > 0">Hai piatti molto osservati ma poco ordinati: sono i candidati migliori per menu intelligence e ottimizzazione scheda prodotto.</li>
-          <li *ngIf="benchmarkAlertCount > 0">I benchmark evidenziano scarti reali rispetto alla categoria: adesso sai dove intervenire prima degli altri piatti.</li>
-          <li *ngIf="revenueOpportunityCount > 0">Le opportunità revenue ora sono calcolate per piatto: puoi testare prezzo, bundle e visibilità in modo mirato.</li>
-        </ul>
-      </section>
-    </div>
-
-    <section class="panel benchmark-panel">
-      <div class="panel-head">
-        <div>
-          <h2>Benchmark intelligence</h2>
-          <p>Insight aggregati su cosa performa sopra o sotto la propria categoria e rispetto alla media del locale.</p>
-        </div>
+    <section class="simple-panel">
+      <div class="table-head">
+        <h3>Performance per piatto</h3>
       </div>
-
-      <div class="empty-state" *ngIf="benchmarkInsights.length === 0">
-        Ancora nessun segnale benchmark abbastanza forte da mostrare.
-      </div>
-
-      <div class="benchmark-grid" *ngIf="benchmarkInsights.length > 0">
-        <article class="benchmark-card" *ngFor="let insight of benchmarkInsights; trackBy: trackBenchmark">
-          <div class="benchmark-topline">
-            <span class="benchmark-type">{{ benchmarkLabel(insight.benchmarkLabel) }}</span>
-            <strong>{{ insight.benchmarkScore | number:'1.0-0' }}</strong>
-          </div>
-          <h3>{{ insight.dishName }}</h3>
-          <p>{{ insight.title }}</p>
-          <div class="benchmark-metrics">
-            <span>View -> Order: {{ insight.viewToOrderRate | percent:'1.1-1' }}</span>
-            <span>Categoria: {{ insight.categoryViewToOrderRate | percent:'1.1-1' }}</span>
-            <span>Locale: {{ insight.restaurantViewToOrderRate | percent:'1.1-1' }}</span>
-          </div>
-          <div class="benchmark-rationale">{{ insight.rationale }}</div>
-          <div class="benchmark-action">{{ insight.actionLabel }}</div>
-        </article>
-      </div>
-    </section>
-
-    <section class="panel revenue-panel">
-      <div class="panel-head">
-        <div>
-          <h2>Revenue optimization</h2>
-          <p>Suggerimenti economici basati su conversione, prezzo attuale e ruolo del piatto nel menu.</p>
-        </div>
-      </div>
-
-      <div class="empty-state" *ngIf="revenueOpportunities.length === 0">
-        Ancora nessuna opportunità revenue abbastanza forte da suggerire.
-      </div>
-
-      <div class="revenue-grid" *ngIf="revenueOpportunities.length > 0">
-        <article class="revenue-card" *ngFor="let opportunity of revenueOpportunities; trackBy: trackOpportunity">
-          <div class="revenue-topline">
-            <span class="revenue-type">{{ revenueOpportunityTypeLabel(opportunity.opportunityType) }}</span>
-            <strong>{{ opportunity.revenueScore | number:'1.0-0' }}</strong>
-          </div>
-          <h3>{{ opportunity.dishName }}</h3>
-          <p>{{ opportunity.title }}</p>
-          <div class="revenue-pricing">
-            <span>Prezzo attuale: {{ opportunity.currentPrice | number:'1.2-2' }} &euro;</span>
-            <span *ngIf="opportunity.suggestedPrice !== opportunity.currentPrice">Prezzo test: {{ opportunity.suggestedPrice | number:'1.2-2' }} &euro;</span>
-          </div>
-          <div class="revenue-rationale">{{ opportunity.rationale }}</div>
-          <div class="revenue-action">{{ opportunity.actionLabel }}</div>
-        </article>
-      </div>
-    </section>
-
-    <section class="panel dishes-panel">
-      <div class="panel-head">
-        <div>
-          <h2>Performance per piatto</h2>
-          <p>Usa questa classifica per capire cosa attira attenzione, entra in carrello e chiude in ordine.</p>
-        </div>
-      </div>
-
-      <div class="empty-state" *ngIf="dishPerformance.length === 0">
-        Nessun piatto disponibile per l'analisi.
-      </div>
-
-      <div class="table-shell" *ngIf="dishPerformance.length > 0">
+      <div class="table-shell" *ngIf="dishPerformance.length > 0; else noDishTpl">
         <table class="dish-table">
           <thead>
             <tr>
               <th>Piatto</th>
-              <th>Categoria</th>
-              <th>Prezzo</th>
-              <th>View</th>
-              <th>Click</th>
-              <th>Add to cart</th>
               <th>Ordini</th>
-              <th>View -> Cart</th>
-              <th>View -> Order</th>
-              <th>Segnale</th>
+              <th>Revenue</th>
+              <th>Conversione</th>
+              <th>Trend</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let dish of dishPerformance; trackBy: trackDish">
-              <td class="dish-name-cell">
-                <strong>{{ dish.dishName }}</strong>
-              </td>
-              <td>{{ dish.category || '-' }}</td>
-              <td>{{ dish.price | number:'1.2-2' }} &euro;</td>
-              <td>{{ dish.views | number:'1.0-0' }}</td>
-              <td>{{ dish.clicks | number:'1.0-0' }}</td>
-              <td>{{ dish.addToCart | number:'1.0-0' }}</td>
+              <td><strong>{{ dish.dishName }}</strong></td>
               <td>{{ dish.orderCount | number:'1.0-0' }}</td>
-              <td>{{ dish.viewToCartRate | percent:'1.1-1' }}</td>
+              <td>{{ (dish.orderCount * dish.price) | number:'1.0-0' }} &euro;</td>
               <td>{{ dish.viewToOrderRate | percent:'1.1-1' }}</td>
               <td>
-                <span class="performance-pill" [class]="dish.performanceLabel">{{ performanceBadgeLabel(dish.performanceLabel) }}</span>
+                <span class="trend" [class.down]="dish.performanceLabel === 'high_interest_low_conversion' || dish.performanceLabel === 'cart_abandonment'">
+                  {{ dish.performanceLabel === 'high_interest_low_conversion' || dish.performanceLabel === 'cart_abandonment' ? '?' : '?' }}
+                </span>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <ng-template #noDishTpl>
+        <div class="empty-state">Nessun piatto disponibile per l'analisi.</div>
+      </ng-template>
     </section>
   </ng-container>
 </div>

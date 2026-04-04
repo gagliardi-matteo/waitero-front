@@ -1,12 +1,10 @@
 <div class="content">
   <div class="page-header">
     <div>
-      <h1>Gestione Menu</h1>
-      <p class="page-subtitle">Controlla piatti, consigli automatici e segnali di performance senza cambiare il layout base del menu.</p>
+      <h1>Menu</h1>
+      <p class="page-subtitle">Gestisci i piatti con una vista piu pulita e rapida.</p>
     </div>
-    <button class="add-button" [routerLink]="['/add-dish']">
-      <span class="plus-icon">+</span> Inserisci Piatto
-    </button>
+    <button class="add-button" [routerLink]="['/add-dish']">Inserisci Piatto</button>
   </div>
 
   <app-menu-insights-panel
@@ -30,50 +28,24 @@
     </div>
 
     <div class="menu-grid">
-      <div class="menu-card" *ngFor="let item of entry[1]; trackBy: trackDish">
-        <a class="card-link" [routerLink]="['/ristoratore/piatto', item.id]">
+      <a class="menu-card" *ngFor="let item of entry[1]; trackBy: trackDish" [routerLink]="['/ristoratore/piatto', item.id]">
+        <div class="card-image-shell">
           <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
-        </a>
+          <span class="top-badge" *ngIf="item.consigliato">Top</span>
+        </div>
         <div class="info">
-          <div class="category-label">{{ item.categoria }}</div>
-          <a class="card-link info-link" [routerLink]="['/ristoratore/piatto', item.id]">
-            <div class="name">{{ item.nome }}</div>
-            <div class="description" *ngIf="item.descrizione">{{ item.descrizione }}</div>
-            <div class="ingredients" *ngIf="item.ingredienti">
-              <strong>Ingredienti:</strong> {{ item.ingredienti }}
-            </div>
-          </a>
-
-          <div class="dish-metrics">
-            <span>{{ item.numeroOrdini ?? 0 }} ordini</span>
-            <span>{{ item.views ?? 0 }} view</span>
-            <span>{{ formatRate(item.viewToOrderRate) }} conv.</span>
+          <h3 class="name">{{ item.nome }}</h3>
+          <p class="description">{{ item.descrizione || item.categoria }}</p>
+          <div class="card-footer">
+            <span class="price">{{ item.prezzo }}&euro;</span>
+            <span class="metric">{{ item.numeroOrdini ?? 0 }} ordini - {{ formatRate(item.viewToOrderRate) }}</span>
           </div>
-
-          <div class="dish-insights" *ngIf="getDishInsightPills(item).length > 0">
-            <span class="insight-pill" *ngFor="let insight of getDishInsightPills(item); trackBy: trackInsight">{{ insight }}</span>
-          </div>
-
-          <div class="primary-insight">{{ getPrimaryInsight(item) }}</div>
-
-          <label class="recommended-toggle" (click)="$event.stopPropagation()">
-            <input type="checkbox" [checked]="!!item.consigliato" [disabled]="togglingRecommendedId === item.id" (change)="toggleRecommended(item, $event)" />
-            Consigliato al cliente
-          </label>
-
-          <div class="dish-allergen-list" *ngIf="getAllergenBadges(item).length > 0">
-            <span class="allergen-badge" *ngFor="let allergen of getAllergenBadges(item); trackBy: trackBadge">{{ allergen }}</span>
-          </div>
-
-          <div class="price-row">
-            <div class="price">{{ item.prezzo }}&euro;</div>
-            <div class="actions">
-              <button class="edit-btn text-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]" (click)="$event.stopPropagation()">Modifica</button>
-              <button class="delete-btn text-btn" [disabled]="deletingDishId === item.id" (click)="deleteDish(item, $event)">Elimina</button>
-            </div>
+          <div class="actions" (click)="$event.stopPropagation()">
+            <button class="text-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]">Modifica</button>
+            <button class="text-btn danger" [disabled]="deletingDishId === item.id" (click)="deleteDish(item, $event)">Elimina</button>
           </div>
         </div>
-      </div>
+      </a>
     </div>
   </div>
 </div>
