@@ -4,7 +4,7 @@
       <div class="brand-mark">
         <img src="assets/brand/logo_b.svg" alt="WaiterO" />
       </div>
-      <div class="brand-copy brand-cliente">
+      <div class="brand-copy">
         <strong>WaiterO</strong>
       </div>
     </div>
@@ -39,10 +39,12 @@
 
   <section class="recommended-section" *ngIf="!errorMessage && recommendedDishes.length > 0">
     <div class="recommended-header">
-      <h2>Consigliati per te</h2>
-      <button class="ghost-btn" type="button" (click)="toggleRecommendedSection()" [attr.aria-expanded]="recommendedExpanded">
-        <span class="material-symbols-outlined">{{ recommendedExpanded ? 'expand_less' : 'expand_more' }}</span>
-      </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+        <h2>Consigliati per te</h2>
+        <button class="ghost-btn" type="button" (click)="toggleRecommendedSection()" [attr.aria-expanded]="recommendedExpanded">
+          <span class="material-symbols-outlined">{{ recommendedExpanded ? 'expand_less' : 'expand_more' }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="recommended-grid" *ngIf="recommendedExpanded">
