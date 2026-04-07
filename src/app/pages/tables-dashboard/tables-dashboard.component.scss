@@ -7,12 +7,17 @@
 .filters-row,
 .page-actions { display: flex; gap: 0.75rem; }
 .page-header { align-items: center; justify-content: space-between; }
-.filters-row { flex-wrap: wrap; }
+.filters-row { 
+  flex-wrap: wrap; 
+  margin: 1.5rem 0;
+}
 .page-header p { color: var(--text-muted); }
 
 .filter-chip {
-  min-height: 42px; padding: 0.65rem 1rem; border-radius: 999px; border: 1px solid var(--border);
+  padding: 0.15rem 1rem; border-radius: 999px; border: 1px solid var(--border);
   background: rgba(255,255,255,.92); color: var(--text-muted); font: inherit; font-weight: 600;
+  height: 1.8rem !important;
+  font-size: .9rem;
 }
 .filter-chip.active { border-color: rgba(216,122,44,.28); background: var(--accent-soft); color: var(--accent-strong); }
 .filter-chip span { margin-left: .45rem; }

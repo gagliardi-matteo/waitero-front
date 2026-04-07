@@ -55,3 +55,14 @@ export interface CustomerOrder {
   items: CustomerOrderItem[];
   payments: CustomerOrderPayment[];
 }
+
+export interface OrderSummary {
+  id: number;
+  tableId: number;
+  status: string;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  totale: number;
+  itemCount: number;
+}

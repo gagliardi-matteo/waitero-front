@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { CustomerOrder } from '../models/customer-order.model';
+import { CustomerOrder, OrderSummary } from '../models/customer-order.model';
 import { AuthService } from '../auth/AuthService';
 
 interface PaymentAllocationPayload {
@@ -13,6 +13,16 @@ interface PaymentAllocationPayload {
 interface ManualOrderPayload {
   tableId: number;
   items: Array<{ dishId: number; quantity: number }>;
+}
+
+export interface OrderSummaryPage {
+  items: OrderSummary[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +36,32 @@ export class RestaurantOrderService {
 
   getHistoryOrders(): Observable<CustomerOrder[]> {
     return this.http.get<CustomerOrder[]>(`${environment.apiUrl}/orders/history`);
+  }
+
+  getActiveOrderSummaries(): Observable<OrderSummary[]> {
+    return this.http.get<OrderSummary[]>(`${environment.apiUrl}/orders/active-summary`);
+  }
+
+  getAllOrderSummaries(): Observable<OrderSummary[]> {
+    return this.http.get<OrderSummary[]>(`${environment.apiUrl}/orders/all-summary`);
+  }
+
+  getPagedOrderSummaries(page: number, size: number, options?: { q?: string; status?: string }): Observable<OrderSummaryPage> {
+    let params = new HttpParams()
+      .set('page', String(page))
+      .set('size', String(size));
+
+    const search = options?.q?.trim();
+    if (search) {
+      params = params.set('q', search);
+    }
+
+    const status = options?.status?.trim();
+    if (status && status !== 'ALL') {
+      params = params.set('status', status);
+    }
+
+    return this.http.get<OrderSummaryPage>(`${environment.apiUrl}/orders/summary/page`, { params });
   }
 
   getOrderById(orderId: number): Observable<CustomerOrder> {

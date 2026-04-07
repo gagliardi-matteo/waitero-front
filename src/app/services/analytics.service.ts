@@ -7,9 +7,20 @@ import { BenchmarkInsight } from '../models/benchmark-insight.model';
 import { DishPerformance } from '../models/dish-performance.model';
 import { RevenueOpportunity } from '../models/revenue-opportunity.model';
 
+export interface AnalyticsDashboard {
+  overview: AnalyticsOverview;
+  dishPerformance: DishPerformance[];
+  revenueOpportunities: RevenueOpportunity[];
+  benchmarkInsights: BenchmarkInsight[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
   private http = inject(HttpClient);
+
+  getDashboard(): Observable<AnalyticsDashboard> {
+    return this.http.get<AnalyticsDashboard>(`${environment.apiUrl}/analytics/dashboard`);
+  }
 
   getOverview(): Observable<AnalyticsOverview> {
     return this.http.get<AnalyticsOverview>(`${environment.apiUrl}/analytics/overview`);

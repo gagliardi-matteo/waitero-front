@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { Piatto } from '../../models/piatto.model';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { Ristorante } from '../../models/ristorante.mode';
@@ -95,15 +96,22 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.tableId = tableId;
     this.orderService.syncContext(`${this.restaurantId}:${this.tableId}`);
 
-    this.loadPiatti();
-    this.loadCurrentOrder();
-    this.loadCurrentDraft();
-    this.connectTableStream();
+    forkJoin({
+      restaurant: this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`),
+      tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
+    }).subscribe({
+      next: ({ restaurant, tableState }) => {
+        this.ristoranteObj = restaurant;
+        this.orderService.setConfirmedOrder(tableState.currentOrder);
+        this.orderService.setDraft(tableState.draft.items);
+      },
+      error: err => {
+        console.error('Errore caricamento stato menu', err);
+      }
+    });
 
-    this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`)
-      .subscribe(data => {
-        this.ristoranteObj = data;
-      });
+    this.loadPiatti();
+    this.connectTableStream();
   }
 
   ngOnDestroy(): void {
@@ -179,34 +187,20 @@ export class MenuComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadCurrentOrder() {
-    this.customerOrderService.getCurrentOrder(this.token, this.restaurantId, this.tableId)
+  loadCurrentState() {
+    this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
       .subscribe({
-        next: order => this.orderService.setConfirmedOrder(order),
-        error: err => {
-          if (err.status === 404) {
-            this.orderService.setConfirmedOrder(null);
-            return;
-          }
-          console.error('Errore caricamento ordine attivo', err);
-        }
-      });
-  }
-
-  loadCurrentDraft() {
-    this.customerOrderService.getCurrentDraft(this.token, this.restaurantId, this.tableId)
-      .subscribe({
-        next: draft => this.orderService.setDraft(draft.items),
-        error: err => console.error('Errore caricamento bozza tavolo', err)
+        next: state => {
+          this.orderService.setConfirmedOrder(state.currentOrder);
+          this.orderService.setDraft(state.draft.items);
+        },
+        error: err => console.error('Errore caricamento stato tavolo', err)
       });
   }
 
   connectTableStream() {
     this.eventSource = this.customerOrderService.connectToTableStream(this.token, this.restaurantId, this.tableId);
-    this.eventSource?.addEventListener('customer-order-updated', () => {
-      this.loadCurrentDraft();
-      this.loadCurrentOrder();
-    });
+    this.eventSource?.addEventListener('customer-order-updated', () => this.loadCurrentState());
   }
 
   onSearchChange(): void {

@@ -1,9 +1,10 @@
-import { HttpInterceptorFn } from '@angular/common/http';
-import { inject, PLATFORM_ID } from '@angular/core';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { PLATFORM_ID, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
-import { catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
+import { from, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
+import { AuthService } from './AuthService';
 
 const PUBLIC_API_PATTERNS = [
   '/api/auth/',
@@ -25,28 +26,32 @@ function isCustomerRoute(platformId: object): boolean {
 }
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
   const router = inject(Router);
   const platformId = inject(PLATFORM_ID);
-
-  let token: string | null = null;
-
-  if (isPlatformBrowser(platformId)) {
-    token = localStorage.getItem('accessToken');
-  }
 
   const requiresRestaurantAuth = !isPublicApiRequest(req.url);
   const onCustomerRoute = isCustomerRoute(platformId);
 
-  const cloned = token && requiresRestaurantAuth
-    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-    : req;
+  if (!requiresRestaurantAuth) {
+    return next(req);
+  }
 
-  return next(cloned).pipe(
-    catchError(err => {
-      if (!onCustomerRoute && requiresRestaurantAuth && (err.status === 401 || err.status === 403)) {
-        router.navigate(['/login']);
-      }
-      return throwError(() => err);
+  return from(auth.ensureValidAccessToken()).pipe(
+    switchMap(token => {
+      const authorizedReq = token
+        ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+        : req;
+
+      return next(authorizedReq).pipe(
+        catchError((err: HttpErrorResponse) => {
+          if (!onCustomerRoute && (err.status === 401 || err.status === 403)) {
+            auth.logout();
+            void router.navigate(['/login']);
+          }
+          return throwError(() => err);
+        })
+      );
     })
   );
 };

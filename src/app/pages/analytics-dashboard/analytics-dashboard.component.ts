@@ -1,7 +1,6 @@
 import { CommonModule, DecimalPipe, PercentPipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { AnalyticsOverview } from '../../models/analytics-overview.model';
 import { BenchmarkInsight } from '../../models/benchmark-insight.model';
 import { DishPerformance } from '../../models/dish-performance.model';
@@ -33,17 +32,12 @@ export class AnalyticsDashboardComponent implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    forkJoin({
-      overview: this.analyticsService.getOverview(),
-      dishPerformance: this.analyticsService.getDishPerformance(),
-      revenueOpportunities: this.analyticsService.getRevenueOpportunities(),
-      benchmarkInsights: this.analyticsService.getBenchmarkInsights()
-    }).subscribe({
-      next: ({ overview, dishPerformance, revenueOpportunities, benchmarkInsights }) => {
-        this.overview = overview;
-        this.dishPerformance = dishPerformance;
-        this.revenueOpportunities = revenueOpportunities;
-        this.benchmarkInsights = benchmarkInsights;
+    this.analyticsService.getDashboard().subscribe({
+      next: dashboard => {
+        this.overview = dashboard.overview;
+        this.dishPerformance = dashboard.dishPerformance;
+        this.revenueOpportunities = dashboard.revenueOpportunities;
+        this.benchmarkInsights = dashboard.benchmarkInsights;
         this.loading = false;
       },
       error: err => {

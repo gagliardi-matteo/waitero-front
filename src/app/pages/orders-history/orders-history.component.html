@@ -1,0 +1,44 @@
+<div class="content">
+  <div class="page-header">
+    <div>
+      <h1>Storico Ordini</h1>
+      <p>Vista completa e leggera di tutti gli ordini del ristorante.</p>
+    </div>
+  </div>
+
+  <div class="orders-toolbar">
+    <div class="search-field">
+      <input type="text" [ngModel]="searchTerm" (ngModelChange)="onSearchChange($event)" placeholder="Cerca per ID ordine o tavolo..." />
+    </div>
+    <div class="filter-chips">
+      <button type="button" class="chip" *ngFor="let status of statusOptions" [class.active]="selectedStatus === status" (click)="onStatusChange(status)">
+        {{ status === 'ALL' ? 'Tutti' : status }}
+      </button>
+      <button type="button" class="ghost-btn reset-inline" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <div class="orders-toolbar" *ngIf="!isLoading">
+    <div class="row-subtitle">{{ pageLabel }}</div>
+    <div class="filter-chips">
+      <button type="button" class="ghost-btn reset-inline" [disabled]="!hasPrevious" (click)="previousPage()">Precedente</button>
+      <button type="button" class="ghost-btn reset-inline" [disabled]="!hasNext" (click)="nextPage()">Successiva</button>
+    </div>
+  </div>
+
+  <div class="orders-list" *ngIf="orders.length > 0; else emptyTpl">
+    <button class="order-row muted" *ngFor="let order of orders; trackBy: trackOrder" (click)="openOrder(order)">
+      <div class="row-main">
+        <div class="row-title">Ordine #{{ order.id }}</div>
+        <div class="row-subtitle">Tavolo {{ order.tableId }} - {{ order.itemCount }} articoli</div>
+      </div>
+      <div class="row-status">{{ order.status }}</div>
+      <div class="row-total">{{ order.totale | number: '1.2-2' }} &euro;</div>
+      <div class="row-time">{{ (order.paidAt || order.updatedAt) | date: 'dd/MM HH:mm' }}</div>
+    </button>
+  </div>
+
+  <ng-template #emptyTpl>
+    <div class="empty-state" *ngIf="!isLoading">Nessun ordine trovato.</div>
+  </ng-template>
+</div>

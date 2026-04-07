@@ -8,7 +8,12 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent) },
   {
     path: 'orders',
-    loadComponent: () => import('./pages/orders/orders.component').then(m => m.OrdersComponent),
+    loadComponent: () => import('./pages/orders-active/orders-active.component').then(m => m.OrdersActiveComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'orders-history',
+    loadComponent: () => import('./pages/orders-history/orders-history.component').then(m => m.OrdersHistoryComponent),
     canActivate: [authGuard]
   },
   {

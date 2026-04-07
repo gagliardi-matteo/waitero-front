@@ -25,11 +25,13 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private ordersService = inject(RestaurantOrderService);
   private eventSource: EventSource | null = null;
   private orderId = 0;
+  private returnTo: 'active' | 'history' = 'active';
 
   ngOnInit(): void {
     this.orderId = Number(this.route.snapshot.paramMap.get('id'));
+    this.returnTo = this.route.snapshot.queryParamMap.get('from') === 'history' ? 'history' : 'active';
     if (!this.orderId) {
-      this.router.navigate(['/orders']);
+      this.navigateBack();
       return;
     }
 
@@ -59,7 +61,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       error: err => {
         console.error('Errore caricamento dettaglio ordine', err);
         this.isLoading = false;
-        this.router.navigate(['/orders']);
+        this.navigateBack();
       }
     });
   }
@@ -146,7 +148,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
-    this.router.navigate(['/orders']);
+    this.navigateBack();
+  }
+
+  private navigateBack(): void {
+    this.router.navigate([this.returnTo === 'history' ? '/orders-history' : '/orders']);
   }
 
   private syncSelectionWithOrder(order: CustomerOrder): void {

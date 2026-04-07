@@ -1,8 +1,12 @@
-import { Component, ElementRef, inject, AfterViewInit, PLATFORM_ID } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, PLATFORM_ID, ViewChild, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { AuthService } from '../auth/AuthService';
 
-declare const google: any;
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 @Component({
   selector: 'app-login',
@@ -28,8 +32,15 @@ declare const google: any;
       <section class="login-card">
         <span class="eyebrow">Backoffice ristorante</span>
         <h1>Accedi a WaiterO</h1>
-        <p>Gestisci menu, tavoli, ordini e pagamenti da un pannello unico.</p>
-        <div id="g_id_signin"></div>
+        <p>Accesso riservato al ristoratore. I clienti non usano login Google.</p>
+
+        <div class="login-actions">
+          <div #googleButtonHost class="google-host" [class.is-hidden]="buttonReady"></div>
+          <button type="button" class="google-fallback" *ngIf="loadingButton" disabled>Caricamento accesso Google...</button>
+          <button type="button" class="google-fallback" *ngIf="loadError" (click)="retryRender()">Riprova</button>
+        </div>
+
+        <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
       </section>
     </div>
   `,
@@ -137,9 +148,34 @@ declare const google: any;
       color: var(--text-muted);
     }
 
-    #g_id_signin {
+    .login-actions {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .google-host {
       display: flex;
       justify-content: flex-start;
+      min-height: 44px;
+    }
+
+    .google-host.is-hidden {
+      min-height: 0;
+    }
+
+    .google-fallback {
+      min-height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      font: inherit;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .error {
+      margin-top: 1rem;
+      color: #b42318;
     }
 
     @media (max-width: 980px) {
@@ -155,37 +191,119 @@ declare const google: any;
         text-align: center;
       }
 
-      #g_id_signin {
+      .google-host {
         justify-content: center;
       }
     }
   `]
 })
 export class LoginComponent implements AfterViewInit {
+  @ViewChild('googleButtonHost', { static: true }) private googleButtonHost?: ElementRef<HTMLDivElement>;
+
   private auth = inject(AuthService);
-  private elementRef = inject(ElementRef);
   private platformId = inject(PLATFORM_ID);
+  loadingButton = true;
+  buttonReady = false;
+  loadError = false;
+  errorMessage = '';
 
   ngAfterViewInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
+    void this.renderGoogleButton();
+  }
+
+  retryRender(): void {
+    this.loadingButton = true;
+    this.buttonReady = false;
+    this.loadError = false;
+    this.errorMessage = '';
+    void this.renderGoogleButton(true);
+  }
+
+  private async renderGoogleButton(forceReload = false): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const host = this.googleButtonHost?.nativeElement;
+    if (!host) {
+      this.loadingButton = false;
+      this.loadError = true;
+      return;
+    }
+
+    try {
+      const google = await this.loadGoogleIdentityScript(forceReload);
+      host.innerHTML = '';
       google.accounts.id.initialize({
         client_id: '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com',
-        callback: (response: any) => this.handleCredentialResponse(response)
+        callback: (response: { credential?: string }) => this.handleCredentialResponse(response),
+        auto_select: false,
+        cancel_on_tap_outside: true
       });
-
-      google.accounts.id.renderButton(
-        this.elementRef.nativeElement.querySelector('#g_id_signin'),
-        {
-          theme: 'outline',
-          size: 'large',
-          width: 280
-        }
-      );
+      google.accounts.id.disableAutoSelect();
+      google.accounts.id.renderButton(host, {
+        theme: 'outline',
+        size: 'large',
+        width: 280,
+        text: 'continue_with',
+        shape: 'pill'
+      });
+      this.loadingButton = false;
+      this.buttonReady = true;
+      this.loadError = false;
+    } catch (err) {
+      console.error('Errore caricamento Google Identity', err);
+      this.loadingButton = false;
+      this.buttonReady = false;
+      this.loadError = true;
+      this.errorMessage = 'Impossibile caricare il pulsante Google. Riprova.';
     }
   }
 
-  handleCredentialResponse(response: any) {
+  private handleCredentialResponse(response: { credential?: string }): void {
     const idToken = response.credential;
-    this.auth.loginWithGoogleIdToken(idToken);
+    if (!idToken) {
+      this.errorMessage = 'Token Google non valido.';
+      return;
+    }
+
+    this.errorMessage = '';
+    void this.auth.loginWithGoogleIdToken(idToken).catch(err => {
+      console.error('Errore login Google', err);
+      this.errorMessage = err?.error?.message ?? 'Accesso non autorizzato.';
+    });
+  }
+
+  private loadGoogleIdentityScript(forceReload: boolean): Promise<any> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return Promise.reject(new Error('Google Identity non disponibile lato server'));
+    }
+
+    if (!forceReload && window.google?.accounts?.id) {
+      return Promise.resolve(window.google);
+    }
+
+    return new Promise((resolve, reject) => {
+      if (forceReload) {
+        const existing = document.querySelector('script[data-google-identity="true"]');
+        existing?.remove();
+      }
+
+      const existingScript = document.querySelector('script[data-google-identity="true"]') as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(window.google), { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Google Identity script load failed')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.dataset['googleIdentity'] = 'true';
+      script.onload = () => resolve(window.google);
+      script.onerror = () => reject(new Error('Google Identity script load failed'));
+      document.head.appendChild(script);
+    });
   }
 }

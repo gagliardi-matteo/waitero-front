@@ -18,6 +18,11 @@ interface SubmitOrderPayload {
   }>;
 }
 
+export interface CustomerOrderState {
+  currentOrder: CustomerOrder | null;
+  draft: CustomerDraft;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomerOrderService {
   private http = inject(HttpClient);
@@ -41,6 +46,16 @@ export class CustomerOrderService {
       .set('tableId', tableId));
 
     return this.http.get<CustomerDraft>(`${environment.apiUrl}/customer/orders/draft`, { params })
+      .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
+  }
+
+  getCurrentState(token: string, restaurantId: string, tableId: string): Observable<CustomerOrderState> {
+    const params = this.withAccessMetadata(new HttpParams()
+      .set('token', token)
+      .set('restaurantId', restaurantId)
+      .set('tableId', tableId));
+
+    return this.http.get<CustomerOrderState>(`${environment.apiUrl}/customer/orders/state`, { params })
       .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 

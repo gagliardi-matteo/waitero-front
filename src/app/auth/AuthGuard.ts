@@ -6,12 +6,14 @@ export const authGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (!auth.isAuthenticated()) {
-    if (!(state.url === '/menu' || state.url.startsWith('/menu/'))) {
-      router.navigate(['/login']);
+  return auth.ensureValidAccessToken().then(token => {
+    if (!token) {
+      if (!(state.url === '/menu' || state.url.startsWith('/menu/'))) {
+        void router.navigate(['/login']);
+      }
+      return false;
     }
-    return false;
-  }
 
-  return true;
+    return true;
+  });
 };

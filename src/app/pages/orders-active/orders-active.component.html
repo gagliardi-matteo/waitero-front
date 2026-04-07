@@ -1,0 +1,35 @@
+<div class="content">
+  <div class="page-header">
+    <div>
+      <h1>Ordini Attivi</h1>
+      <p>Visualizza solo gli ordini aperti o parzialmente pagati.</p>
+    </div>
+  </div>
+
+  <div class="orders-toolbar">
+    <div class="search-field">
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Cerca per ID ordine o tavolo..." />
+    </div>
+    <div class="filter-chips">
+      <button type="button" class="chip" [class.active]="selectedStatus === 'ALL'" (click)="selectedStatus = 'ALL'">Tutti</button>
+      <button type="button" class="chip" *ngFor="let status of availableStatuses" [class.active]="selectedStatus === status" (click)="selectedStatus = status">{{ status }}</button>
+      <button type="button" class="ghost-btn reset-inline" (click)="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <div class="orders-list" *ngIf="filteredOrders.length > 0; else emptyTpl">
+    <button class="order-row" *ngFor="let order of filteredOrders; trackBy: trackOrder" (click)="openOrder(order)">
+      <div class="row-main">
+        <div class="row-title">Ordine #{{ order.id }}</div>
+        <div class="row-subtitle">Tavolo {{ order.tableId }} - {{ order.itemCount }} articoli</div>
+      </div>
+      <div class="row-status">{{ order.status }}</div>
+      <div class="row-total">{{ order.totale | number: '1.2-2' }} &euro;</div>
+      <div class="row-time">{{ order.updatedAt | date: 'dd/MM HH:mm' }}</div>
+    </button>
+  </div>
+
+  <ng-template #emptyTpl>
+    <div class="empty-state" *ngIf="!isLoading">Nessun ordine attivo trovato.</div>
+  </ng-template>
+</div>

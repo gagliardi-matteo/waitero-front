@@ -2,20 +2,18 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
-import { CustomerOrder } from '../../models/customer-order.model';
+import { OrderSummary } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 
 @Component({
-  selector: 'app-orders',
+  selector: 'app-orders-active',
   standalone: true,
   imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule],
-  templateUrl: './orders.component.html',
-  styleUrl: './orders.component.scss'
+  templateUrl: './orders-active.component.html',
+  styleUrl: '../orders/orders.component.scss'
 })
-export class OrdersComponent implements OnInit, OnDestroy {
-  activeOrders: CustomerOrder[] = [];
-  historyOrders: CustomerOrder[] = [];
+export class OrdersActiveComponent implements OnInit, OnDestroy {
+  orders: OrderSummary[] = [];
   isLoading = true;
   searchTerm = '';
   selectedStatus = 'ALL';
@@ -34,17 +32,12 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.eventSource?.close();
   }
 
-  get filteredActiveOrders(): CustomerOrder[] {
-    return this.activeOrders.filter(order => this.matchesFilters(order));
-  }
-
-  get filteredHistoryOrders(): CustomerOrder[] {
-    return this.historyOrders.filter(order => this.matchesFilters(order));
+  get filteredOrders(): OrderSummary[] {
+    return this.orders.filter(order => this.matchesFilters(order));
   }
 
   get availableStatuses(): string[] {
-    return Array.from(new Set([...this.activeOrders, ...this.historyOrders].map(order => order.status)))
-      .sort((a, b) => a.localeCompare(b));
+    return Array.from(new Set(this.orders.map(order => order.status))).sort((a, b) => a.localeCompare(b));
   }
 
   loadOrders(markLoading = true): void {
@@ -52,28 +45,20 @@ export class OrdersComponent implements OnInit, OnDestroy {
       this.isLoading = true;
     }
 
-    forkJoin({
-      activeOrders: this.ordersService.getActiveOrders(),
-      historyOrders: this.ordersService.getHistoryOrders()
-    }).subscribe({
-      next: ({ activeOrders, historyOrders }) => {
-        this.activeOrders = activeOrders;
-        this.historyOrders = historyOrders;
+    this.ordersService.getActiveOrderSummaries().subscribe({
+      next: orders => {
+        this.orders = orders;
         this.isLoading = false;
       },
       error: err => {
-        console.error('Errore caricamento ordini', err);
+        console.error('Errore caricamento ordini attivi', err);
         this.isLoading = false;
       }
     });
   }
 
-  getItemCount(order: CustomerOrder): number {
-    return order.items.reduce((acc, item) => acc + item.quantita, 0);
-  }
-
-  openOrder(order: CustomerOrder) {
-    this.router.navigate(['/orders', order.id]);
+  openOrder(order: OrderSummary): void {
+    this.router.navigate(['/orders', order.id], { queryParams: { from: 'active' } });
   }
 
   resetFilters(): void {
@@ -81,11 +66,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.selectedStatus = 'ALL';
   }
 
-  trackOrder(index: number, order: CustomerOrder): number {
+  trackOrder(index: number, order: OrderSummary): number {
     return order.id;
   }
 
-  private matchesFilters(order: CustomerOrder): boolean {
+  private matchesFilters(order: OrderSummary): boolean {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
     const matchesSearch = normalizedSearch.length === 0
       || order.id.toString().includes(normalizedSearch)
