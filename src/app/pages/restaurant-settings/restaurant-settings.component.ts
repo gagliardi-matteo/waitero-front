@@ -1,13 +1,10 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, from, of, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, RestaurantSettingsService } from '../../services/restaurant-settings.service';
-import { environment } from '../../../environments/environment';
-
-declare const google: any;
 
 type DuplicateMode = 'slot' | 'day';
 
@@ -35,8 +32,6 @@ export class RestaurantSettingsComponent {
   private settingsService = inject(RestaurantSettingsService);
   private sanitizer = inject(DomSanitizer);
   private destroyRef = inject(DestroyRef);
-  private platformId = inject(PLATFORM_ID);
-  private googlePlacesReady: Promise<void> | null = null;
 
   readonly weekdays = [
     { value: 'MONDAY', label: 'Lunedi' },
@@ -315,7 +310,7 @@ export class RestaurantSettingsComponent {
           return of([]);
         }
         this.searchingAddress = true;
-        return from(this.searchAddressWithGoogle(query, this.form.controls.city.value));
+        return this.settingsService.searchAddress(query, this.form.controls.city.value);
       }),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
@@ -324,113 +319,12 @@ export class RestaurantSettingsComponent {
         this.searchingAddress = false;
       },
       error: err => {
-        console.error('Errore ricerca indirizzi Google', err);
+        console.error('Errore ricerca indirizzi', err);
         this.addressSuggestions = [];
         this.searchingAddress = false;
+        this.errorMessage = 'Ricerca indirizzo non disponibile in questo momento.';
       }
     });
-  }
-
-  private async searchAddressWithGoogle(query: string, city?: string): Promise<AddressSuggestion[]> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return [];
-    }
-
-    await this.ensureGooglePlacesLoaded();
-    const input = city && city.trim() ? `${query}, ${city.trim()}` : query;
-    const predictions = await this.fetchPredictions(input);
-    const suggestions = await Promise.all(predictions.slice(0, 5).map(prediction => this.fetchSuggestionDetails(prediction)));
-
-    return suggestions
-      .filter((suggestion): suggestion is AddressSuggestion => !!suggestion)
-      .sort((left, right) => Number(right.hasStreetNumber) - Number(left.hasStreetNumber));
-  }
-
-  private ensureGooglePlacesLoaded(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return Promise.resolve();
-    }
-    if (this.googlePlacesReady) {
-      return this.googlePlacesReady;
-    }
-    if ((window as any).google?.maps?.places) {
-      this.googlePlacesReady = Promise.resolve();
-      return this.googlePlacesReady;
-    }
-    if (!environment.googleMapsApiKey) {
-      this.googlePlacesReady = Promise.reject(new Error('Google Maps API key is missing'));
-      return this.googlePlacesReady;
-    }
-
-    this.googlePlacesReady = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(environment.googleMapsApiKey)}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Google Maps script load failed'));
-      document.head.appendChild(script);
-    });
-
-    return this.googlePlacesReady;
-  }
-
-  private fetchPredictions(input: string): Promise<any[]> {
-    return new Promise(resolve => {
-      const service = new google.maps.places.AutocompleteService();
-      service.getPlacePredictions(
-        {
-          input,
-          componentRestrictions: { country: 'it' },
-          types: ['address']
-        },
-        (predictions: any[] | null, status: string) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
-            resolve([]);
-            return;
-          }
-          resolve(predictions);
-        }
-      );
-    });
-  }
-
-  private fetchSuggestionDetails(prediction: any): Promise<AddressSuggestion | null> {
-    return new Promise(resolve => {
-      const service = new google.maps.places.PlacesService(document.createElement('div'));
-      service.getDetails(
-        {
-          placeId: prediction.place_id,
-          fields: ['address_components', 'formatted_address', 'geometry']
-        },
-        (place: any, status: string) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !place?.geometry?.location) {
-            resolve(null);
-            return;
-          }
-
-          const route = this.googleAddressComponent(place.address_components, 'route');
-          const streetNumber = this.googleAddressComponent(place.address_components, 'street_number');
-          const city = this.googleAddressComponent(place.address_components, 'locality')
-            ?? this.googleAddressComponent(place.address_components, 'administrative_area_level_3')
-            ?? this.googleAddressComponent(place.address_components, 'administrative_area_level_2');
-
-          resolve({
-            address: route && streetNumber ? `${route}, ${streetNumber}` : route ?? prediction.description,
-            city: city ?? null,
-            formattedAddress: place.formatted_address ?? prediction.description,
-            latitude: place.geometry.location.lat(),
-            longitude: place.geometry.location.lng(),
-            hasStreetNumber: !!streetNumber
-          });
-        }
-      );
-    });
-  }
-
-  private googleAddressComponent(components: any[] | undefined, type: string): string | null {
-    const component = components?.find(item => item.types?.includes(type));
-    return component?.long_name ?? null;
   }
 
   private bestAddressValue(suggestion: AddressSuggestion): string {
