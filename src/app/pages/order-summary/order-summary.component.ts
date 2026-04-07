@@ -1,4 +1,4 @@
-import { Component, DoCheck, Input, OnInit, inject } from '@angular/core';
+import { Component, DoCheck, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,7 +15,7 @@ import { TrackingService } from '../../services/tracking.service';
   templateUrl: './order-summary.component.html',
   styleUrls: ['./order-summary.component.scss']
 })
-export class OrderSummaryComponent implements OnInit, DoCheck {
+export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   @Input() piatti: Piatto[] = [];
 
   isExpanded = false;
@@ -28,6 +28,8 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
   private customerOrderService = inject(CustomerOrderService);
   private trackingService = inject(TrackingService);
   private lastCartSignature = '';
+  private lastUpsellRequestSignature = '';
+  private upsellRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     this.refreshCartUpsellSuggestions();
@@ -37,7 +39,14 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
     const signature = this.buildCartSignature();
     if (signature !== this.lastCartSignature) {
       this.lastCartSignature = signature;
-      this.refreshCartUpsellSuggestions();
+      this.scheduleCartUpsellRefresh();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.upsellRefreshTimer) {
+      clearTimeout(this.upsellRefreshTimer);
+      this.upsellRefreshTimer = null;
     }
   }
 
@@ -212,8 +221,15 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
     const dishIds = this.getCartDishIds();
     if (!restaurantId || dishIds.length === 0) {
       this.cartUpsellSuggestions = [];
+      this.lastUpsellRequestSignature = '';
       return;
     }
+
+    const requestSignature = `${restaurantId}:${dishIds.sort((left, right) => left - right).join(',')}`;
+    if (requestSignature === this.lastUpsellRequestSignature) {
+      return;
+    }
+    this.lastUpsellRequestSignature = requestSignature;
 
     this.customerOrderService.getCartUpsellSuggestions(dishIds, restaurantId)
       .subscribe({
@@ -228,6 +244,17 @@ export class OrderSummaryComponent implements OnInit, DoCheck {
           this.cartUpsellSuggestions = [];
         }
       });
+  }
+
+  private scheduleCartUpsellRefresh(): void {
+    if (this.upsellRefreshTimer) {
+      clearTimeout(this.upsellRefreshTimer);
+    }
+
+    this.upsellRefreshTimer = setTimeout(() => {
+      this.upsellRefreshTimer = null;
+      this.refreshCartUpsellSuggestions();
+    }, 120);
   }
 
   private getCartDishIds(): number[] {
