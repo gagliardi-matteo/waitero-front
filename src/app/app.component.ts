@@ -23,4 +23,9 @@ export class AppComponent {
     const url = this.router.url.toLowerCase();
     return this.isLoggedIn() && !(url === '/menu' || url.startsWith('/menu/'));
   }
+
+  isCustomerMenuRoute(): boolean {
+    const url = this.router.url.toLowerCase();
+    return url === '/menu' || url.startsWith('/menu/');
+  }
 }

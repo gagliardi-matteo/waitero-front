@@ -1,7 +1,8 @@
 <div class="layout">
   <app-sidebar *ngIf="showSidebar()"></app-sidebar>
 
-  <div class="content" [class.with-sidebar]="showSidebar()">
+  <div class="content" [class.with-sidebar]="showSidebar()" [class.content--customer-menu]="isCustomerMenuRoute()">
     <router-outlet></router-outlet>
   </div>
 </div>
+
