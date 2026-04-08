@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { OrderSummary } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-orders-active',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule],
+  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, BrandLoaderComponent],
   templateUrl: './orders-active.component.html',
   styleUrl: '../orders/orders.component.scss'
 })
@@ -81,3 +82,5 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
     return matchesSearch && matchesStatus;
   }
 }
+
+

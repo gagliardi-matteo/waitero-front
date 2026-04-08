@@ -4,11 +4,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import QRCode from 'qrcode';
 import { RestaurantTable, RestaurantTablePayload } from '../../models/table.model';
 import { TableService } from '../../services/table.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-tables-management',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BrandLoaderComponent],
   templateUrl: './tables-management.component.html',
   styleUrl: './tables-management.component.scss'
 })
@@ -363,3 +364,5 @@ export class TablesManagementComponent {
     return isPlatformBrowser(this.platformId);
   }
 }
+
+

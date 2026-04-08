@@ -26,6 +26,12 @@
     </div>
   </div>
 
+  <app-brand-loader
+    *ngIf="isLoading"
+    label="Caricamento storico ordini"
+    hint="Recupero risultati e paginazione"
+  />
+
   <div class="orders-list" *ngIf="orders.length > 0; else emptyTpl">
     <button class="order-row muted" *ngFor="let order of orders; trackBy: trackOrder" (click)="openOrder(order)">
       <div class="row-main">
@@ -42,3 +48,4 @@
     <div class="empty-state" *ngIf="!isLoading">Nessun ordine trovato.</div>
   </ng-template>
 </div>
+

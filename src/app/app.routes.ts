@@ -83,3 +83,5 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/menu/menu.component').then(m => m.MenuComponent)
   }
 ];
+
+

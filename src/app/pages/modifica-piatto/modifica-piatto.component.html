@@ -1,5 +1,11 @@
 <div class="dish-form-page">
-  <div class="dish-form-card">
+  <app-brand-loader
+    *ngIf="loading"
+    label="Caricamento piatto"
+    hint="Recupero dettagli, allergeni e asset"
+  />
+
+  <div class="dish-form-card" *ngIf="!loading">
     <div class="form-header">
       <div>
         <span class="eyebrow">Menu Management</span>
@@ -101,3 +107,5 @@
     </form>
   </div>
 </div>
+
+

@@ -17,6 +17,12 @@
     </div>
   </div>
 
+  <app-brand-loader
+    *ngIf="isLoading"
+    label="Caricamento ordini attivi"
+    hint="Sincronizzazione in corso"
+  />
+
   <div class="orders-list" *ngIf="filteredOrders.length > 0; else emptyTpl">
     <button class="order-row" *ngFor="let order of filteredOrders; trackBy: trackOrder" (click)="openOrder(order)">
       <div class="row-main">
@@ -33,3 +39,4 @@
     <div class="empty-state" *ngIf="!isLoading">Nessun ordine attivo trovato.</div>
   </ng-template>
 </div>
+

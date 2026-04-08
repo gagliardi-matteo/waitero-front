@@ -6,11 +6,12 @@ import { BenchmarkInsight } from '../../models/benchmark-insight.model';
 import { DishPerformance } from '../../models/dish-performance.model';
 import { RevenueOpportunity } from '../../models/revenue-opportunity.model';
 import { AnalyticsService } from '../../services/analytics.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-analytics-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, DecimalPipe, PercentPipe, NgIf, NgFor],
+  imports: [CommonModule, RouterModule, DecimalPipe, PercentPipe, NgIf, NgFor, BrandLoaderComponent],
   templateUrl: './analytics-dashboard.component.html',
   styleUrl: './analytics-dashboard.component.scss'
 })
@@ -168,3 +169,5 @@ export class AnalyticsDashboardComponent implements OnInit {
     return insight.dishId;
   }
 }
+
+

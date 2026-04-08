@@ -11,7 +11,13 @@
   </div>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
-  <div class="loading-card" *ngIf="loading">Caricamento metriche in corso...</div>
+  <div class="loading-card" *ngIf="loading">
+    <app-brand-loader
+      [compact]="true"
+      label="Caricamento analytics"
+      hint="Elaborazione metriche del locale"
+    />
+  </div>
 
   <ng-container *ngIf="!loading && overview as data">
     <div class="kpi-row">
@@ -100,3 +106,4 @@
     </section>
   </ng-container>
 </div>
+

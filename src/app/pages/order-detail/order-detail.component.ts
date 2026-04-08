@@ -1,14 +1,15 @@
-﻿import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CustomerOrder, CustomerOrderItem } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule],
+  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, BrandLoaderComponent],
   templateUrl: './order-detail.component.html',
   styleUrl: './order-detail.component.scss'
 })
@@ -168,3 +169,5 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     return value.length > 0 ? value : undefined;
   }
 }
+
+

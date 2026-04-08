@@ -8,6 +8,12 @@
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
+  <app-brand-loader
+    *ngIf="loading"
+    label="Preparazione comanda"
+    hint="Caricamento tavoli e menu"
+  />
+
   <div class="command-layout" *ngIf="!loading">
     <div class="command-main">
       <div>
@@ -83,3 +89,4 @@
     </aside>
   </div>
 </div>
+

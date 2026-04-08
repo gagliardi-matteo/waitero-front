@@ -10,11 +10,12 @@ import { RestaurantTable } from '../../models/table.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { TableService } from '../../services/table.service';
 import { environment } from '../../../environments/environment';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-waiter-order',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, NgIf, NgFor, DecimalPipe],
+  imports: [CommonModule, RouterModule, FormsModule, NgIf, NgFor, DecimalPipe, BrandLoaderComponent],
   templateUrl: './waiter-order.component.html',
   styleUrl: './waiter-order.component.scss'
 })
@@ -157,3 +158,5 @@ export class WaiterOrderComponent implements OnInit {
     return dish.id;
   }
 }
+
+

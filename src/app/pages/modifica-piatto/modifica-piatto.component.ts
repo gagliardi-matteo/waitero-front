@@ -7,11 +7,12 @@ import { Piatto } from '../../models/piatto.model';
 import { CategoriaEnum } from '../../models/categorie.enum';
 import { environment } from '../../../environments/environment';
 import { STANDARD_ALLERGENS, buildStoredAllergens, splitStoredAllergens } from '../../shared/allergens';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-modifica-piatto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BrandLoaderComponent],
   templateUrl: './modifica-piatto.component.html',
   styleUrl: './modifica-piatto.component.scss',
 })
@@ -162,3 +163,5 @@ export class ModificaPiattoComponent implements OnInit {
     this.form.patchValue({ allergeni }, { emitEvent: false });
   }
 }
+
+

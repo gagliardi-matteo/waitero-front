@@ -1,3 +1,10 @@
+<div class="content" *ngIf="isLoading">
+  <app-brand-loader
+    label="Caricamento dettaglio ordine"
+    hint="Recupero dati di pagamento e articoli"
+  />
+</div>
+
 <div class="content" *ngIf="order as currentOrder">
   <div class="detail-topbar">
     <button class="back-button" (click)="goBack()">&larr; Torna agli ordini</button>
@@ -144,3 +151,4 @@
     </section>
   </div>
 </div>
+

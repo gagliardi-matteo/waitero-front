@@ -6,6 +6,7 @@ import { CustomerOrder } from '../../models/customer-order.model';
 import { RestaurantTable } from '../../models/table.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { TableService } from '../../services/table.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 interface TableDashboardCard {
   table: RestaurantTable;
@@ -21,7 +22,7 @@ type TableDashboardFilter = 'ALL' | 'OPEN' | 'PARTIAL' | 'FREE' | 'INACTIVE';
 @Component({
   selector: 'app-tables-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgIf, NgFor, DecimalPipe, DatePipe],
+  imports: [CommonModule, RouterModule, NgIf, NgFor, DecimalPipe, DatePipe, BrandLoaderComponent],
   templateUrl: './tables-dashboard.component.html',
   styleUrl: './tables-dashboard.component.scss'
 })
@@ -177,3 +178,5 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return activeOrder.status === 'PARZIALMENTE_PAGATO' ? 'PARTIAL' : 'OPEN';
   }
 }
+
+

@@ -5,11 +5,12 @@ import { Router, RouterModule } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { OrderSummary } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-orders-history',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule],
+  imports: [CommonModule, RouterModule, NgIf, NgFor, DatePipe, DecimalPipe, FormsModule, BrandLoaderComponent],
   templateUrl: './orders-history.component.html',
   styleUrl: '../orders/orders.component.scss'
 })
@@ -125,3 +126,5 @@ export class OrdersHistoryComponent implements OnInit, OnDestroy {
     return order.id;
   }
 }
+
+

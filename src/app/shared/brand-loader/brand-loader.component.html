@@ -1,0 +1,21 @@
+<div class="loader-shell" [class.loader-shell--compact]="compact" role="status" [attr.aria-label]="label">
+  <div class="loader-mark" aria-hidden="true">
+    <svg class="loader-mark__svg" viewBox="0 0 403 202" xmlns="http://www.w3.org/2000/svg">
+      <path
+        class="loader-mark__path loader-mark__path--left"
+        pathLength="100"
+        d="M149.401 200.852L0.400955 0.851898L157.901 158.852L224.401 100.852H244.401L150.401 200.852H149.401Z"
+      />
+      <path
+        class="loader-mark__path loader-mark__path--right"
+        pathLength="100"
+        d="M254.401 200.852L402.401 0.351898L242.901 161.352L218.401 143.352L206.901 154.852L253.401 200.852H254.401Z"
+      />
+    </svg>
+  </div>
+
+  <div class="loader-copy">
+    <strong>{{ label }}</strong>
+    <span *ngIf="hint">{{ hint }}</span>
+  </div>
+</div>

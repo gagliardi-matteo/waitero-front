@@ -9,6 +9,12 @@
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
   <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
 
+  <app-brand-loader
+    *ngIf="loading"
+    label="Caricamento impostazioni"
+    hint="Recupero profilo locale e orari"
+  />
+
   <div class="settings-layout" *ngIf="!loading">
     <section class="settings-card">
       <form [formGroup]="form" (ngSubmit)="submit()">
@@ -141,3 +147,4 @@
     </aside>
   </div>
 </div>
+

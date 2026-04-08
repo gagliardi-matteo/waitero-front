@@ -1,0 +1,146 @@
+:host {
+  display: block;
+  color: currentColor;
+}
+
+.loader-shell {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  width: min(100%, 26rem);
+  margin: 0 auto;
+  padding: 1.4rem 1rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.loader-shell--compact {
+  width: auto;
+  padding: 0.85rem 0.75rem;
+  gap: 0.7rem;
+}
+
+.loader-mark {
+  display: grid;
+  place-items: center;
+  width: clamp(88px, 16vw, 128px);
+  aspect-ratio: 403 / 202;
+  color: currentColor;
+}
+
+.loader-shell--compact .loader-mark {
+  width: clamp(74px, 12vw, 104px);
+}
+
+.loader-mark__svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: brand-loader-pulse 1.88s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.loader-mark__path {
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  will-change: stroke-dashoffset, fill-opacity;
+  animation:
+    brand-loader-draw 1.88s cubic-bezier(0.22, 1, 0.36, 1) infinite,
+    brand-loader-fill 1.88s ease-out infinite;
+}
+
+.loader-mark__path--right {
+  animation-delay: 0.12s, 0.12s;
+}
+
+.loader-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.loader-copy strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.loader-copy span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+@keyframes brand-loader-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+
+  38%,
+  72% {
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes brand-loader-fill {
+  0%,
+  42% {
+    fill-opacity: 0;
+  }
+
+  52%,
+  88% {
+    fill-opacity: 1;
+  }
+
+  100% {
+    fill-opacity: 0;
+  }
+}
+
+@keyframes brand-loader-pulse {
+  0%,
+  42% {
+    transform: scale(0.985);
+    opacity: 0.92;
+  }
+
+  54%,
+  78% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  88% {
+    transform: scale(1.018);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.985);
+    opacity: 0.92;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-mark__svg,
+  .loader-mark__path {
+    animation: none;
+  }
+
+  .loader-mark__path {
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+}

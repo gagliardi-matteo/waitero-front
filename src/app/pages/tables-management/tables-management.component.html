@@ -35,6 +35,12 @@
     </form>
   </div>
 
+  <app-brand-loader
+    *ngIf="loading"
+    label="Caricamento tavoli"
+    hint="Sincronizzazione configurazione e QR"
+  />
+
   <div class="tables-table-shell" *ngIf="tables.length > 0; else noTablesTpl">
     <table class="tables-table">
       <thead>
@@ -73,3 +79,4 @@
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 </div>
+

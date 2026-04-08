@@ -25,6 +25,12 @@
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
+  <app-brand-loader
+    *ngIf="loading"
+    label="Caricamento sala live"
+    hint="Aggiornamento stato tavoli"
+  />
+
   <div class="dashboard-grid" *ngIf="filteredCards.length > 0; else emptyTpl">
     <article class="table-tile" *ngFor="let card of filteredCards; trackBy: trackByTable">
       <div class="tile-top">
@@ -58,3 +64,4 @@
     <div class="empty-state" *ngIf="!loading">Nessun tavolo corrisponde al filtro selezionato.</div>
   </ng-template>
 </div>
+

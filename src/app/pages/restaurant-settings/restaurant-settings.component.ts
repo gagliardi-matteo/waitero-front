@@ -5,13 +5,14 @@ import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, RestaurantSettingsService } from '../../services/restaurant-settings.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 type DuplicateMode = 'slot' | 'day';
 
 @Component({
   selector: 'app-restaurant-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, BrandLoaderComponent],
   templateUrl: './restaurant-settings.component.html',
   styleUrl: './restaurant-settings.component.scss'
 })
@@ -395,4 +396,6 @@ export class RestaurantSettingsComponent {
     });
   }
 }
+
+
 
