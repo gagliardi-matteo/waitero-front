@@ -53,6 +53,7 @@ html {
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(216, 122, 44, 0.14), transparent 28%),
     radial-gradient(circle at top right, rgba(36, 39, 47, 0.06), transparent 24%),
@@ -241,3 +242,4 @@ h1.page-title {
     font-size: 0.8rem;
   }
 }
+

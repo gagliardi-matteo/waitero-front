@@ -7,7 +7,7 @@
 .content {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .with-sidebar {
@@ -23,3 +23,5 @@
     margin-left: 0;
   }
 }
+
+

@@ -16,11 +16,12 @@ import { splitStoredAllergens } from '../../shared/allergens';
 import { byScoreDesc, rankDishes } from '../../shared/menu-ranking';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 @Component({
   selector: 'app-menu',
   standalone: true,
-  imports: [CommonModule, FormsModule, OrderSummaryComponent, NgFor, NgIf],
+  imports: [CommonModule, FormsModule, OrderSummaryComponent, NgFor, NgIf, BrandLoaderComponent],
   templateUrl: './menu.component.html',
   styleUrls: ['./menu.component.scss']
 })
@@ -33,9 +34,11 @@ export class MenuComponent implements OnInit, OnDestroy {
   token!: string;
   searchTerm = '';
   selectedCategory = 'ALL';
+  activeVisibleCategory = '';
   errorMessage = '';
   recommendedDishes: Piatto[] = [];
   recommendedExpanded = true;
+  loading = true;
   private eventSource: EventSource | null = null;
   private enteredAt = Date.now();
   private lastScrollBucket = 0;
@@ -86,6 +89,7 @@ export class MenuComponent implements OnInit, OnDestroy {
         return;
       }
 
+      this.loading = false;
       this.errorMessage = 'Accesso tavolo non disponibile. Scansiona di nuovo il QR del tavolo.';
       return;
     }
@@ -98,20 +102,28 @@ export class MenuComponent implements OnInit, OnDestroy {
 
     forkJoin({
       restaurant: this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`),
-      tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
+      tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId),
+      menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}`)
     }).subscribe({
-      next: ({ restaurant, tableState }) => {
+      next: ({ restaurant, tableState, menu }) => {
+        this.errorMessage = '';
         this.ristoranteObj = restaurant;
         this.orderService.setConfirmedOrder(tableState.currentOrder);
         this.orderService.setDraft(tableState.draft.items);
+        this.applyMenuData(menu);
+        this.loading = false;
+        this.syncActiveVisibleCategory();
+        this.connectTableStream();
       },
       error: err => {
         console.error('Errore caricamento stato menu', err);
+        this.piatti = [];
+        this.piattiRaggruppati = [];
+        this.recommendedDishes = [];
+        this.loading = false;
+        this.errorMessage = err.error?.message ?? 'Menu non disponibile.';
       }
     });
-
-    this.loadPiatti();
-    this.connectTableStream();
   }
 
   ngOnDestroy(): void {
@@ -127,6 +139,8 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   @HostListener('window:scroll')
   onWindowScroll(): void {
+    this.updateActiveVisibleCategory();
+
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
     }
@@ -160,28 +174,39 @@ export class MenuComponent implements OnInit, OnDestroy {
     return this.piattiRaggruppati.length > 0;
   }
 
+  get showRecommendedSection(): boolean {
+    return !this.loading
+      && !this.errorMessage
+      && this.selectedCategory === 'ALL'
+      && this.searchTerm.trim().length === 0
+      && this.recommendedDishes.length > 0;
+  }
+
   get availableCategories(): string[] {
     const categories = this.piatti
       .map(piatto => (piatto.categoria ?? 'SENZA CATEGORIA').toUpperCase());
     return this.categoriaOrder.filter(cat => categories.includes(cat));
   }
 
-  loadPiatti() {
+  loadPiatti(markLoading = false) {
+    if (markLoading) {
+      this.loading = true;
+    }
+
     this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}`)
       .subscribe({
         next: data => {
           this.errorMessage = '';
-          this.piatti = rankDishes(data);
-          this.recommendedDishes = this.buildRecommendedDishes(this.piatti);
-          this.orderService.setCatalog(this.piatti);
-          this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
-          this.applyFilters();
+          this.applyMenuData(data);
+          this.loading = false;
+          this.syncActiveVisibleCategory();
         },
         error: err => {
           console.error('Errore caricamento menu cliente', err);
           this.piatti = [];
           this.piattiRaggruppati = [];
           this.recommendedDishes = [];
+          this.loading = false;
           this.errorMessage = err.error?.message ?? 'Menu non disponibile.';
         }
       });
@@ -208,8 +233,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   selectCategory(category: string): void {
-    this.selectedCategory = category;
-    this.applyFilters();
+    this.activeVisibleCategory = category;
+    this.scrollToCategory(category);
   }
 
   clearFilters(): void {
@@ -223,12 +248,27 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   isCategoryActive(category: string): boolean {
-    return this.selectedCategory === category;
+    return this.activeVisibleCategory === category;
   }
 
   getAllergenBadges(piatto: Piatto): string[] {
     const parsed = splitStoredAllergens(piatto.allergeni);
     return [...parsed.standard, ...parsed.custom];
+  }
+
+  onHorizontalWheel(event: WheelEvent): void {
+    const target = event.currentTarget as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (delta === 0) {
+      return;
+    }
+
+    target.scrollLeft += delta;
+    event.preventDefault();
   }
 
   private applyFilters(): void {
@@ -245,6 +285,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
 
     this.piattiRaggruppati = this.raggruppaPerCategoria(filtered);
+    this.activeVisibleCategory = this.piattiRaggruppati[0]?.[0] ?? '';
+    this.syncActiveVisibleCategory();
   }
 
   private raggruppaPerCategoria(piatti: Piatto[]): [string, Piatto[]][] {
@@ -273,6 +315,47 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
 
     return Array.from(recommended.values()).sort(byScoreDesc);
+  }
+
+  private applyMenuData(data: Piatto[]): void {
+    this.piatti = rankDishes(data);
+    this.recommendedDishes = this.buildRecommendedDishes(this.piatti);
+    this.orderService.setCatalog(this.piatti);
+    this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
+    this.applyFilters();
+  }
+
+  private syncActiveVisibleCategory(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.requestAnimationFrame(() => this.updateActiveVisibleCategory());
+  }
+
+  private updateActiveVisibleCategory(): void {
+    if (typeof document === 'undefined' || this.piattiRaggruppati.length === 0) {
+      return;
+    }
+
+    const stickyOffset = 112;
+    let nextActive = this.piattiRaggruppati[0][0];
+
+    for (const [category] of this.piattiRaggruppati) {
+      const section = document.getElementById(`cat-${category}`);
+      if (!section) {
+        continue;
+      }
+
+      const top = section.getBoundingClientRect().top;
+      if (top <= stickyOffset) {
+        nextActive = category;
+      } else {
+        break;
+      }
+    }
+
+    this.activeVisibleCategory = nextActive;
   }
 
   categoriaLabel(cat: string): string {
@@ -347,6 +430,10 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   scrollToCategory(categoria: string) {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
     const id = 'cat-' + categoria;
     const element = document.getElementById(id);
     if (element) {
@@ -354,3 +441,4 @@ export class MenuComponent implements OnInit, OnDestroy {
     }
   }
 }
+
