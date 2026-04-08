@@ -16,6 +16,20 @@
   margin-bottom: 1.4rem;
 }
 
+.form-header-top {
+  margin-bottom: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.back-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
 .eyebrow {
   display: inline-flex;
   margin-bottom: 0.65rem;

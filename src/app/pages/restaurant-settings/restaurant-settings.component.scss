@@ -211,6 +211,7 @@ iframe {
 }
 
 .meta-grid > div {
+  min-width: 0;
   padding: 0.85rem;
   border-radius: 18px;
 }
@@ -220,6 +221,14 @@ iframe {
   margin-bottom: 0.2rem;
   font-size: 0.78rem;
   color: var(--text-soft);
+}
+
+.truncate-value {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .error {

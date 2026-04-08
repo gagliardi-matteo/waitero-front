@@ -129,11 +129,11 @@
       <div class="meta-grid" *ngIf="settings">
         <div>
           <span class="meta-label">Latitudine</span>
-          <strong>{{ settings.latitude ?? '-' }}</strong>
+          <strong class="truncate-value" [title]="(settings.latitude ?? '-') + ''">{{ settings.latitude ?? '-' }}</strong>
         </div>
         <div>
           <span class="meta-label">Longitudine</span>
-          <strong>{{ settings.longitude ?? '-' }}</strong>
+          <strong class="truncate-value" [title]="(settings.longitude ?? '-') + ''">{{ settings.longitude ?? '-' }}</strong>
         </div>
         <div>
           <span class="meta-label">Raggio</span>
@@ -147,4 +147,3 @@
     </aside>
   </div>
 </div>
-

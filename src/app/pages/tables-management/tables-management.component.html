@@ -41,7 +41,7 @@
     hint="Sincronizzazione configurazione e QR"
   />
 
-  <div class="tables-table-shell" *ngIf="tables.length > 0; else noTablesTpl">
+  <div class="tables-table-shell desktop-only" *ngIf="tables.length > 0; else noTablesTpl">
     <table class="tables-table">
       <thead>
         <tr>
@@ -73,10 +73,41 @@
     </table>
   </div>
 
+  <div class="tables-mobile-list mobile-only" *ngIf="tables.length > 0">
+    <article class="table-card" *ngFor="let table of tables">
+      <div class="table-card__header">
+        <div>
+          <strong>T{{ table.numero }}</strong>
+          <small>{{ table.nome }}</small>
+        </div>
+        <span class="status-chip" [class.inactive]="!table.attivo">{{ table.attivo ? 'Attivo' : 'Disattivo' }}</span>
+      </div>
+
+      <div class="table-card__meta">
+        <div>
+          <span class="meta-label">Coperti</span>
+          <strong>{{ table.coperti }}</strong>
+        </div>
+        <div>
+          <span class="meta-label">Link</span>
+          <span class="link-preview" [title]="buildAccessUrl(table)">{{ buildAccessUrl(table) }}</span>
+        </div>
+      </div>
+
+      <div class="row-actions">
+        <button type="button" class="icon-btn" (click)="copyAccessLink(table)">{{ copiedTableId === table.id ? 'Copiato' : 'Copia' }}</button>
+        <button type="button" class="icon-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">QR</button>
+        <button type="button" class="icon-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
+        <button type="button" class="icon-btn" (click)="regenerateToken(table)">Rigenera</button>
+        <button type="button" class="icon-btn" (click)="editTable(table)">Modifica</button>
+        <button type="button" class="icon-btn danger" (click)="deleteTable(table)">Elimina</button>
+      </div>
+    </article>
+  </div>
+
   <ng-template #noTablesTpl>
     <div class="empty-state" *ngIf="!loading">Nessun tavolo configurato.</div>
   </ng-template>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 </div>
-

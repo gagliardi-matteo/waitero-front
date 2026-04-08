@@ -87,11 +87,11 @@
           </thead>
           <tbody>
             <tr *ngFor="let dish of dishPerformance; trackBy: trackDish">
-              <td><strong>{{ dish.dishName }}</strong></td>
-              <td>{{ dish.orderCount | number:'1.0-0' }}</td>
-              <td>{{ (dish.orderCount * dish.price) | number:'1.0-0' }} &euro;</td>
-              <td>{{ dish.viewToOrderRate | percent:'1.1-1' }}</td>
-              <td>
+              <td data-label="Piatto"><strong>{{ dish.dishName }}</strong></td>
+              <td data-label="Ordini">{{ dish.orderCount | number:'1.0-0' }}</td>
+              <td data-label="Revenue">{{ (dish.orderCount * dish.price) | number:'1.0-0' }} &euro;</td>
+              <td data-label="Conversione">{{ dish.viewToOrderRate | percent:'1.1-1' }}</td>
+              <td data-label="Trend">
                 <span class="trend" [class.down]="dish.performanceLabel === 'high_interest_low_conversion' || dish.performanceLabel === 'cart_abandonment'">
                   {{ dish.performanceLabel === 'high_interest_low_conversion' || dish.performanceLabel === 'cart_abandonment' ? '?' : '?' }}
                 </span>
@@ -106,4 +106,3 @@
     </section>
   </ng-container>
 </div>
-

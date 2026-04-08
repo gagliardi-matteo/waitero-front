@@ -15,17 +15,34 @@ export class AppComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
 
+  private readonly backofficeRoutes = [
+    '/orders',
+    '/orders-history',
+    '/tables-dashboard',
+    '/analytics',
+    '/waiter-order',
+    '/menu-management',
+    '/tables',
+    '/restaurant-settings',
+    '/add-dish',
+    '/ristoratore/'
+  ];
+
   isLoggedIn(): boolean {
     return this.authService.isAuthenticated();
   }
 
   showSidebar(): boolean {
-    const url = this.router.url.toLowerCase();
-    return this.isLoggedIn() && !(url === '/menu' || url.startsWith('/menu/'));
+    return this.isLoggedIn() && this.isBackofficeRoute();
   }
 
   isCustomerMenuRoute(): boolean {
     const url = this.router.url.toLowerCase();
     return url === '/menu' || url.startsWith('/menu/');
+  }
+
+  private isBackofficeRoute(): boolean {
+    const url = this.router.url.toLowerCase();
+    return this.backofficeRoutes.some(route => url === route || url.startsWith(route));
   }
 }

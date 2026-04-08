@@ -44,15 +44,29 @@
       </div>
 
       <div class="item-grid">
-        <button
-          type="button"
+        <article
           *ngFor="let dish of filteredDishes; trackBy: trackDish"
-          class="menu-item-btn"
-          (click)="increase(dish)"
+          class="menu-item-card"
+          [class.active]="getQuantity(dish.id) > 0"
         >
-          <p>{{ dish.nome }}</p>
-          <span>{{ dish.prezzo | number: '1.2-2' }} &euro;</span>
-        </button>
+          <button type="button" class="menu-item-hit" (click)="increase(dish)">
+            <div class="menu-item-copy">
+              <p>{{ dish.nome }}</p>
+              <span>{{ dish.prezzo | number: '1.2-2' }} &euro;</span>
+            </div>
+            <span class="menu-item-qty-badge" *ngIf="getQuantity(dish.id) > 0">{{ getQuantity(dish.id) }}</span>
+          </button>
+
+          <div class="menu-item-stepper" *ngIf="getQuantity(dish.id) > 0; else addOnlyTpl">
+            <button type="button" class="stepper-btn" (click)="decrease(dish)">-</button>
+            <span class="stepper-value">{{ getQuantity(dish.id) }}</span>
+            <button type="button" class="stepper-btn" (click)="increase(dish)">+</button>
+          </div>
+
+          <ng-template #addOnlyTpl>
+            <button type="button" class="add-inline-btn" (click)="increase(dish)">Aggiungi</button>
+          </ng-template>
+        </article>
       </div>
     </div>
 
@@ -89,4 +103,3 @@
     </aside>
   </div>
 </div>
-

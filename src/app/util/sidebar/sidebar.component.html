@@ -1,4 +1,4 @@
-<nav class="sidebar" *ngIf="isLoggedIn()">
+<nav class="sidebar sidebar--desktop" *ngIf="isLoggedIn()">
   <div class="brand">
     <div class="brand-mark">
       <img src="assets/brand/logo_b.svg" alt="WaiterO" />
@@ -8,41 +8,64 @@
       <span>Backoffice ristorante</span>
     </div>
   </div>
+
   <ul>
-    <li routerLink="/tables-dashboard" routerLinkActive="active">
-      <span class="material-symbols-outlined">dashboard</span>
-      <span class="label">Sala</span>
+    <li *ngFor="let item of primaryItems" [routerLink]="item.route" routerLinkActive="active">
+      <span class="material-symbols-outlined">{{ item.icon }}</span>
+      <span class="label">{{ item.label }}</span>
     </li>
-    <li routerLink="/analytics" routerLinkActive="active">
-      <span class="material-symbols-outlined">monitoring</span>
-      <span class="label">Analytics</span>
-    </li>
-    <li routerLink="/waiter-order" routerLinkActive="active">
-      <span class="material-symbols-outlined">playlist_add</span>
-      <span class="label">Comanda</span>
-    </li>
-    <li routerLink="/orders" routerLinkActive="active">
-      <span class="material-symbols-outlined">receipt_long</span>
-      <span class="label">Ordini attivi</span>
-    </li>
-    <li routerLink="/orders-history" routerLinkActive="active">
-      <span class="material-symbols-outlined">history</span>
-      <span class="label">Storico ordini</span>
-    </li>
-    <li routerLink="/menu-management" routerLinkActive="active">
-      <span class="material-symbols-outlined">local_dining</span>
-      <span class="label">Menu</span>
-    </li>
-    <li routerLink="/tables" routerLinkActive="active">
-      <span class="material-symbols-outlined">table_restaurant</span>
-      <span class="label">Tavoli</span>
-    </li>
-    <li routerLink="/restaurant-settings" routerLinkActive="active">
-      <span class="material-symbols-outlined">storefront</span>
-      <span class="label">Locale</span>
+
+    <li *ngFor="let item of secondaryItems" [routerLink]="item.route" routerLinkActive="active">
+      <span class="material-symbols-outlined">{{ item.icon }}</span>
+      <span class="label">{{ item.label }}</span>
     </li>
   </ul>
+
   <div class="sidebar-footer">
     <span>Pannello operativo</span>
   </div>
 </nav>
+
+<div class="mobile-nav-shell" *ngIf="isLoggedIn()">
+  <div class="mobile-nav-drawer-backdrop" *ngIf="mobileMoreOpen" (click)="closeMobileMore()"></div>
+
+  <div class="mobile-nav-drawer" [class.open]="mobileMoreOpen">
+    <button
+      type="button"
+      class="mobile-nav-drawer__item"
+      *ngFor="let item of secondaryItems"
+      [routerLink]="item.route"
+      routerLinkActive="active"
+      (click)="closeMobileMore()"
+    >
+      <span class="material-symbols-outlined">{{ item.icon }}</span>
+      <span>{{ item.label }}</span>
+    </button>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Navigazione principale backoffice">
+    <a
+      class="mobile-nav__item"
+      *ngFor="let item of primaryItems"
+      [routerLink]="item.route"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="closeMobileMore()"
+    >
+      <span class="material-symbols-outlined">{{ item.icon }}</span>
+      <span class="mobile-nav__label">{{ item.label }}</span>
+    </a>
+
+    <button
+      type="button"
+      class="mobile-nav__item mobile-nav__item--more"
+      [class.active]="mobileMoreOpen || hasSecondaryActiveRoute()"
+      (click)="toggleMobileMore()"
+      aria-label="Apri altre sezioni"
+      [attr.aria-expanded]="mobileMoreOpen"
+    >
+      <span class="material-symbols-outlined">widgets</span>
+      <span class="mobile-nav__label">Altro</span>
+    </button>
+  </nav>
+</div>
