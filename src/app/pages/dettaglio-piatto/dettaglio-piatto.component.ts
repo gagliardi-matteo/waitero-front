@@ -155,6 +155,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
+          this.orderService.markDraftAttribution(suggestion.id, 'dish_detail_upsell', this.piatto?.id);
           this.trackingService.trackEvent('add_to_cart', {
             dishId: suggestion.id,
             metadata: {
@@ -186,7 +187,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.customerOrderService.getUpsellSuggestions(this.piatto.id, restaurantId)
+    this.customerOrderService.getUpsellSuggestions(this.piatto.id, restaurantId, this.trackingService.sessionId)
       .subscribe({
         next: suggestions => {
           this.upsellSuggestions = suggestions.filter(suggestion => suggestion.id !== this.piatto.id).slice(0, 2);

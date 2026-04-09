@@ -122,6 +122,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       restaurantId,
       tableId,
       noteCucina: this.normalizedKitchenNote,
+      sessionId: this.trackingService.sessionId,
       items: draftPayload
     }).subscribe({
       next: order => {
@@ -137,7 +138,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     });
   }
 
-  aggiungi(piatto: Piatto) {
+  aggiungi(piatto: Piatto, attribution?: { source: string; sourceDishId?: number }) {
     const token = this.auth.tokenValue;
     const restaurantId = this.auth.restaurantIdValue;
     const tableId = this.auth.tableIdValue;
@@ -147,6 +148,9 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       .subscribe({
         next: draft => {
           this.orderState.setDraft(draft.items);
+          if (attribution) {
+            this.orderState.markDraftAttribution(piatto.id, attribution.source, attribution.sourceDishId);
+          }
           this.trackingService.trackEvent('add_to_cart', {
             dishId: piatto.id,
             metadata: {
@@ -183,7 +187,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
   aggiungiUpsell(piatto: Piatto, event: Event): void {
     event.stopPropagation();
-    this.aggiungi(piatto);
+    this.aggiungi(piatto, { source: 'cart_upsell' });
   }
 
   quantita(id: number): number {
@@ -231,7 +235,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     }
     this.lastUpsellRequestSignature = requestSignature;
 
-    this.customerOrderService.getCartUpsellSuggestions(dishIds, restaurantId)
+    this.customerOrderService.getCartUpsellSuggestions(dishIds, restaurantId, this.trackingService.sessionId)
       .subscribe({
         next: suggestions => {
           const cartDishIdSet = new Set<number>(dishIds);

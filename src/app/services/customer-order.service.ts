@@ -12,9 +12,12 @@ interface SubmitOrderPayload {
   restaurantId: string;
   tableId: string;
   noteCucina?: string;
+  sessionId?: string;
   items: Array<{
     dishId: number;
     quantity: number;
+    source?: string;
+    sourceDishId?: number;
   }>;
 }
 
@@ -71,17 +74,22 @@ export class CustomerOrderService {
     }).pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 
-  getUpsellSuggestions(dishId: number, restaurantId: string): Observable<Piatto[]> {
-    const params = new HttpParams().set('restaurantId', restaurantId);
+  getUpsellSuggestions(dishId: number, restaurantId: string, sessionId?: string): Observable<Piatto[]> {
+    let params = new HttpParams().set('restaurantId', restaurantId);
+    if (sessionId) {
+      params = params.set('sessionId', sessionId);
+    }
     return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/upsell/${dishId}`, { params });
   }
-
-  getCartUpsellSuggestions(dishIds: number[], restaurantId: string): Observable<Piatto[]> {
+  getCartUpsellSuggestions(dishIds: number[], restaurantId: string, sessionId?: string): Observable<Piatto[]> {
     if (dishIds.length === 0) {
       return of([]);
     }
 
     let params = new HttpParams().set('restaurantId', restaurantId);
+    if (sessionId) {
+      params = params.set('sessionId', sessionId);
+    }
     dishIds.forEach(dishId => {
       params = params.append('dishIds', String(dishId));
     });

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Piatto } from '../models/piatto.model';
 import { CustomerDraftItem, CustomerOrder, CustomerOrderItem } from '../models/customer-order.model';
 
@@ -7,6 +7,7 @@ export class OrderService {
   private draftCounts = new Map<number, number>();
   private catalog = new Map<number, Piatto>();
   private confirmedOrder: CustomerOrder | null = null;
+  private draftAttribution = new Map<number, { source: string; sourceDishId?: number }>();
   private contextKey: string | null = null;
 
   syncContext(contextKey: string) {
@@ -29,12 +30,17 @@ export class OrderService {
         this.draftCounts.set(item.dishId, item.quantity);
       }
     }
+    for (const dishId of Array.from(this.draftAttribution.keys())) {
+      if (!this.draftCounts.has(dishId)) {
+        this.draftAttribution.delete(dishId);
+      }
+    }
   }
 
-  getDraftPayload(): Array<{ dishId: number; quantity: number }> {
+  getDraftPayload(): Array<{ dishId: number; quantity: number; source?: string; sourceDishId?: number }> {
     return Array.from(this.draftCounts.entries())
       .filter(([, quantity]) => quantity > 0)
-      .map(([dishId, quantity]) => ({ dishId, quantity }));
+      .map(([dishId, quantity]) => ({ dishId, quantity, ...this.draftAttribution.get(dishId) }));
   }
 
   getOrdine(): Piatto[] {
@@ -49,12 +55,21 @@ export class OrderService {
     return result;
   }
 
+
+  markDraftAttribution(dishId: number, source: string, sourceDishId?: number) {
+    if (!source.trim()) {
+      return;
+    }
+    this.draftAttribution.set(dishId, { source: source.trim(), sourceDishId });
+  }
+
   quantita(id: number): number {
     return this.draftCounts.get(id) ?? 0;
   }
 
   clearDraft() {
     this.draftCounts.clear();
+    this.draftAttribution.clear();
   }
 
   setConfirmedOrder(order: CustomerOrder | null) {
@@ -75,6 +90,7 @@ export class OrderService {
 
   resetState() {
     this.draftCounts.clear();
+    this.draftAttribution.clear();
     this.catalog.clear();
     this.confirmedOrder = null;
   }

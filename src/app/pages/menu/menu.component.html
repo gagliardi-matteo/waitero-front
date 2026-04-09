@@ -59,7 +59,7 @@
       </div>
 
       <div class="recommended-rail" (wheel)="onHorizontalWheel($event)">
-        <div class="dish-card recommended-card" *ngFor="let piatto of recommendedDishes; trackBy: trackById" (click)="openDettaglio(piatto)">
+        <div class="dish-card recommended-card" *ngFor="let piatto of recommendedDishes; trackBy: trackById" data-track-menu-item="true" [attr.data-dish-id]="piatto.id" [attr.data-category]="piatto.categoria" (click)="openDettaglio(piatto)">
           <div class="dish-info">
             <div>
               <div class="dish-name">{{ piatto.nome }}</div>
@@ -90,7 +90,7 @@
     <div class="category" *ngFor="let group of piattiRaggruppati">
       <h2 class="category-title" [id]="'cat-' + group[0]">{{ categoriaLabel(group[0]) }}</h2>
 
-      <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" (click)="openDettaglio(piatto)">
+      <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" data-track-menu-item="true" [attr.data-dish-id]="piatto.id" [attr.data-category]="piatto.categoria" (click)="openDettaglio(piatto)">
         <div class="dish-info">
           <div>
             <div class="dish-name">{{ piatto.nome }}</div>

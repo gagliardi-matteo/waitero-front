@@ -13,7 +13,6 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
-import { byScoreDesc, rankDishes } from '../../shared/menu-ranking';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
@@ -42,6 +41,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   private eventSource: EventSource | null = null;
   private enteredAt = Date.now();
   private lastScrollBucket = 0;
+  private impressionObserver: IntersectionObserver | null = null;
+  private impressionDishIds = new Set<number>();
 
   readonly categoriaOrder: string[] = [
     'ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'
@@ -103,7 +104,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     forkJoin({
       restaurant: this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`),
       tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId),
-      menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}`)
+      menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
     }).subscribe({
       next: ({ restaurant, tableState, menu }) => {
         this.errorMessage = '';
@@ -128,6 +129,8 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.eventSource?.close();
+    this.impressionObserver?.disconnect();
+    this.impressionObserver = null;
     this.trackingService.trackTimeSpent(this.enteredAt, {
       metadata: {
         page: 'menu',
@@ -193,7 +196,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.loading = true;
     }
 
-    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}`)
+    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
       .subscribe({
         next: data => {
           this.errorMessage = '';
@@ -298,7 +301,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     }
     return this.categoriaOrder
       .filter(cat => map.has(cat))
-      .map(cat => [cat, [...map.get(cat)!].sort(byScoreDesc)]);
+      .map(cat => [cat, [...map.get(cat)!]]);
   }
 
   private buildRecommendedDishes(piatti: Piatto[]): Piatto[] {
@@ -314,11 +317,11 @@ export class MenuComponent implements OnInit, OnDestroy {
       }
     });
 
-    return Array.from(recommended.values()).sort(byScoreDesc);
+    return Array.from(recommended.values());
   }
 
   private applyMenuData(data: Piatto[]): void {
-    this.piatti = rankDishes(data);
+    this.piatti = data;
     this.recommendedDishes = this.buildRecommendedDishes(this.piatti);
     this.orderService.setCatalog(this.piatti);
     this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
@@ -358,6 +361,54 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.activeVisibleCategory = nextActive;
   }
 
+  private scheduleMenuItemImpressionObserver(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    window.requestAnimationFrame(() => this.observeMenuItemImpressions());
+  }
+
+  private observeMenuItemImpressions(): void {
+    if (typeof document === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+
+    if (!this.impressionObserver) {
+      this.impressionObserver = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting || entry.intersectionRatio < 0.5) {
+            continue;
+          }
+
+          const element = entry.target as HTMLElement;
+          const dishId = Number(element.dataset['dishId']);
+          if (!dishId || this.impressionDishIds.has(dishId)) {
+            this.impressionObserver?.unobserve(element);
+            continue;
+          }
+
+          this.impressionDishIds.add(dishId);
+          this.trackingService.trackEvent('view_menu_item', {
+            dishId,
+            metadata: {
+              page: 'menu',
+              category: element.dataset['category'] ?? null
+            }
+          });
+          this.impressionObserver?.unobserve(element);
+        }
+      }, { threshold: 0.5 });
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-track-menu-item="true"]').forEach(element => {
+      const dishId = Number(element.dataset['dishId']);
+      if (!dishId || this.impressionDishIds.has(dishId)) {
+        return;
+      }
+      this.impressionObserver?.observe(element);
+    });
+  }
   categoriaLabel(cat: string): string {
     return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
   }

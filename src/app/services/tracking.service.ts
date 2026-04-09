@@ -5,6 +5,7 @@ import { AuthContextService } from './auth-context.service';
 
 export type TrackingEventType =
   | 'view_dish'
+  | 'view_menu_item'
   | 'click_dish'
   | 'add_to_cart'
   | 'remove_from_cart'
@@ -38,7 +39,7 @@ export class TrackingService {
     const payload = {
       eventType,
       userId: options.userId,
-      sessionId: this.getOrCreateSessionId(),
+      sessionId: this.sessionId,
       restaurantId: Number(restaurantId),
       tableId: Number(tableId),
       dishId: options.dishId,
@@ -66,6 +67,10 @@ export class TrackingService {
       },
       useBeacon: true
     });
+  }
+
+  get sessionId(): string {
+    return this.getOrCreateSessionId();
   }
 
   private getOrCreateSessionId(): string {
