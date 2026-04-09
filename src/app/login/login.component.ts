@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, ElementRef, PLATFORM_ID, ViewChild, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/AuthService';
 
 declare global {
@@ -11,7 +12,7 @@ declare global {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="login-shell">
       <section class="login-brand-panel">
@@ -30,14 +31,32 @@ declare global {
       </section>
 
       <section class="login-card">
-        <span class="eyebrow">Backoffice ristorante</span>
+        <span class="eyebrow">Backoffice</span>
         <h1>Accedi a WaiterO</h1>
-        <p>Accesso riservato al ristoratore. I clienti non usano login Google.</p>
+        <p>Accedi con email e password oppure continua con Google se il tuo account e gia stato abilitato.</p>
+
+        <form class="local-login" (ngSubmit)="submitLocalLogin()">
+          <label>
+            Email ristoratore
+            <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+          </label>
+
+          <label>
+            Password
+            <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
+          </label>
+
+          <button type="submit" class="primary-login" [disabled]="localLoading">
+            {{ localLoading ? 'Accesso in corso...' : 'Accedi' }}
+          </button>
+        </form>
+
+        <div class="divider"><span>Oppure con Google</span></div>
 
         <div class="login-actions">
           <div #googleButtonHost class="google-host" [class.is-hidden]="buttonReady"></div>
           <button type="button" class="google-fallback" *ngIf="loadingButton" disabled>Caricamento accesso Google...</button>
-          <button type="button" class="google-fallback" *ngIf="loadError" (click)="retryRender()">Riprova</button>
+          <button type="button" class="google-fallback" *ngIf="loadError" (click)="retryRender()">Riprova Google</button>
         </div>
 
         <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
@@ -86,9 +105,7 @@ declare global {
       color: white;
     }
 
-    .brand-copy {
-      max-width: 34rem;
-    }
+    .brand-copy { max-width: 34rem; }
 
     .brand-copy h1 {
       margin: 0.9rem 0 1rem;
@@ -148,9 +165,62 @@ declare global {
       color: var(--text-muted);
     }
 
+    .local-login,
     .login-actions {
       display: grid;
       gap: 0.75rem;
+    }
+
+    .local-login label {
+      display: grid;
+      gap: 0.4rem;
+      color: #252a33;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .local-login input {
+      width: 100%;
+      min-height: 46px;
+      box-sizing: border-box;
+      padding: 0 0.95rem;
+      border: 1px solid rgba(37, 42, 51, 0.14);
+      border-radius: 14px;
+      background: white;
+      font: inherit;
+      color: #252a33;
+    }
+
+    .primary-login {
+      min-height: 48px;
+      border: 0;
+      border-radius: 15px;
+      background: #1f232c;
+      color: white;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .primary-login:disabled { opacity: 0.72; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.2rem 0;
+      color: rgba(37, 42, 51, 0.48);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      height: 1px;
+      flex: 1;
+      background: rgba(37, 42, 51, 0.1);
     }
 
     .google-host {
@@ -159,9 +229,7 @@ declare global {
       min-height: 44px;
     }
 
-    .google-host.is-hidden {
-      min-height: 0;
-    }
+    .google-host.is-hidden { min-height: 0; }
 
     .google-fallback {
       min-height: 44px;
@@ -179,21 +247,10 @@ declare global {
     }
 
     @media (max-width: 980px) {
-      .login-shell {
-        grid-template-columns: 1fr;
-      }
-
-      .login-brand-panel {
-        display: none;
-      }
-
-      .login-card {
-        text-align: center;
-      }
-
-      .google-host {
-        justify-content: center;
-      }
+      .login-shell { grid-template-columns: 1fr; }
+      .login-brand-panel { display: none; }
+      .login-card { text-align: left; }
+      .google-host { justify-content: center; }
     }
   `]
 })
@@ -202,6 +259,9 @@ export class LoginComponent implements AfterViewInit {
 
   private auth = inject(AuthService);
   private platformId = inject(PLATFORM_ID);
+  email = '';
+  password = '';
+  localLoading = false;
   loadingButton = true;
   buttonReady = false;
   loadError = false;
@@ -209,6 +269,23 @@ export class LoginComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     void this.renderGoogleButton();
+  }
+
+  submitLocalLogin(): void {
+    if (this.localLoading) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.localLoading = true;
+    void this.auth.loginWithLocalCredentials(this.email, this.password)
+      .catch(err => {
+        console.error('Errore login proprietario', err);
+        this.errorMessage = err?.error?.message ?? 'Credenziali non valide.';
+      })
+      .finally(() => {
+        this.localLoading = false;
+      });
   }
 
   retryRender(): void {
@@ -270,7 +347,7 @@ export class LoginComponent implements AfterViewInit {
     this.errorMessage = '';
     void this.auth.loginWithGoogleIdToken(idToken).catch(err => {
       console.error('Errore login Google', err);
-      this.errorMessage = err?.error?.message ?? 'Accesso non autorizzato.';
+      this.errorMessage = err?.error?.message ?? 'Account Google non autorizzato.';
     });
   }
 
@@ -307,3 +384,4 @@ export class LoginComponent implements AfterViewInit {
     });
   }
 }
+

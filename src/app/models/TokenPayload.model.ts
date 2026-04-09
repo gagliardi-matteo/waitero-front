@@ -1,6 +1,9 @@
 export interface TokenPayload {
-  sub: number; // oppure restaurateurId, sub, ecc.
+  sub: number;
   email?: string;
+  role?: 'RISTORATORE' | 'MASTER';
+  restaurantId?: number;
+  actingRestaurantId?: number;
   exp?: number;
   [key: string]: any;
 }

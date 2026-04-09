@@ -40,9 +40,9 @@ export class MenuManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.userId = this.authService.getUserIdFromToken();
+    this.userId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
     if (!this.userId) {
-      alert('Utente non autenticato');
+      alert('Ristorante non disponibile');
       return;
     }
 

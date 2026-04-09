@@ -16,6 +16,7 @@ export class AppComponent {
   private router = inject(Router);
 
   private readonly backofficeRoutes = [
+    '/admin',
     '/orders',
     '/orders-history',
     '/tables-dashboard',
@@ -39,6 +40,21 @@ export class AppComponent {
   isCustomerMenuRoute(): boolean {
     const url = this.router.url.toLowerCase();
     return url === '/menu' || url.startsWith('/menu/');
+  }
+
+  showImpersonationBanner(): boolean {
+    return this.showSidebar() && this.authService.isImpersonating();
+  }
+
+  getImpersonationRestaurantName(): string {
+    return this.authService.getImpersonatedRestaurantName() ?? 'ristorante selezionato';
+  }
+
+  async exitImpersonation(): Promise<void> {
+    await this.authService.stopImpersonation();
+    if (this.authService.isMaster()) {
+      await this.router.navigate(['/admin/restaurants']);
+    }
   }
 
   private isBackofficeRoute(): boolean {

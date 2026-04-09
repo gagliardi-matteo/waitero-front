@@ -12,6 +12,15 @@ interface AuthTokens {
   refreshToken: string;
 }
 
+export interface BackofficeProfile {
+  userId: number;
+  email: string;
+  nome: string;
+  role: TokenPayload['role'];
+  restaurantId: number | null;
+  hasPassword: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private http = inject(HttpClient);
@@ -20,6 +29,7 @@ export class AuthService {
 
   private readonly ACCESS_KEY = 'accessToken';
   private readonly REFRESH_KEY = 'refreshToken';
+  private readonly IMPERSONATION_NAME_KEY = 'impersonatedRestaurantName';
   private refreshPromise: Promise<string | null> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -29,12 +39,28 @@ export class AuthService {
     this.bootstrapSession();
   }
 
-  loginWithGoogleIdToken(idToken: string): Promise<void> {
-    return firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/login`, { idToken }))
-      .then(tokens => {
-        this.storeTokens(tokens);
-        void this.router.navigate(['/menu-management']);
-      });
+  async loginWithGoogleIdToken(idToken: string): Promise<void> {
+    const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/login`, { idToken }));
+    this.storeTokens(tokens);
+    await this.navigateAfterLogin(tokens.accessToken);
+  }
+
+  async loginWithLocalCredentials(email: string, password: string): Promise<void> {
+    const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/local-login`, { email, password }));
+    this.storeTokens(tokens);
+    await this.navigateAfterLogin(tokens.accessToken);
+  }
+
+  getProfile() {
+    return this.http.get<BackofficeProfile>(`${environment.apiUrl}/auth/profile`);
+  }
+
+  updateProfile(nome: string) {
+    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/profile`, { nome });
+  }
+
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/password`, { currentPassword, newPassword });
   }
 
   async ensureValidAccessToken(): Promise<string | null> {
@@ -60,23 +86,62 @@ export class AuthService {
     return this.authenticated();
   }
 
+  isMaster(): boolean {
+    return this.getRole() === 'MASTER';
+  }
+
+  isImpersonating(): boolean {
+    return this.getActingRestaurantId() !== null;
+  }
+
+  getRole(): TokenPayload['role'] | null {
+    return this.getDecodedAccessToken()?.role ?? null;
+  }
+
+  getOwnedRestaurantId(): number | null {
+    return this.getDecodedAccessToken()?.restaurantId ?? null;
+  }
+
+  getActingRestaurantId(): number | null {
+    return this.getDecodedAccessToken()?.actingRestaurantId ?? null;
+  }
+
+  getImpersonatedRestaurantName(): string | null {
+    return this.isBrowser() ? localStorage.getItem(this.IMPERSONATION_NAME_KEY) : null;
+  }
+
+  beginImpersonation(accessToken: string, restaurantName: string): void {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    localStorage.setItem(this.ACCESS_KEY, accessToken);
+    localStorage.setItem(this.IMPERSONATION_NAME_KEY, restaurantName);
+    this.authenticated.set(true);
+    this.scheduleRefresh(accessToken);
+  }
+
+  async stopImpersonation(): Promise<void> {
+    if (!this.isImpersonating()) {
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
+    }
+
+    const token = await this.refreshAccessToken();
+    if (!token) {
+      this.clearSession(true);
+    }
+  }
+
   logout(): void {
     this.clearSession(true);
   }
 
   getUserIdFromToken(): number | null {
-    const token = this.getStoredAccessToken();
-    if (!token) {
-      return null;
-    }
-
-    try {
-      const decoded = jwtDecode<TokenPayload>(token);
-      return decoded.sub ?? null;
-    } catch (err) {
-      console.error('Errore nel decoding del token', err);
-      return null;
-    }
+    return this.getDecodedAccessToken()?.sub ?? null;
   }
 
   private bootstrapSession(): void {
@@ -91,6 +156,7 @@ export class AuthService {
     if (this.isTokenUsable(accessToken)) {
       this.authenticated.set(true);
       if (accessToken) {
+        this.syncImpersonationState(accessToken);
         this.scheduleRefresh(accessToken);
       }
       return;
@@ -138,6 +204,7 @@ export class AuthService {
 
     localStorage.setItem(this.ACCESS_KEY, tokens.accessToken);
     localStorage.setItem(this.REFRESH_KEY, tokens.refreshToken);
+    this.syncImpersonationState(tokens.accessToken);
     this.authenticated.set(true);
     this.scheduleRefresh(tokens.accessToken);
   }
@@ -151,6 +218,7 @@ export class AuthService {
     if (this.isBrowser()) {
       localStorage.removeItem(this.ACCESS_KEY);
       localStorage.removeItem(this.REFRESH_KEY);
+      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
     }
 
     this.authenticated.set(false);
@@ -201,19 +269,48 @@ export class AuthService {
   }
 
   private getTokenExpirationMs(token: string | null): number | null {
+    const decoded = this.decodeToken(token);
+    return decoded?.exp ? decoded.exp * 1000 : null;
+  }
+
+  private getDecodedAccessToken(): TokenPayload | null {
+    return this.decodeToken(this.getStoredAccessToken());
+  }
+
+  private decodeToken(token: string | null): TokenPayload | null {
     if (!token) {
       return null;
     }
 
     try {
-      const decoded = jwtDecode<TokenPayload>(token);
-      return decoded.exp ? decoded.exp * 1000 : null;
-    } catch {
+      return jwtDecode<TokenPayload>(token);
+    } catch (err) {
+      console.error('Errore nel decoding del token', err);
       return null;
     }
+  }
+
+  private syncImpersonationState(accessToken: string): void {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    const decoded = this.decodeToken(accessToken);
+    if (!decoded?.actingRestaurantId) {
+      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
+    }
+  }
+
+  private navigateAfterLogin(accessToken: string): Promise<boolean> {
+    const decoded = this.decodeToken(accessToken);
+    const target = decoded?.role === 'MASTER' ? '/admin/restaurants' : '/menu-management';
+    return this.router.navigate([target]);
   }
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
 }
+
+
+

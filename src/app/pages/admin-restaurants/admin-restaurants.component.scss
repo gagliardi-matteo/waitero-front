@@ -1,0 +1,347 @@
+:host {
+  display: block;
+}
+
+.admin-console {
+  min-height: 100vh;
+  padding: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(216, 122, 44, 0.12), transparent 22%),
+    linear-gradient(180deg, #f8f6f1 0%, #f2ede5 100%);
+}
+
+.admin-console__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-console__eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(216, 122, 44, 0.12);
+  color: #b86522;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-console h1,
+.admin-console h2 {
+  color: #1f232c;
+}
+
+.admin-console h1 {
+  margin: 0 0 0.4rem;
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.admin-console h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.admin-console p {
+  margin: 0;
+  max-width: 42rem;
+  color: #59606d;
+  line-height: 1.6;
+}
+
+.admin-console__logout,
+.admin-console__search-row button,
+.admin-console__create-grid button,
+.restaurant-card__action,
+.restaurant-card__secondary {
+  min-height: 46px;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 16px;
+  background: #1f232c;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.admin-console__logout,
+.restaurant-card__secondary {
+  min-width: 96px;
+  background: rgba(31, 35, 44, 0.08);
+  color: #1f232c;
+}
+
+.admin-console__panel {
+  padding: 1.25rem;
+  border: 1px solid rgba(31, 35, 44, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.admin-console__panel + .admin-console__panel {
+  margin-top: 1rem;
+}
+
+.admin-console__panel-head {
+  margin-bottom: 1rem;
+}
+
+.admin-console__create-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.admin-console__create-grid label {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  font-weight: 700;
+  color: #1f232c;
+}
+
+.admin-console__create-grid span,
+.admin-console__search-label {
+  font-size: 0.9rem;
+  color: #59606d;
+}
+
+.admin-console__search-label {
+  display: block;
+  margin-bottom: 0.65rem;
+  font-weight: 700;
+}
+
+.admin-console__search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+}
+
+.admin-console__search-row input,
+.admin-console__create-grid input {
+  min-height: 46px;
+  min-width: 0;
+  padding: 0 1rem;
+  border: 1px solid rgba(31, 35, 44, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  font: inherit;
+  color: #1f232c;
+}
+
+.admin-console__error {
+  margin-bottom: 0.75rem;
+  color: #b42318;
+}
+
+.admin-console__success {
+  margin-bottom: 0.75rem;
+  color: #067647;
+}
+
+.admin-console__results {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.restaurant-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.2rem;
+  border: 1px solid rgba(31, 35, 44, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+}
+
+.restaurant-card__meta {
+  min-width: 0;
+}
+
+.restaurant-card__meta h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.restaurant-card__meta p,
+.restaurant-card__meta span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #59606d;
+}
+
+.restaurant-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-console__empty {
+  padding: 1rem 0;
+  color: #59606d;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+@media (max-width: 1180px) {
+  .admin-console__create-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-console__create-grid button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 960px) {
+  .admin-console {
+    padding: 1rem;
+  }
+
+  .admin-console__hero,
+  .restaurant-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-console__search-row,
+  .admin-console__create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-console__logout,
+  .admin-console__search-row button,
+  .admin-console__create-grid button,
+  .restaurant-card__action,
+  .restaurant-card__secondary {
+    width: 100%;
+  }
+
+  .restaurant-card__actions {
+    justify-content: stretch;
+  }
+}
+
+.restaurant-card__reset {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: min(100%, 340px);
+}
+
+.restaurant-card__reset input {
+  min-height: 46px;
+  min-width: 0;
+  width: 180px;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(31, 35, 44, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  font: inherit;
+  color: #1f232c;
+}
+
+@media (max-width: 960px) {
+  .restaurant-card__reset {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .restaurant-card__reset input {
+    width: 100%;
+  }
+}
+.admin-console__audit {
+  margin-top: 1rem;
+}
+
+.admin-console__audit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-console__refresh {
+  min-height: 42px;
+  padding: 0.7rem 0.95rem;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(31, 35, 44, 0.08);
+  color: #1f232c;
+  font: inherit;
+  font-weight: 700;
+}
+
+.audit-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.audit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid rgba(31, 35, 44, 0.08);
+}
+
+.audit-row div {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.audit-row strong,
+.audit-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-row strong {
+  color: #1f232c;
+  font-size: 0.95rem;
+}
+
+.audit-row span,
+.audit-row time {
+  color: #59606d;
+  font-size: 0.86rem;
+}
+
+.audit-row time {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 960px) {
+  .admin-console__audit-head,
+  .audit-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+

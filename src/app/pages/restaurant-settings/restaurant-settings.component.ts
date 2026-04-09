@@ -5,6 +5,7 @@ import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, RestaurantSettingsService } from '../../services/restaurant-settings.service';
+import { AuthService, BackofficeProfile } from '../../auth/AuthService';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 type DuplicateMode = 'slot' | 'day';
@@ -19,10 +20,13 @@ type DuplicateMode = 'slot' | 'day';
 export class RestaurantSettingsComponent {
   loading = true;
   saving = false;
+  savingProfile = false;
+  changingPassword = false;
   searchingAddress = false;
   errorMessage = '';
   successMessage = '';
   settings: RestaurantSettings | null = null;
+  accountProfile: BackofficeProfile | null = null;
   addressSuggestions: AddressSuggestion[] = [];
   selectedSuggestion: AddressSuggestion | null = null;
   duplicateSourceIndex: number | null = null;
@@ -31,6 +35,7 @@ export class RestaurantSettingsComponent {
 
   private fb = inject(FormBuilder);
   private settingsService = inject(RestaurantSettingsService);
+  private authService = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
   private destroyRef = inject(DestroyRef);
 
@@ -52,13 +57,27 @@ export class RestaurantSettingsComponent {
     serviceHours: this.fb.array([])
   });
 
+  readonly accountForm = this.fb.nonNullable.group({
+    nome: ['', [Validators.required, Validators.maxLength(120)]]
+  });
+
+  readonly passwordForm = this.fb.nonNullable.group({
+    currentPassword: [''],
+    newPassword: ['', [Validators.required, Validators.minLength(8)]]
+  });
+
   constructor() {
     this.setupAddressAutocomplete();
     this.loadSettings();
+    this.loadAccountProfile();
   }
 
   get serviceHoursArray(): FormArray {
     return this.form.controls.serviceHours;
+  }
+
+  get showAccountSettings(): boolean {
+    return !this.authService.isMaster() && !this.authService.isImpersonating();
   }
 
   get duplicateSourceLabel(): string {
@@ -108,6 +127,78 @@ export class RestaurantSettingsComponent {
         console.error('Errore caricamento impostazioni ristorante', err);
         this.errorMessage = 'Impossibile caricare le impostazioni del ristorante.';
         this.loading = false;
+      }
+    });
+  }
+
+  loadAccountProfile(): void {
+    if (!this.showAccountSettings) {
+      return;
+    }
+
+    this.authService.getProfile().subscribe({
+      next: profile => {
+        this.accountProfile = profile;
+        this.accountForm.patchValue({ nome: profile.nome ?? '' }, { emitEvent: false });
+        this.syncPasswordValidators(profile);
+      },
+      error: err => {
+        console.error('Errore caricamento profilo account', err);
+      }
+    });
+  }
+
+  saveAccountProfile(): void {
+    if (this.accountForm.invalid) {
+      this.accountForm.markAllAsTouched();
+      this.errorMessage = 'Inserisci un nome account valido.';
+      return;
+    }
+
+    this.savingProfile = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.authService.updateProfile(this.accountForm.getRawValue().nome).subscribe({
+      next: profile => {
+        this.accountProfile = profile;
+        this.successMessage = 'Profilo account aggiornato.';
+        this.savingProfile = false;
+      },
+      error: err => {
+        console.error('Errore aggiornamento profilo account', err);
+        this.errorMessage = err.error?.message ?? 'Aggiornamento profilo non riuscito.';
+        this.savingProfile = false;
+      }
+    });
+  }
+
+  changePassword(): void {
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      this.errorMessage = this.accountProfile?.hasPassword
+        ? 'Inserisci password attuale e nuova password di almeno 8 caratteri.'
+        : 'Inserisci una nuova password di almeno 8 caratteri.';
+      return;
+    }
+
+    const raw = this.passwordForm.getRawValue();
+    this.changingPassword = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.authService.changePassword(raw.currentPassword, raw.newPassword).subscribe({
+      next: profile => {
+        this.accountProfile = profile;
+        this.syncPasswordValidators(profile);
+        this.passwordForm.reset();
+        this.successMessage = 'Password aggiornata.';
+        this.changingPassword = false;
+      },
+      error: err => {
+        console.error('Errore cambio password', err);
+        this.errorMessage = err.error?.message ?? 'Cambio password non riuscito.';
+        this.changingPassword = false;
       }
     });
   }
@@ -299,6 +390,16 @@ export class RestaurantSettingsComponent {
     return this.weekdays.find(day => day.value === dayOfWeek)?.label ?? dayOfWeek;
   }
 
+
+  private syncPasswordValidators(profile: BackofficeProfile): void {
+    const currentPasswordControl = this.passwordForm.controls.currentPassword;
+    if (profile.hasPassword) {
+      currentPasswordControl.setValidators([Validators.required]);
+    } else {
+      currentPasswordControl.clearValidators();
+    }
+    currentPasswordControl.updateValueAndValidity({ emitEvent: false });
+  }
   private setupAddressAutocomplete(): void {
     this.form.controls.address.valueChanges.pipe(
       debounceTime(350),
@@ -396,6 +497,5 @@ export class RestaurantSettingsComponent {
     });
   }
 }
-
 
 

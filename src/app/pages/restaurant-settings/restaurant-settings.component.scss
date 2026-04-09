@@ -257,3 +257,29 @@ iframe {
     flex-wrap: wrap;
   }
 }
+
+.account-section {
+  margin-bottom: 1rem;
+}
+
+.account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.password-form {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.account-form button {
+  min-height: 46px;
+}
+
+@media (max-width: 960px) {
+  .account-form {
+    grid-template-columns: 1fr;
+  }
+}

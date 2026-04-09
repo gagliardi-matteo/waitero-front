@@ -7,7 +7,9 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { AuthService } from './AuthService';
 
 const PUBLIC_API_PATTERNS = [
-  '/api/auth/',
+  '/api/auth/login',
+  '/api/auth/local-login',
+  '/api/auth/refresh-token',
   '/api/customer/',
   '/api/table/access',
   '/api/image/'

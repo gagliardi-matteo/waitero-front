@@ -77,9 +77,9 @@ export class AddDishComponent {
     );
     this.dishForm.patchValue({ allergeni }, { emitEvent: false });
 
-    const userId = this.authService.getUserIdFromToken();
+    const userId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
     if (!userId) {
-      alert('Utente non autenticato');
+      alert('Ristorante non disponibile');
       return;
     }
 

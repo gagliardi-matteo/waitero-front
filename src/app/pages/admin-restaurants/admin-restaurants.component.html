@@ -1,0 +1,133 @@
+<section class="admin-console">
+  <header class="admin-console__hero">
+    <div>
+      <span class="admin-console__eyebrow">Console master</span>
+      <h1>Gestione ristoranti</h1>
+      <p>Crea ristoratori locali, cerca un tenant e apri il backoffice in impersonazione quando serve supporto.</p>
+    </div>
+
+    <button type="button" class="admin-console__logout" (click)="logout()">Esci</button>
+  </header>
+
+  <p class="admin-console__error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="admin-console__success" *ngIf="successMessage">{{ successMessage }}</p>
+
+  <section class="admin-console__panel">
+    <div class="admin-console__panel-head">
+      <span class="admin-console__eyebrow">Nuovo tenant</span>
+      <h2>Crea ristoratore</h2>
+      <p>Non esiste registrazione pubblica: l'accesso locale nasce solo da questa console master.</p>
+    </div>
+
+    <form class="admin-console__create-grid" (ngSubmit)="createRestaurant()" #createRestaurantForm="ngForm">
+      <label>
+        <span>Nome ristorante</span>
+        <input type="text" name="nome" [(ngModel)]="createForm.nome" required />
+      </label>
+      <label>
+        <span>Email accesso</span>
+        <input type="email" name="email" [(ngModel)]="createForm.email" required />
+      </label>
+      <label>
+        <span>Password temporanea</span>
+        <input type="password" name="password" [(ngModel)]="createForm.password" minlength="8" required />
+      </label>
+      <label>
+        <span>Indirizzo</span>
+        <input type="text" name="address" [(ngModel)]="createForm.address" />
+      </label>
+      <label>
+        <span>Citta</span>
+        <input type="text" name="city" [(ngModel)]="createForm.city" />
+      </label>
+      <button type="submit" [disabled]="creating || createRestaurantForm.invalid">
+        {{ creating ? 'Creazione...' : 'Crea ristorante' }}
+      </button>
+    </form>
+  </section>
+
+  <section class="admin-console__search admin-console__panel">
+    <label class="admin-console__search-label" for="admin-search">Cerca ristorante</label>
+    <div class="admin-console__search-row">
+      <input
+        id="admin-search"
+        type="search"
+        [(ngModel)]="searchTerm"
+        (keyup.enter)="loadRestaurants()"
+        placeholder="Nome, email o citta"
+      />
+      <button type="button" (click)="loadRestaurants()" [disabled]="loading">
+        {{ loading ? 'Caricamento...' : 'Cerca' }}
+      </button>
+    </div>
+  </section>
+
+
+  <section class="admin-console__audit admin-console__panel">
+    <div class="admin-console__audit-head">
+      <div>
+        <span class="admin-console__eyebrow">Audit supporto</span>
+        <h2>Ultime azioni master</h2>
+        <p>Traccia operativa degli accessi e delle modifiche fatte in impersonazione.</p>
+      </div>
+      <button type="button" class="admin-console__refresh" (click)="loadAuditLogs()" [disabled]="loadingAudit">
+        {{ loadingAudit ? 'Aggiorno...' : 'Aggiorna' }}
+      </button>
+    </div>
+
+    <div class="audit-list" *ngIf="auditLogs.length > 0; else emptyAudit">
+      <div class="audit-row" *ngFor="let log of auditLogs; trackBy: trackAuditLog">
+        <div>
+          <strong>{{ auditActionLabel(log.action) }}</strong>
+          <span>{{ auditMetadata(log) }}</span>
+        </div>
+        <time>{{ log.createdAt | date:'dd/MM HH:mm' }}</time>
+      </div>
+    </div>
+
+    <ng-template #emptyAudit>
+      <p class="admin-console__empty">Nessuna azione master registrata.</p>
+    </ng-template>
+  </section>
+  <section class="admin-console__results">
+    <article class="restaurant-card" *ngFor="let restaurant of restaurants; trackBy: trackRestaurant">
+      <div class="restaurant-card__meta">
+        <h2>{{ restaurant.nome }}</h2>
+        <p>{{ restaurant.email }}</p>
+        <span *ngIf="restaurant.city">{{ restaurant.city }}</span>
+      </div>
+
+      <div class="restaurant-card__actions">
+        <div class="restaurant-card__reset">
+          <input
+            type="password"
+            [(ngModel)]="resetPasswords[restaurant.id]"
+            [name]="'resetPassword' + restaurant.id"
+            placeholder="Nuova password"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="restaurant-card__secondary"
+            (click)="resetPassword(restaurant)"
+            [disabled]="resettingRestaurantId === restaurant.id"
+          >
+            {{ resettingRestaurantId === restaurant.id ? 'Aggiorno...' : 'Reset password' }}
+          </button>
+        </div>
+        <button
+          type="button"
+          class="restaurant-card__action"
+          (click)="enterRestaurant(restaurant)"
+          [disabled]="enteringRestaurantId === restaurant.id"
+        >
+          {{ enteringRestaurantId === restaurant.id ? 'Apertura...' : 'Entra nel ristorante' }}
+        </button>
+      </div>
+    </article>
+
+    <p class="admin-console__empty" *ngIf="!loading && restaurants.length === 0">Nessun ristorante trovato.</p>
+  </section>
+</section>
+
+

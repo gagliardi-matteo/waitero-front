@@ -2,7 +2,14 @@
   <app-sidebar *ngIf="showSidebar()"></app-sidebar>
 
   <div class="content" [class.with-sidebar]="showSidebar()" [class.content--customer-menu]="isCustomerMenuRoute()">
+    <div class="impersonation-banner" *ngIf="showImpersonationBanner()">
+      <div>
+        <strong>Modalita master</strong>
+        <span>Stai operando su {{ getImpersonationRestaurantName() }}</span>
+      </div>
+      <button type="button" (click)="exitImpersonation()">Esci impersonazione</button>
+    </div>
+
     <router-outlet></router-outlet>
   </div>
 </div>
-

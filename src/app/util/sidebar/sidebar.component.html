@@ -4,8 +4,8 @@
       <img src="assets/brand/logo_b.svg" alt="WaiterO" />
     </div>
     <div class="brand-copy">
-      <strong>WaiterO</strong>
-      <span>Backoffice ristorante</span>
+      <strong>{{ brandTitle }}</strong>
+      <span>{{ brandCaption }}</span>
     </div>
   </div>
 
@@ -22,14 +22,14 @@
   </ul>
 
   <div class="sidebar-footer">
-    <span>Pannello operativo</span>
+    <span>{{ footerLabel }}</span>
   </div>
 </nav>
 
 <div class="mobile-nav-shell" *ngIf="isLoggedIn()">
   <div class="mobile-nav-drawer-backdrop" *ngIf="mobileMoreOpen" (click)="closeMobileMore()"></div>
 
-  <div class="mobile-nav-drawer" [class.open]="mobileMoreOpen">
+  <div class="mobile-nav-drawer" [class.open]="mobileMoreOpen" *ngIf="secondaryItems.length > 0">
     <button
       type="button"
       class="mobile-nav-drawer__item"
@@ -43,7 +43,7 @@
     </button>
   </div>
 
-  <nav class="mobile-nav" aria-label="Navigazione principale backoffice">
+  <nav class="mobile-nav" aria-label="Navigazione principale backoffice" [style.gridTemplateColumns]="mobileGridColumns">
     <a
       class="mobile-nav__item"
       *ngFor="let item of primaryItems"
@@ -57,6 +57,7 @@
     </a>
 
     <button
+      *ngIf="secondaryItems.length > 0"
       type="button"
       class="mobile-nav__item mobile-nav__item--more"
       [class.active]="mobileMoreOpen || hasSecondaryActiveRoute()"

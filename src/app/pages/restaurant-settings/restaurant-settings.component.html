@@ -2,7 +2,7 @@
   <div class="page-header">
     <div>
       <h1>Impostazioni Ristorante</h1>
-      <p>Configura indirizzo, raggio di accesso cliente e orari di servizio.</p>
+      <p>Configura indirizzo, raggio di accesso cliente, orari di servizio e credenziali locali.</p>
     </div>
   </div>
 
@@ -17,6 +17,45 @@
 
   <div class="settings-layout" *ngIf="!loading">
     <section class="settings-card">
+      <section class="settings-section account-section" *ngIf="showAccountSettings && accountProfile">
+        <div class="section-headline">
+          <span class="section-kicker">Account ristoratore</span>
+          <h2>Accesso locale</h2>
+        </div>
+
+        <form class="account-form" [formGroup]="accountForm" (ngSubmit)="saveAccountProfile()">
+          <label>
+            <span>Email accesso</span>
+            <input type="email" [value]="accountProfile.email" disabled />
+          </label>
+
+          <label>
+            <span>Nome account</span>
+            <input type="text" formControlName="nome" />
+          </label>
+
+          <button type="submit" class="primary-btn" [disabled]="savingProfile">
+            {{ savingProfile ? 'Salvataggio...' : 'Salva profilo' }}
+          </button>
+        </form>
+
+        <form class="account-form password-form" [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <label *ngIf="accountProfile.hasPassword">
+            <span>Password attuale</span>
+            <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+          </label>
+
+          <label>
+            <span>Nuova password</span>
+            <input type="password" formControlName="newPassword" autocomplete="new-password" />
+          </label>
+
+          <button type="submit" class="ghost-btn" [disabled]="changingPassword">
+            {{ changingPassword ? 'Aggiornamento...' : (accountProfile.hasPassword ? 'Cambia password' : 'Imposta password') }}
+          </button>
+        </form>
+      </section>
+
       <form [formGroup]="form" (ngSubmit)="submit()">
         <section class="settings-section">
           <div class="section-headline">
@@ -147,3 +186,4 @@
     </aside>
   </div>
 </div>
+
