@@ -9,5 +9,13 @@ export interface DishPerformance {
   orderCount: number;
   viewToCartRate: number;
   viewToOrderRate: number;
+  recentViews: number;
+  previousViews: number;
+  recentOrderCount: number;
+  previousOrderCount: number;
+  recentViewToOrderRate: number;
+  previousViewToOrderRate: number;
+  trendDelta: number;
+  trendDirection: string;
   performanceLabel: string;
 }

@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { authGuard, masterGuard } from './auth/AuthGuard';
+import { authGuard, loginGuard, masterGuard } from './auth/AuthGuard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent) },
+  { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent), canActivate: [loginGuard] },
   {
     path: 'admin/restaurants',
     loadComponent: () => import('./pages/admin-restaurants/admin-restaurants.component').then(m => m.AdminRestaurantsComponent),
@@ -86,3 +86,4 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/menu/menu.component').then(m => m.MenuComponent)
   }
 ];
+

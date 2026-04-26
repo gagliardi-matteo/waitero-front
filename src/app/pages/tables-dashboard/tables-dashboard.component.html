@@ -32,7 +32,16 @@
   />
 
   <div class="dashboard-grid" *ngIf="filteredCards.length > 0; else emptyTpl">
-    <article class="table-tile" *ngFor="let card of filteredCards; trackBy: trackByTable">
+    <article
+      class="table-tile"
+      *ngFor="let card of filteredCards; trackBy: trackByTable"
+      [class.is-clickable]="!!card.activeOrder"
+      [attr.role]="card.activeOrder ? 'button' : null"
+      [attr.tabindex]="card.activeOrder ? 0 : null"
+      (click)="openOrder(card)"
+      (keydown.enter)="openOrder(card)"
+      (keydown.space)="openOrderFromKeyboard($event, card)"
+    >
       <div class="tile-top">
         <span class="tile-id">T{{ card.table.numero }}</span>
         <span class="status-pill" [ngClass]="statusClass(card)">{{ statusLabel(card) }}</span>
@@ -45,7 +54,7 @@
           <p><span>{{ card.itemCount }} articoli</span>  <strong style="margin-left: 5px">{{ card.total | number: '1.2-2' }} &euro;</strong></p>
           <p class="tile-time">Aggiornato {{ card.updatedAt | date: 'dd/MM HH:mm' }}</p>
         </div>
-        <button type="button" class="tile-link" (click)="openOrder(card)">Vedi dettaglio ordine</button>
+        <p class="tile-link tile-hint">Apri dettaglio premendo la card</p>
       </ng-container>
 
       <ng-template #freeStateTpl>

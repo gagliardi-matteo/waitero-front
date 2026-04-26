@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from './util/sidebar/sidebar.component';
 import { AuthService } from './auth/AuthService';
 import { NgIf } from '@angular/common';
+import { MobileNativeService } from './services/mobile-native.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { NgIf } from '@angular/common';
 export class AppComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private mobileNativeService = inject(MobileNativeService);
 
   private readonly backofficeRoutes = [
     '/admin',
@@ -28,6 +30,10 @@ export class AppComponent {
     '/add-dish',
     '/ristoratore/'
   ];
+
+  constructor() {
+    void this.mobileNativeService.initialize();
+  }
 
   isLoggedIn(): boolean {
     return this.authService.isAuthenticated();

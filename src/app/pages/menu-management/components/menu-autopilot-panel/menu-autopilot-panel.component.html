@@ -6,22 +6,35 @@
       <p>Non cambia il layout delle card: ti segnala solo cosa spingere, cosa rivedere e dove mettere in evidenza i piatti forti.</p>
     </div>
     <div class="header-actions">
-      <button class="collapse-btn" type="button" (click)="toggleExpanded()" [attr.aria-expanded]="expanded">
+      <button
+        class="collapse-btn"
+        type="button"
+        (click)="toggleExpanded()"
+        [attr.aria-expanded]="expanded"
+        [appExplainTooltip]="collapseButtonTooltip()"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
         <span>{{ expanded ? 'Comprimi' : 'Espandi' }}</span>
         <span class="material-symbols-outlined">{{ expanded ? 'expand_less' : 'expand_more' }}</span>
-      </button>
-      <button class="autopilot-btn" [disabled]="applyingAutopilot || recommendedCandidates.length === 0" (click)="emitApply($event)">
-        {{ applyingAutopilot ? 'Applico...' : 'Applica consigliati automatici' }}
       </button>
     </div>
   </div>
 
   <ng-container *ngIf="expanded">
     <div class="autopilot-grid">
-      <div class="autopilot-card">
+      <div
+        class="autopilot-card"
+        [appExplainTooltip]="recommendedSectionTooltip()"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
         <h3>Da spingere</h3>
         <div class="dish-chip-list" *ngIf="recommendedCandidates.length > 0; else noRecommended">
-          <div class="dish-chip" *ngFor="let item of recommendedCandidates; trackBy: trackDish">
+          <div
+            class="dish-chip"
+            *ngFor="let item of recommendedCandidates; trackBy: trackDish"
+            [appExplainTooltip]="recommendedDishTooltip(item)"
+            [explainTooltipEnabled]="explainabilityEnabled"
+          >
             <span>{{ item.nome }}</span>
             <small>{{ item.categoria }}</small>
           </div>
@@ -29,10 +42,19 @@
         <ng-template #noRecommended><p>Nessun candidato nuovo da marcare come consigliato.</p></ng-template>
       </div>
 
-      <div class="autopilot-card warning">
+      <div
+        class="autopilot-card warning"
+        [appExplainTooltip]="optimizationSectionTooltip()"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
         <h3>Da rivedere</h3>
         <div class="dish-chip-list" *ngIf="optimizationQueue.length > 0; else noOptimization">
-          <div class="dish-chip" *ngFor="let item of optimizationQueue; trackBy: trackDish">
+          <div
+            class="dish-chip"
+            *ngFor="let item of optimizationQueue; trackBy: trackDish"
+            [appExplainTooltip]="optimizationDishTooltip(item)"
+            [explainTooltipEnabled]="explainabilityEnabled"
+          >
             <span>{{ item.nome }}</span>
             <small>Molto visto, poco ordinato</small>
           </div>
@@ -44,11 +66,29 @@
     <div class="category-plan-card" *ngIf="categoryPlans.length > 0">
       <h3>Ordine consigliato per categoria</h3>
       <div class="category-plan-list">
-        <div class="category-plan" *ngFor="let plan of categoryPlans; trackBy: trackPlan">
+        <div
+          class="category-plan"
+          *ngFor="let plan of categoryPlans; trackBy: trackPlan"
+          [appExplainTooltip]="categoryPlanTooltip(plan)"
+          [explainTooltipEnabled]="explainabilityEnabled"
+        >
           <div class="category-name">{{ plan.categoria }}</div>
           <div class="category-order">
-            <span class="spotlight" *ngIf="plan.spotlight">{{ plan.spotlight.nome }}</span>
-            <span *ngFor="let item of plan.nextDishes; trackBy: trackDish">{{ item.nome }}</span>
+            <span
+              class="spotlight"
+              *ngIf="plan.spotlight"
+              [appExplainTooltip]="categoryPlanDishTooltip(plan.spotlight, true)"
+              [explainTooltipEnabled]="explainabilityEnabled"
+            >
+              {{ plan.spotlight.nome }}
+            </span>
+            <span
+              *ngFor="let item of plan.nextDishes; trackBy: trackDish"
+              [appExplainTooltip]="categoryPlanDishTooltip(item, false)"
+              [explainTooltipEnabled]="explainabilityEnabled"
+            >
+              {{ item.nome }}
+            </span>
           </div>
         </div>
       </div>

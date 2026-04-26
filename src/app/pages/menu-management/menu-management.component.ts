@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -12,6 +12,8 @@ import { DishPerformance } from '../../models/dish-performance.model';
 import { rankDishes } from '../../shared/menu-ranking';
 import { MenuInsightsPanelComponent } from './components/menu-insights-panel/menu-insights-panel.component';
 import { MenuAutopilotPanelComponent } from './components/menu-autopilot-panel/menu-autopilot-panel.component';
+import { UiFeaturesService } from '../../services/ui-features.service';
+import { ExplainTooltipDirective } from '../../shared/explain-tooltip/explain-tooltip.directive';
 
 interface AutopilotCategoryPlan {
   categoria: string;
@@ -22,7 +24,7 @@ interface AutopilotCategoryPlan {
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent],
+  imports: [CommonModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent, ExplainTooltipDirective],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.scss',
 })
@@ -31,7 +33,9 @@ export class MenuManagementComponent implements OnInit {
   userId: number | null = null;
   deletingDishId: number | null = null;
   togglingRecommendedId: number | null = null;
-  applyingAutopilot = false;
+  explainabilityEnabled = false;
+
+  private uiFeaturesService = inject(UiFeaturesService);
 
   constructor(
     private http: HttpClient,
@@ -40,6 +44,7 @@ export class MenuManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadExplainability();
     this.userId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
     if (!this.userId) {
       alert('Ristorante non disponibile');
@@ -78,32 +83,6 @@ export class MenuManagementComponent implements OnInit {
   toggleRecommended(item: Piatto, event: Event): void {
     event.stopPropagation();
     this.updateRecommended(item, !item.consigliato);
-  }
-
-  applyAutopilotRecommended(event: Event): void {
-    event.stopPropagation();
-    const candidates = this.autopilotRecommendedCandidates;
-    if (this.applyingAutopilot || candidates.length === 0) {
-      return;
-    }
-
-    this.applyingAutopilot = true;
-    forkJoin(candidates.map(item => this.http.put<Piatto>(`${environment.apiUrl}/menu/piatti/${item.id}`, {
-      ...item,
-      consigliato: true,
-      disponibile: item.disponibile ?? true
-    }))).subscribe({
-      next: () => {
-        const candidateIds = new Set(candidates.map(item => item.id));
-        this.piatti = this.piatti.map(item => candidateIds.has(item.id) ? { ...item, consigliato: true } : item);
-        this.applyingAutopilot = false;
-      },
-      error: err => {
-        console.error('Errore applicazione autopilot consigliati:', err);
-        this.applyingAutopilot = false;
-        alert(err.error?.message ?? 'Impossibile applicare i consigliati automatici.');
-      }
-    });
   }
 
   get menuByCategory(): [string, Piatto[]][] {
@@ -274,6 +253,67 @@ export class MenuManagementComponent implements OnInit {
 
   private hasUpsellOpportunity(piatto: Piatto): boolean {
     return (piatto.numeroOrdini ?? 0) >= 3 || (piatto.viewToCartRate ?? 0) >= 0.18;
+  }
+
+  addDishButtonTooltip(): string {
+    return this.joinTooltip([
+      'Azione UI.',
+      'Premendo questo bottone si apre la pagina di inserimento nuovo piatto.',
+      'Non vengono ricalcolate metriche e non parte nessuna scrittura sul backend finche il nuovo piatto non viene salvato.'
+    ]);
+  }
+
+  categorySectionTooltip(categoria: string, items: Piatto[]): string {
+    return this.joinTooltip([
+      `Categoria ${categoria}.`,
+      'I piatti vengono raggruppati per categoria normalizzata in maiuscolo.',
+      "L'ordine delle categorie e' fisso: ANTIPASTO, PRIMO, SECONDO, CONTORNO, DOLCE, BEVANDA.",
+      'Dentro ogni categoria i piatti sono ordinati per numeroOrdini decrescente e, a parita, per id crescente.',
+      `Piatti mostrati in questa sezione: ${items.length}.`
+    ]);
+  }
+
+  dishCardTooltip(item: Piatto): string {
+    return this.joinTooltip([
+      `${item.nome}.`,
+      'Il contenuto del piatto arriva da /menu/piattiRistoratore/{ristoranteId}. Le metriche arrivano da /analytics/dish-performance e vengono fuse lato frontend.',
+      'Metriche usate: orderCount da customer_orders/customer_order_items; views da event_log.view_dish; clicks da event_log.click_dish; addToCart da event_log.add_to_cart.',
+      'Formule: viewToOrderRate = orderCount / views. viewToCartRate = addToCart / views.',
+      "Label backend: top_performer se orderCount >= 5 oppure views >= 10 e conversione >= 15%; high_interest_low_conversion se views >= 10 e ordini = 0; cart_abandonment se addToCart > 0 e ordini = 0.",
+      `Valori attuali: ordini ${item.numeroOrdini ?? 0}, views ${item.views ?? 0}, clicks ${item.clicks ?? 0}, addToCart ${item.addToCart ?? 0}, conversione ${this.formatPercent(item.viewToOrderRate)}, label ${item.performanceLabel ?? 'stable'}.`
+    ]);
+  }
+
+  editDishButtonTooltip(item: Piatto): string {
+    return this.joinTooltip([
+      `Azione su ${item.nome}.`,
+      'Apre la pagina di modifica del piatto.',
+      'Non salva nulla finche non confermi le modifiche dal form dedicato.'
+    ]);
+  }
+
+  deleteDishButtonTooltip(item: Piatto): string {
+    return this.joinTooltip([
+      `Azione distruttiva su ${item.nome}.`,
+      `Flusso reale: conferma browser -> DELETE /menu/piatti/${item.id} -> se il backend risponde OK il piatto viene rimosso dalla lista locale.`,
+      "Se il backend restituisce errore, la UI mostra un alert e il piatto resta invariato."
+    ]);
+  }
+
+  private loadExplainability(): void {
+    this.uiFeaturesService.getFeatures().subscribe(features => {
+      this.explainabilityEnabled = features.explainabilityBalloonsEnabled;
+    });
+  }
+
+  private formatPercent(value: number | undefined): string {
+    return `${((value ?? 0) * 100).toFixed(1)}%`;
+  }
+
+  private joinTooltip(parts: Array<string | null | undefined>): string {
+    return parts
+      .filter((part): part is string => !!part && part.trim().length > 0)
+      .join('\n\n');
   }
 
   private updateRecommended(item: Piatto, nextValue: boolean): void {

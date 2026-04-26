@@ -4,31 +4,48 @@
       <h1>Menu</h1>
       <p class="page-subtitle">Gestisci i piatti con una vista piu pulita e rapida.</p>
     </div>
-    <button class="add-button" [routerLink]="['/add-dish']">Inserisci Piatto</button>
+    <button
+      class="add-button"
+      [routerLink]="['/add-dish']"
+      [appExplainTooltip]="addDishButtonTooltip()"
+      [explainTooltipEnabled]="explainabilityEnabled"
+    >
+      Inserisci Piatto
+    </button>
   </div>
 
   <app-menu-insights-panel
     [topPerformerCount]="topPerformerCount"
     [optimizationCount]="optimizationCount"
     [upsellOpportunityCount]="upsellOpportunityCount"
+    [explainabilityEnabled]="explainabilityEnabled"
   />
 
   <app-menu-autopilot-panel
     [recommendedCandidates]="autopilotRecommendedCandidates"
     [optimizationQueue]="autopilotOptimizationQueue"
     [categoryPlans]="autopilotCategoryPlans"
-    [applyingAutopilot]="applyingAutopilot"
-    (applyRecommended)="applyAutopilotRecommended($event)"
+    [explainabilityEnabled]="explainabilityEnabled"
   />
 
   <div *ngFor="let entry of menuByCategory" class="category-section">
-    <div class="category-heading">
+    <div
+      class="category-heading"
+      [appExplainTooltip]="categorySectionTooltip(entry[0], entry[1])"
+      [explainTooltipEnabled]="explainabilityEnabled"
+    >
       <h2 class="category-title">{{ entry[0] }}</h2>
       <span class="category-count">{{ entry[1].length }} piatti</span>
     </div>
 
     <div class="menu-grid">
-      <a class="menu-card" *ngFor="let item of entry[1]; trackBy: trackDish" [routerLink]="['/ristoratore/piatto', item.id]">
+      <a
+        class="menu-card"
+        *ngFor="let item of entry[1]; trackBy: trackDish"
+        [routerLink]="['/ristoratore/piatto', item.id]"
+        [appExplainTooltip]="dishCardTooltip(item)"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
         <div class="card-image-shell">
           <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
           <span class="top-badge" *ngIf="item.consigliato">Top</span>
@@ -41,8 +58,23 @@
             <span class="metric">{{ item.numeroOrdini ?? 0 }} ordini - {{ formatRate(item.viewToOrderRate) }}</span>
           </div>
           <div class="actions" (click)="$event.stopPropagation()">
-            <button class="text-btn" [routerLink]="['/ristoratore/piatto/modifica', item.id]">Modifica</button>
-            <button class="text-btn danger" [disabled]="deletingDishId === item.id" (click)="deleteDish(item, $event)">Elimina</button>
+            <button
+              class="text-btn"
+              [routerLink]="['/ristoratore/piatto/modifica', item.id]"
+              [appExplainTooltip]="editDishButtonTooltip(item)"
+              [explainTooltipEnabled]="explainabilityEnabled"
+            >
+              Modifica
+            </button>
+            <button
+              class="text-btn danger"
+              [disabled]="deletingDishId === item.id"
+              (click)="deleteDish(item, $event)"
+              [appExplainTooltip]="deleteDishButtonTooltip(item)"
+              [explainTooltipEnabled]="explainabilityEnabled"
+            >
+              Elimina
+            </button>
           </div>
         </div>
       </a>

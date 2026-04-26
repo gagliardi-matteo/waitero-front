@@ -1,10 +1,32 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { AuthService } from './AuthService';
 
 function isCustomerMenuUrl(url: string): boolean {
   return url === '/menu' || url.startsWith('/menu/');
 }
+
+function isNativeMobileApp(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+export const loginGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (!isNativeMobileApp()) {
+    return true;
+  }
+
+  return auth.ensureValidAccessToken().then(token => {
+    if (!token) {
+      return true;
+    }
+
+    return router.createUrlTree([auth.getDefaultAuthenticatedRoute()]);
+  });
+};
 
 export const authGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);

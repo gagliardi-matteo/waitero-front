@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg: #f8f5f0;
@@ -49,10 +49,21 @@
 
 html {
   font-size: 16px;
+  min-height: 100%;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  touch-action: manipulation;
+  padding:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
   overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(216, 122, 44, 0.14), transparent 28%),
@@ -81,6 +92,7 @@ input, button, textarea, select {
 button {
   color: inherit;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 p, h1, h2, h3, h4, h5, h6 {
@@ -240,6 +252,51 @@ h1.page-title {
   span {
     color: rgba(211, 216, 226, 0.66);
     font-size: 0.8rem;
+  }
+}
+
+
+.capacitor-native {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.capacitor-native input,
+.capacitor-native textarea,
+.capacitor-native [contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.explain-tooltip-overlay {
+  position: absolute;
+  z-index: 1200;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 0.8rem 0.95rem;
+  border: 1px solid rgba(201, 139, 31, 0.26);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 242, 0.98), rgba(255, 247, 224, 0.98));
+  color: var(--text);
+  box-shadow: var(--shadow-md);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .primary-btn:hover {
+    background: var(--accent);
+  }
+
+  .ghost-btn:hover,
+  .secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .danger-btn:hover {
+    background: var(--danger-soft);
   }
 }
 

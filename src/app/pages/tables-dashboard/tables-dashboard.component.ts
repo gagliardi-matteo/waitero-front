@@ -114,6 +114,11 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/orders', card.activeOrder.id]);
   }
 
+  openOrderFromKeyboard(event: Event, card: TableDashboardCard): void {
+    event.preventDefault();
+    this.openOrder(card);
+  }
+
   statusLabel(card: TableDashboardCard): string {
     switch (card.state) {
       case 'OPEN':

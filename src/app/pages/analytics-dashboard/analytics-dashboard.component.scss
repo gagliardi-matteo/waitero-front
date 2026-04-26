@@ -58,6 +58,7 @@
 
 .kpi-card,
 .simple-panel,
+.insights-box,
 .loading-card,
 .empty-state {
   border: 1px solid var(--border);
@@ -93,6 +94,87 @@
 .simple-panel {
   padding: 1.2rem;
   min-width: 0;
+}
+
+.insights-box {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.insights-box h3 {
+  margin-bottom: 8px;
+}
+
+.insights-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.insights-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.insights-toggle span:first-child {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.insights-toggle .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
+.insights-head .primary-btn {
+  flex: 0 0 auto;
+}
+
+.insights-head h3,
+.insights-toggle {
+  margin: 0;
+}
+
+.insights-summary {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+}
+
+.insights-box ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.insights-box li {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.insights-box li strong {
+  font-size: 0.95rem;
+}
+
+.insights-box li small {
+  color: var(--text-muted);
+}
+
+.insights-box li span {
+  color: var(--text-main);
+}
+
+.insights-box li + li {
+  margin-top: 0.35rem;
 }
 
 .simple-panel h3 {
@@ -162,11 +244,20 @@
 
 .trend {
   font-weight: 700;
+  color: var(--text-main);
+}
+
+.trend.up {
   color: var(--success);
 }
 
 .trend.down {
   color: var(--danger);
+}
+
+.trend.flat,
+.trend.na {
+  color: var(--text-muted);
 }
 
 .error {
@@ -198,7 +289,8 @@
 
   .page-header,
   .page-actions,
-  .table-head {
+  .table-head,
+  .insights-head {
     flex-direction: column;
     align-items: stretch;
   }

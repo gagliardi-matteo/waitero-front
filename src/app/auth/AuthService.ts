@@ -94,6 +94,14 @@ export class AuthService {
     return this.getActingRestaurantId() !== null;
   }
 
+  getDefaultAuthenticatedRoute(): string {
+    if (this.isMaster() && !this.isImpersonating()) {
+      return '/admin/restaurants';
+    }
+
+    return '/menu-management';
+  }
+
   getRole(): TokenPayload['role'] | null {
     return this.getDecodedAccessToken()?.role ?? null;
   }
@@ -303,7 +311,9 @@ export class AuthService {
 
   private navigateAfterLogin(accessToken: string): Promise<boolean> {
     const decoded = this.decodeToken(accessToken);
-    const target = decoded?.role === 'MASTER' ? '/admin/restaurants' : '/menu-management';
+    const target = decoded?.role === 'MASTER' && !decoded?.actingRestaurantId
+      ? '/admin/restaurants'
+      : '/menu-management';
     return this.router.navigate([target]);
   }
 
@@ -311,6 +321,8 @@ export class AuthService {
     return isPlatformBrowser(this.platformId);
   }
 }
+
+
 
 
 
