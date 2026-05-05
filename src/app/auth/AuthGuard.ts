@@ -42,7 +42,7 @@ export const authGuard: CanActivateFn = (route, state) => {
 
     if (state.url.startsWith('/admin')) {
       if (!auth.isMaster()) {
-        void router.navigate(['/menu-management']);
+        void router.navigate([auth.getDefaultAuthenticatedRoute()]);
         return false;
       }
       return true;
@@ -68,7 +68,7 @@ export const masterGuard: CanActivateFn = (route, state) => {
     }
 
     if (!auth.isMaster()) {
-      void router.navigate(['/menu-management']);
+      void router.navigate([auth.getDefaultAuthenticatedRoute()]);
       return false;
     }
 

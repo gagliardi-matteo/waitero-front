@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { BusinessType } from '../models/business-type.model';
 
 export interface RestaurantServiceHour {
   id?: number;
@@ -12,6 +13,7 @@ export interface RestaurantServiceHour {
 
 export interface RestaurantSettings {
   id: number;
+  businessType: BusinessType;
   nome: string;
   email: string;
   address: string | null;

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { Piatto } from '../../../../models/piatto.model';
 import { ExplainTooltipDirective } from '../../../../shared/explain-tooltip/explain-tooltip.directive';
+import { dishCategoryLabel } from '../../../../shared/dish-category';
 
 interface AutopilotCategoryPlan {
   categoria: string;
@@ -34,6 +35,10 @@ export class MenuAutopilotPanelComponent {
 
   trackPlan(index: number, plan: AutopilotCategoryPlan): string {
     return plan.categoria;
+  }
+
+  categoryLabel(item: Piatto): string {
+    return dishCategoryLabel(item);
   }
 
   recommendedSectionTooltip(): string {

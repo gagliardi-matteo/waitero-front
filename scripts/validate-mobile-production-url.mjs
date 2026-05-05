@@ -1,4 +1,4 @@
-const defaultApiUrl = 'https://waitero-back-production-f19d.up.railway.app/api';
+const defaultApiUrl = 'https://waitero-back.onrender.com/api';
 const rawApiUrl = process.env.WAITERO_API_URL?.trim() || defaultApiUrl;
 
 let parsedUrl;

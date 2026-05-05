@@ -53,7 +53,7 @@ export class AppComponent {
   }
 
   getImpersonationRestaurantName(): string {
-    return this.authService.getImpersonatedRestaurantName() ?? 'ristorante selezionato';
+    return this.authService.getImpersonatedRestaurantName() ?? 'locale selezionato';
   }
 
   async exitImpersonation(): Promise<void> {

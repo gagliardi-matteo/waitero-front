@@ -2,8 +2,8 @@
   <header class="admin-console__hero">
     <div>
       <span class="admin-console__eyebrow">Console master</span>
-      <h1>Gestione ristoranti</h1>
-      <p>Crea ristoratori locali, cerca un tenant e apri il backoffice in impersonazione quando serve supporto.</p>
+      <h1>Gestione locali</h1>
+      <p>Crea tenant ristorante o pub, cerca un locale e apri il backoffice in impersonazione quando serve supporto.</p>
     </div>
 
     <button type="button" class="admin-console__logout" (click)="logout()">Esci</button>
@@ -15,13 +15,20 @@
   <section class="admin-console__panel">
     <div class="admin-console__panel-head">
       <span class="admin-console__eyebrow">Nuovo tenant</span>
-      <h2>Crea ristoratore</h2>
+      <h2>Crea locale</h2>
       <p>Non esiste registrazione pubblica: l'accesso locale nasce solo da questa console master.</p>
     </div>
 
     <form class="admin-console__create-grid" (ngSubmit)="createRestaurant()" #createRestaurantForm="ngForm">
       <label>
-        <span>Nome ristorante</span>
+        <span>Tipo attivita</span>
+        <select name="businessType" [(ngModel)]="createForm.businessType" required>
+          <option value="RISTORANTE">Ristorante</option>
+          <option value="PUB">Pub</option>
+        </select>
+      </label>
+      <label>
+        <span>Nome locale</span>
         <input type="text" name="nome" [(ngModel)]="createForm.nome" required />
       </label>
       <label>
@@ -41,13 +48,13 @@
         <input type="text" name="city" [(ngModel)]="createForm.city" />
       </label>
       <button type="submit" [disabled]="creating || createRestaurantForm.invalid">
-        {{ creating ? 'Creazione...' : 'Crea ristorante' }}
+        {{ creating ? 'Creazione...' : 'Crea locale' }}
       </button>
     </form>
   </section>
 
   <section class="admin-console__search admin-console__panel">
-    <label class="admin-console__search-label" for="admin-search">Cerca ristorante</label>
+    <label class="admin-console__search-label" for="admin-search">Cerca locale</label>
     <div class="admin-console__search-row">
       <input
         id="admin-search"
@@ -94,6 +101,7 @@
       <div class="restaurant-card__meta">
         <h2>{{ restaurant.nome }}</h2>
         <p>{{ restaurant.email }}</p>
+        <span>{{ businessTypeLabel(restaurant.businessType) }}</span>
         <span *ngIf="restaurant.city">{{ restaurant.city }}</span>
       </div>
 
@@ -121,12 +129,12 @@
           (click)="enterRestaurant(restaurant)"
           [disabled]="enteringRestaurantId === restaurant.id"
         >
-          {{ enteringRestaurantId === restaurant.id ? 'Apertura...' : 'Entra nel ristorante' }}
+          {{ enteringRestaurantId === restaurant.id ? 'Apertura...' : 'Entra nel backoffice' }}
         </button>
       </div>
     </article>
 
-    <p class="admin-console__empty" *ngIf="!loading && restaurants.length === 0">Nessun ristorante trovato.</p>
+    <p class="admin-console__empty" *ngIf="!loading && restaurants.length === 0">Nessun locale trovato.</p>
   </section>
 </section>
 

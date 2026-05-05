@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, RestaurantSettingsService } from '../../services/restaurant-settings.service';
 import { AuthService, BackofficeProfile } from '../../auth/AuthService';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { businessTypeLabel } from '../../models/business-type.model';
 
 type DuplicateMode = 'slot' | 'day';
 
@@ -94,6 +95,10 @@ export class RestaurantSettingsComponent {
       : `${dayLabel} ${slot.startTime}-${slot.endTime}`;
   }
 
+  get businessTypeDisplay(): string {
+    return businessTypeLabel(this.settings?.businessType);
+  }
+
   loadSettings(): void {
     this.loading = true;
     this.settingsService.getSettings().subscribe({
@@ -124,8 +129,8 @@ export class RestaurantSettingsComponent {
         this.loading = false;
       },
       error: err => {
-        console.error('Errore caricamento impostazioni ristorante', err);
-        this.errorMessage = 'Impossibile caricare le impostazioni del ristorante.';
+        console.error('Errore caricamento impostazioni locale', err);
+        this.errorMessage = 'Impossibile caricare le impostazioni del locale.';
         this.loading = false;
       }
     });
@@ -356,12 +361,12 @@ export class RestaurantSettingsComponent {
     this.settingsService.updateSettings(payload).subscribe({
       next: settings => {
         this.settings = settings;
-        this.successMessage = 'Impostazioni ristorante aggiornate.';
+        this.successMessage = 'Impostazioni locale aggiornate.';
         this.saving = false;
         this.loadSettings();
       },
       error: err => {
-        console.error('Errore aggiornamento impostazioni ristorante', err);
+        console.error('Errore aggiornamento impostazioni locale', err);
         this.errorMessage = err.error?.message ?? 'Aggiornamento impostazioni non riuscito.';
         this.saving = false;
       }
@@ -390,6 +395,9 @@ export class RestaurantSettingsComponent {
     return this.weekdays.find(day => day.value === dayOfWeek)?.label ?? dayOfWeek;
   }
 
+  logout(): void {
+    this.authService.logout();
+  }
 
   private syncPasswordValidators(profile: BackofficeProfile): void {
     const currentPasswordControl = this.passwordForm.controls.currentPassword;

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
@@ -6,6 +6,8 @@ import { AuthService } from '../../auth/AuthService';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../environments/environment';
 import { STANDARD_ALLERGENS, buildStoredAllergens } from '../../shared/allergens';
+import { MenuCategory } from '../../models/menu-category.model';
+import { MenuCategoryService } from '../../services/menu-category.service';
 
 @Component({
   selector: 'app-add-dish',
@@ -20,6 +22,9 @@ export class AddDishComponent {
   previewUrl: string | null = null;
   standardAllergens = [...STANDARD_ALLERGENS];
   selectedAllergens = new Set<string>();
+  categories: MenuCategory[] = [];
+
+  private categoryService = inject(MenuCategoryService);
 
   constructor(
     private fb: FormBuilder,
@@ -27,9 +32,9 @@ export class AddDishComponent {
     private router: Router,
     private authService: AuthService
   ) {
-    this.dishForm = this.fb.group({
+      this.dishForm = this.fb.group({
       nome: ['', Validators.required],
-      categoria: ['', Validators.required],
+      categoriaId: [null, Validators.required],
       prezzo: [0, [Validators.required, Validators.min(0)]],
       descrizione: [''],
       ingredienti: [''],
@@ -40,6 +45,17 @@ export class AddDishComponent {
 
     this.dishForm.get('allergeniCustom')?.valueChanges.subscribe(() => {
       this.syncAllergensField();
+    });
+  }
+
+  ngOnInit(): void {
+    this.categoryService.getCategories().subscribe({
+      next: categories => {
+        this.categories = categories;
+      },
+      error: err => {
+        console.error('Errore caricamento categorie locale', err);
+      }
     });
   }
 
@@ -79,14 +95,14 @@ export class AddDishComponent {
 
     const userId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
     if (!userId) {
-      alert('Ristorante non disponibile');
+      alert('Locale non disponibile');
       return;
     }
 
     const rawValues = this.dishForm.getRawValue();
     const dto = {
       ...rawValues,
-      categoria: rawValues.categoria.toUpperCase(),
+      categoriaId: rawValues.categoriaId,
       ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
       allergeni: this.normalizeOptionalText(allergeni),
       consigliato: !!rawValues.consigliato

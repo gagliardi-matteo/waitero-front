@@ -16,6 +16,7 @@ import { splitStoredAllergens } from '../../shared/allergens';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { categoryOptionsFromDishes, dishCategoryCode, groupDishesByCategory, DishCategoryGroup } from '../../shared/dish-category';
 
 @Component({
   selector: 'app-menu',
@@ -28,7 +29,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   restaurantId: string = '';
   tableId: string = '';
   piatti: Piatto[] = [];
-  piattiRaggruppati: [string, Piatto[]][] = [];
+  piattiRaggruppati: DishCategoryGroup[] = [];
   ristoranteObj!: Ristorante;
   token!: string;
   searchTerm = '';
@@ -43,10 +44,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   private lastScrollBucket = 0;
   private impressionObserver: IntersectionObserver | null = null;
   private impressionDishIds = new Set<number>();
-
-  readonly categoriaOrder: string[] = [
-    'ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'
-  ];
 
   constructor(
     private orderService: OrderService,
@@ -186,9 +183,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   get availableCategories(): string[] {
-    const categories = this.piatti
-      .map(piatto => (piatto.categoria ?? 'SENZA CATEGORIA').toUpperCase());
-    return this.categoriaOrder.filter(cat => categories.includes(cat));
+    return categoryOptionsFromDishes(this.piatti).map(category => category.code);
   }
 
   loadPiatti(markLoading = false) {
@@ -277,7 +272,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   private applyFilters(): void {
     const normalizedSearch = this.searchTerm.trim().toLowerCase();
     const filtered = this.piatti.filter(piatto => {
-      const category = (piatto.categoria ?? 'SENZA CATEGORIA').toUpperCase();
+      const category = dishCategoryCode(piatto);
       const matchesCategory = this.selectedCategory === 'ALL' || category === this.selectedCategory;
       const haystack = [piatto.nome, piatto.descrizione, piatto.ingredienti, piatto.allergeni]
         .filter((value): value is string => !!value)
@@ -288,20 +283,12 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
 
     this.piattiRaggruppati = this.raggruppaPerCategoria(filtered);
-    this.activeVisibleCategory = this.piattiRaggruppati[0]?.[0] ?? '';
+    this.activeVisibleCategory = this.piattiRaggruppati[0]?.code ?? '';
     this.syncActiveVisibleCategory();
   }
 
-  private raggruppaPerCategoria(piatti: Piatto[]): [string, Piatto[]][] {
-    const map = new Map<string, Piatto[]>();
-    for (const piatto of piatti) {
-      const cat = (piatto.categoria ?? 'SENZA CATEGORIA').toUpperCase();
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(piatto);
-    }
-    return this.categoriaOrder
-      .filter(cat => map.has(cat))
-      .map(cat => [cat, [...map.get(cat)!]]);
+  private raggruppaPerCategoria(piatti: Piatto[]): DishCategoryGroup[] {
+    return groupDishesByCategory(piatti, (left, right) => left.nome.localeCompare(right.nome));
   }
 
   private buildRecommendedDishes(piatti: Piatto[]): Piatto[] {
@@ -342,9 +329,10 @@ export class MenuComponent implements OnInit, OnDestroy {
     }
 
     const stickyOffset = 112;
-    let nextActive = this.piattiRaggruppati[0][0];
+    let nextActive = this.piattiRaggruppati[0].code;
 
-    for (const [category] of this.piattiRaggruppati) {
+    for (const group of this.piattiRaggruppati) {
+      const category = group.code;
       const section = document.getElementById(`cat-${category}`);
       if (!section) {
         continue;
@@ -409,9 +397,6 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.impressionObserver?.observe(element);
     });
   }
-  categoriaLabel(cat: string): string {
-    return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
-  }
 
   addToOrder(piatto: Piatto) {
     this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, 1)
@@ -474,7 +459,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       dishId: piatto.id,
       metadata: {
         page: 'menu',
-        category: piatto.categoria ?? null
+        category: piatto.categoriaCode ?? piatto.categoria ?? null
       }
     });
     this.router.navigate(['/menu/piatto', piatto.id]);

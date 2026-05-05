@@ -35,10 +35,10 @@
           type="button"
           class="category-pill"
           *ngFor="let cat of piattiRaggruppati"
-          [class.active]="isCategoryActive(cat[0])"
-          (click)="selectCategory(cat[0])"
+          [class.active]="isCategoryActive(cat.code)"
+          (click)="selectCategory(cat.code)"
         >
-          {{ categoriaLabel(cat[0]) }}
+          {{ cat.label }}
         </button>
       </div>
     </div>
@@ -88,9 +88,9 @@
     </section>
 
     <div class="category" *ngFor="let group of piattiRaggruppati">
-      <h2 class="category-title" [id]="'cat-' + group[0]">{{ categoriaLabel(group[0]) }}</h2>
+      <h2 class="category-title" [id]="'cat-' + group.code">{{ group.label }}</h2>
 
-      <div class="dish-card" *ngFor="let piatto of group[1]; trackBy: trackById" data-track-menu-item="true" [attr.data-dish-id]="piatto.id" [attr.data-category]="piatto.categoria" (click)="openDettaglio(piatto)">
+      <div class="dish-card" *ngFor="let piatto of group.items; trackBy: trackById" data-track-menu-item="true" [attr.data-dish-id]="piatto.id" [attr.data-category]="piatto.categoriaCode || piatto.categoria" (click)="openDettaglio(piatto)">
         <div class="dish-info">
           <div>
             <div class="dish-name">{{ piatto.nome }}</div>
@@ -123,4 +123,3 @@
     <app-order-summary [piatti]="ordine" />
   </div>
 </div>
-

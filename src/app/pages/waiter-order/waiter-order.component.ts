@@ -11,6 +11,7 @@ import { RestaurantOrderService } from '../../services/restaurant-order.service'
 import { TableService } from '../../services/table.service';
 import { environment } from '../../../environments/environment';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { categoryOptionsFromDishes, dishCategoryCode, groupDishesByCategory, DishCategoryGroup, DishCategoryOption } from '../../shared/dish-category';
 
 @Component({
   selector: 'app-waiter-order',
@@ -34,8 +35,6 @@ export class WaiterOrderComponent implements OnInit {
   private ordersService = inject(RestaurantOrderService);
   private router = inject(Router);
 
-  readonly categoriaOrder: string[] = ['ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'];
-
   ngOnInit(): void {
     forkJoin({
       tables: this.tableService.getTables(),
@@ -54,39 +53,18 @@ export class WaiterOrderComponent implements OnInit {
     });
   }
 
-  get categories(): string[] {
-    const set = new Set<string>(this.dishes.map(dish => (dish.categoria || 'ALTRO').toUpperCase()));
-    const sorted = Array.from(set).sort((a, b) => {
-      const indexA = this.categoriaOrder.indexOf(a);
-      const indexB = this.categoriaOrder.indexOf(b);
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
-    return ['ALL', ...sorted];
+  get categories(): DishCategoryOption[] {
+    return categoryOptionsFromDishes(this.dishes);
   }
 
   get filteredDishes(): Piatto[] {
     return this.dishes
-      .filter(dish => this.selectedCategory === 'ALL' || (dish.categoria || 'ALTRO').toUpperCase() === this.selectedCategory)
+      .filter(dish => this.selectedCategory === 'ALL' || dishCategoryCode(dish) === this.selectedCategory)
       .sort((a, b) => a.nome.localeCompare(b.nome));
   }
 
-  get groupedDishes(): [string, Piatto[]][] {
-    const groups = new Map<string, Piatto[]>();
-    for (const dish of this.dishes) {
-      const category = (dish.categoria || 'ALTRO').toUpperCase();
-      if (!groups.has(category)) {
-        groups.set(category, []);
-      }
-      groups.get(category)!.push(dish);
-    }
-
-    return Array.from(groups.entries())
-      .sort((a, b) => {
-        const indexA = this.categoriaOrder.indexOf(a[0]);
-        const indexB = this.categoriaOrder.indexOf(b[0]);
-        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-      })
-      .map(([category, items]) => [category, items.sort((a, b) => a.nome.localeCompare(b.nome))]);
+  get groupedDishes(): DishCategoryGroup[] {
+    return groupDishesByCategory(this.dishes, (left, right) => left.nome.localeCompare(right.nome));
   }
 
   get selectedItems() {

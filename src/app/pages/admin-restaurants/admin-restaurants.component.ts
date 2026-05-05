@@ -5,9 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../auth/AuthService';
 import { environment } from '../../../environments/environment';
+import { BusinessType, businessTypeLabel } from '../../models/business-type.model';
 
 interface AdminRestaurantSummary {
   id: number;
+  businessType: BusinessType;
   nome: string;
   email: string;
   city?: string | null;
@@ -32,6 +34,7 @@ interface ImpersonationResponse {
 }
 
 interface CreateRestaurantForm {
+  businessType: BusinessType;
   nome: string;
   email: string;
   password: string;
@@ -84,8 +87,8 @@ export class AdminRestaurantsComponent implements OnInit {
         this.loading = false;
       },
       error: err => {
-        console.error('Errore caricamento ristoranti admin', err);
-        this.errorMessage = err.error?.message ?? 'Impossibile caricare i ristoranti.';
+        console.error('Errore caricamento locali admin', err);
+        this.errorMessage = err.error?.message ?? 'Impossibile caricare i locali.';
         this.loading = false;
       }
     });
@@ -107,6 +110,7 @@ export class AdminRestaurantsComponent implements OnInit {
 
   createRestaurant(): void {
     const payload = {
+      businessType: this.createForm.businessType,
       nome: this.createForm.nome.trim(),
       email: this.createForm.email.trim(),
       password: this.createForm.password,
@@ -127,13 +131,13 @@ export class AdminRestaurantsComponent implements OnInit {
       next: restaurant => {
         this.restaurants = [restaurant, ...this.restaurants.filter(item => item.id !== restaurant.id)];
         this.createForm = this.emptyCreateForm();
-        this.successMessage = 'Ristorante creato. Il ristoratore puo accedere con email e password impostate.';
+        this.successMessage = 'Locale creato. Il relativo account puo accedere con email e password impostate.';
         this.creating = false;
         this.loadAuditLogs();
       },
       error: err => {
-        console.error('Errore creazione ristorante admin', err);
-        this.errorMessage = err.error?.message ?? 'Impossibile creare il ristorante.';
+        console.error('Errore creazione locale admin', err);
+        this.errorMessage = err.error?.message ?? 'Impossibile creare il locale.';
         this.creating = false;
       }
     });
@@ -158,7 +162,7 @@ export class AdminRestaurantsComponent implements OnInit {
         this.loadAuditLogs();
       },
       error: err => {
-        console.error('Errore reset password ristorante', err);
+        console.error('Errore reset password locale', err);
         this.errorMessage = err.error?.message ?? 'Impossibile aggiornare la password.';
         this.resettingRestaurantId = null;
       }
@@ -179,11 +183,11 @@ export class AdminRestaurantsComponent implements OnInit {
         this.authService.beginImpersonation(response.accessToken, response.restaurantName);
         this.enteringRestaurantId = null;
         this.loadAuditLogs();
-        void this.router.navigate(['/menu-management']);
+        void this.router.navigate(['/tables-dashboard']);
       },
       error: err => {
         console.error('Errore avvio impersonazione', err);
-        this.errorMessage = err.error?.message ?? 'Impossibile entrare nel ristorante selezionato.';
+        this.errorMessage = err.error?.message ?? 'Impossibile entrare nel locale selezionato.';
         this.enteringRestaurantId = null;
       }
     });
@@ -191,7 +195,7 @@ export class AdminRestaurantsComponent implements OnInit {
 
   auditActionLabel(action: string): string {
     const labels: Record<string, string> = {
-      ADMIN_CREATE_RESTAURANT: 'Creazione ristorante',
+      ADMIN_CREATE_RESTAURANT: 'Creazione locale',
       ADMIN_RESET_RESTAURANT_PASSWORD: 'Reset password',
       ADMIN_START_IMPERSONATION: 'Accesso supporto'
     };
@@ -228,8 +232,13 @@ export class AdminRestaurantsComponent implements OnInit {
     return log.id;
   }
 
+  businessTypeLabel(type: string | null | undefined): string {
+    return businessTypeLabel(type);
+  }
+
   private emptyCreateForm(): CreateRestaurantForm {
     return {
+      businessType: 'RISTORANTE',
       nome: '',
       email: '',
       password: '',

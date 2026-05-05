@@ -10,7 +10,11 @@ export interface Piatto {
   descrizione: string;
   prezzo: number;
   disponibile: boolean;
-  categoria: string;
+  categoria: string | null;
+  categoriaId?: number | null;
+  categoriaCode?: string | null;
+  categoriaLabel?: string | null;
+  categoriaSortOrder?: number | null;
   imageUrl: string | null;
   ingredienti?: string;
   allergeni?: string;

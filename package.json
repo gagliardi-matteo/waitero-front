@@ -9,7 +9,7 @@
     "ng": "ng",
     "build": "ng build --configuration production",
     "build:mobile": "npm run build:mobile:prod",
-    "sync:mobile": "npx cap sync",
+    "sync:mobile": "node scripts/patch-capgo-social-login-android.mjs && npx cap sync",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android",
     "assets:mobile": "npx capacitor-assets generate --iconBackgroundColor=#d87a2c --iconBackgroundColorDark=#d87a2c --splashBackgroundColor=#fbf8f3 --splashBackgroundColorDark=#24272f",
@@ -17,9 +17,9 @@
     "start": "node dist/server/server.js",
     "build:mobile:lan": "npm run build:mobile:dev",
     "build:mobile:prod": "cross-env WAITERO_MOBILE_CHANNEL=prod node scripts/validate-mobile-production-url.mjs && npm run _build:mobile:prod",
-    "_build:mobile:prod": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-prod-environment.mjs && ng build --configuration mobile-prod && npx cap sync",
+    "_build:mobile:prod": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-prod-environment.mjs && node scripts/patch-capgo-social-login-android.mjs && ng build --configuration mobile-prod && npx cap sync",
     "build:mobile:dev": "cross-env WAITERO_MOBILE_CHANNEL=dev WAITERO_MOBILE_LAN=true npm run _build:mobile:dev",
-    "_build:mobile:dev": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-lan-environment.mjs && ng build --configuration mobile-dev && npx cap sync"
+    "_build:mobile:dev": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-lan-environment.mjs && node scripts/patch-capgo-social-login-android.mjs && ng build --configuration mobile-dev && npx cap sync"
   },
   "private": true,
   "dependencies": {
@@ -37,8 +37,10 @@
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.1",
     "@capacitor/haptics": "^7.0.5",
+    "@capacitor/preferences": "^7.0.4",
     "@capacitor/splash-screen": "^7.0.5",
     "@capacitor/status-bar": "^7.0.6",
+    "@capgo/capacitor-social-login": "^7.20.0",
     "@fingerprintjs/fingerprintjs": "^5.1.0",
     "express": "^4.18.2",
     "jwt-decode": "^4.0.0",

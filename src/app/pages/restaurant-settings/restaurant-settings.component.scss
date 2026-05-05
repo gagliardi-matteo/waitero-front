@@ -4,6 +4,17 @@
   padding: 2rem;
 }
 
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-header__logout {
+  white-space: nowrap;
+}
+
 .page-header p,
 .helper,
 .address-suggestions span,
@@ -242,6 +253,11 @@ iframe {
 @media (max-width: 960px) {
   .restaurant-settings-page {
     padding: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .settings-layout,

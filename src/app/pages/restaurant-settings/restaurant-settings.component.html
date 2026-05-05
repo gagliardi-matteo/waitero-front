@@ -1,9 +1,10 @@
 <div class="content restaurant-settings-page">
   <div class="page-header">
     <div>
-      <h1>Impostazioni Ristorante</h1>
-      <p>Configura indirizzo, raggio di accesso cliente, orari di servizio e credenziali locali.</p>
+      <h1>Impostazioni Locale</h1>
+      <p>Configura anagrafica, tipo attivita, raggio di accesso cliente, orari di servizio e credenziali locali.</p>
     </div>
+    <button type="button" class="ghost-btn page-header__logout" (click)="logout()">Esci</button>
   </div>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
@@ -19,7 +20,7 @@
     <section class="settings-card">
       <section class="settings-section account-section" *ngIf="showAccountSettings && accountProfile">
         <div class="section-headline">
-          <span class="section-kicker">Account ristoratore</span>
+          <span class="section-kicker">Account locale</span>
           <h2>Accesso locale</h2>
         </div>
 
@@ -60,12 +61,17 @@
         <section class="settings-section">
           <div class="section-headline">
             <span class="section-kicker">Profilo locale</span>
-            <h2>Dati ristorante</h2>
+            <h2>Dati locale</h2>
           </div>
 
           <label>
-            <span>Nome ristorante</span>
+            <span>Nome locale</span>
             <input type="text" formControlName="nome" />
+          </label>
+
+          <label>
+            <span>Tipo attivita</span>
+            <input type="text" [value]="businessTypeDisplay" disabled />
           </label>
 
           <label class="address-field">

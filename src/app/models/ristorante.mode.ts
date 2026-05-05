@@ -1,5 +1,8 @@
+import { BusinessType } from './business-type.model';
+
 export interface Ristorante {
   id: number;
+  businessType?: BusinessType | null;
   nome: string;
   email?: string;
   address?: string | null;

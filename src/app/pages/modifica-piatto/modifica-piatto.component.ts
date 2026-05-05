@@ -4,10 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PiattoService } from '../../services/piatto.service';
 import { Piatto } from '../../models/piatto.model';
-import { CategoriaEnum } from '../../models/categorie.enum';
 import { environment } from '../../../environments/environment';
 import { STANDARD_ALLERGENS, buildStoredAllergens, splitStoredAllergens } from '../../shared/allergens';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { MenuCategory } from '../../models/menu-category.model';
+import { MenuCategoryService } from '../../services/menu-category.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-modifica-piatto',
@@ -20,7 +22,7 @@ export class ModificaPiattoComponent implements OnInit {
   form: FormGroup;
   piattoId!: number;
   loading = true;
-  categorie = Object.entries(CategoriaEnum);
+  categorie: MenuCategory[] = [];
   imageUrlOriginale: string = 'assets/placeholder.jpg';
   imagePreviewUrl: string = '';
   nuovaImmagine?: File;
@@ -32,6 +34,7 @@ export class ModificaPiattoComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private piattoService = inject(PiattoService);
+  private categoryService = inject(MenuCategoryService);
 
   constructor() {
     this.form = this.fb.group({
@@ -44,7 +47,7 @@ export class ModificaPiattoComponent implements OnInit {
       disponibile: [true],
       consigliato: [false],
       imageUrl: [''],
-      categoria: [null, Validators.required],
+      categoriaId: [null, Validators.required],
     });
 
     this.form.get('allergeniCustom')?.valueChanges.subscribe(() => {
@@ -55,12 +58,17 @@ export class ModificaPiattoComponent implements OnInit {
   ngOnInit(): void {
     this.piattoId = +this.route.snapshot.paramMap.get('id')!;
 
-    this.piattoService.getById(this.piattoId).subscribe({
-      next: (piatto: Piatto) => {
+    forkJoin({
+      piatto: this.piattoService.getById(this.piattoId),
+      categories: this.categoryService.getCategories()
+    }).subscribe({
+      next: ({ piatto, categories }) => {
+        this.categorie = categories;
         const parsedAllergens = splitStoredAllergens(piatto.allergeni);
         this.selectedAllergens = new Set(parsedAllergens.standard);
         this.form.patchValue({
           ...piatto,
+          categoriaId: piatto.categoriaId ?? null,
           consigliato: !!piatto.consigliato,
           allergeniCustom: parsedAllergens.custom.join(', ')
         });
@@ -96,6 +104,7 @@ export class ModificaPiattoComponent implements OnInit {
     const rawValues = this.form.getRawValue();
     const values = {
       ...rawValues,
+      categoriaId: rawValues.categoriaId,
       ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
       allergeni: this.normalizeOptionalText(allergeni),
       consigliato: !!rawValues.consigliato

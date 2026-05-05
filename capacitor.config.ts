@@ -27,6 +27,14 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#fbf8f3',
       overlaysWebView: false
+    },
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false
+      }
     }
   },
   ios: {

@@ -280,7 +280,7 @@ export class AnalyticsDashboardComponent implements OnInit {
   applyAutomaticInsightsTooltip(): string {
     return this.joinTooltip([
       'Azione automatica reale.',
-      'Flusso: conferma browser -> POST /dish-intelligence/insights/apply?ristoranteId=... -> il backend applica gli insight correnti.',
+      'Flusso: conferma browser -> POST /dish-intelligence/insights/apply con id del locale -> il backend applica gli insight correnti.',
       "Effetti possibili: PROMOTE => consigliato=true; FIX_CONVERSION => consigliato=false; REMOVE => disponibile=false e consigliato=false; UPSELL => consigliato=true sul piatto target.",
       'Dopo la risposta la UI aggiorna il riepilogo testuale e ricarica solo la lista insight, non i KPI della pagina.'
     ]);
@@ -307,7 +307,7 @@ export class AnalyticsDashboardComponent implements OnInit {
   averageOrderValueTooltip(): string {
     return this.joinTooltip([
       `Valore attuale: ${this.formatMoney(this.averageOrderValue)}.`,
-      'Formula backend: averageOrderValue = avg(totale) sulle righe customer_orders del ristorante.',
+      'Formula backend: averageOrderValue = avg(totale) sulle righe customer_orders del locale.',
       "Usa ordini reali, non l'evento order_submitted."
     ]);
   }
@@ -315,7 +315,7 @@ export class AnalyticsDashboardComponent implements OnInit {
   totalOrdersTooltip(): string {
     return this.joinTooltip([
       `Valore attuale: ${this.overview?.orders ?? 0}.`,
-      'Formula backend: count(*) da customer_orders del ristorante.',
+      'Formula backend: count(*) da customer_orders del locale.',
       "Conta ordini reali presenti a database, non i click o le view del menu."
     ]);
   }
@@ -383,7 +383,7 @@ export class AnalyticsDashboardComponent implements OnInit {
     return this.joinTooltip([
       'Questa tabella usa la pipeline legacy /analytics/dashboard.',
       'Per ogni piatto aggrega: views da view_dish, impressions da view_menu_item, clicks da click_dish, addToCart da add_to_cart, ordini e revenue da customer_order_items/customer_orders.',
-      "Il trend confronta la conversione degli ultimi 7 giorni osservati con i 7 osservati precedenti, ancorati all'ultima attivita reale del ristorante: trendDelta = recentViewToOrderRate - previousViewToOrderRate.",
+      "Il trend confronta la conversione degli ultimi 7 giorni osservati con i 7 osservati precedenti, ancorati all'ultima attivita reale del locale: trendDelta = recentViewToOrderRate - previousViewToOrderRate.",
       'Il trend viene mostrato se la finestra recente ha almeno 5 view_dish per quel piatto; se la finestra precedente non ha views, il baseline e 0.'
     ]);
   }
@@ -432,7 +432,7 @@ export class AnalyticsDashboardComponent implements OnInit {
       return this.joinTooltip([
         `${dish.dishName}.`,
         'Trend non disponibile.',
-        "Regola: servono almeno 5 view_dish nella finestra recente di 7 giorni osservati ancorata all'ultima attivita reale del ristorante.",
+        "Regola: servono almeno 5 view_dish nella finestra recente di 7 giorni osservati ancorata all'ultima attivita reale del locale.",
         `Volumi attuali: recente ${dish.recentViews} views / ${dish.recentOrderCount} ordini, precedente ${dish.previousViews} views / ${dish.previousOrderCount} ordini.`
       ]);
     }
@@ -441,7 +441,7 @@ export class AnalyticsDashboardComponent implements OnInit {
       `${dish.dishName}.`,
       'Trend sulla conversione del piatto.',
       'Formula: trendDelta = recentViewToOrderRate - previousViewToOrderRate.',
-      "Finestre usate: ultimi 7 giorni osservati e 7 precedenti, ancorati all'ultima attivita reale del ristorante.",
+      "Finestre usate: ultimi 7 giorni osservati e 7 precedenti, ancorati all'ultima attivita reale del locale.",
       `Finestra recente: ${dish.recentOrderCount} ordini / ${dish.recentViews} views = ${this.formatPercent(dish.recentViewToOrderRate)}.`,
       `Finestra precedente: ${dish.previousOrderCount} ordini / ${dish.previousViews} views = ${this.formatPercent(dish.previousViewToOrderRate)}.`,
       `Delta mostrato in tabella: ${this.trendDisplay(dish)}.`

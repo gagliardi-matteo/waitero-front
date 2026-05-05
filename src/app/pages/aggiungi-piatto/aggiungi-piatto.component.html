@@ -67,12 +67,9 @@
       <section class="form-section compact-grid">
         <label>
           <span>Categoria</span>
-          <select formControlName="categoria">
-            <option disabled value="">Seleziona...</option>
-            <option>Primo</option>
-            <option>Secondo</option>
-            <option>Dolce</option>
-            <option>Contorno</option>
+          <select formControlName="categoriaId">
+            <option [ngValue]="null">Seleziona...</option>
+            <option *ngFor="let category of categories" [ngValue]="category.id">{{ category.label }}</option>
           </select>
         </label>
 

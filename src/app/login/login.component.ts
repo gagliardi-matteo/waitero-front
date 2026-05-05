@@ -1,7 +1,10 @@
 import { AfterViewInit, Component, ElementRef, PLATFORM_ID, ViewChild, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
+import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
 import { AuthService } from '../auth/AuthService';
+import { BrandLoaderComponent } from '../shared/brand-loader/brand-loader.component';
 
 declare global {
   interface Window {
@@ -9,10 +12,12 @@ declare global {
   }
 }
 
+const GOOGLE_WEB_CLIENT_ID = '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com';
+
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BrandLoaderComponent],
   template: `
     <div class="login-shell">
       <section class="login-brand-panel">
@@ -23,40 +28,82 @@ declare global {
 
         <div class="brand-copy">
           <span class="eyebrow inverse">Hospitality Tech</span>
-          <h1>Gestisci il ristorante in un unico pannello.</h1>
+          <h1>Gestisci il locale in un unico pannello.</h1>
           <p>Menu, tavoli, ordini, pagamenti e analytics in una UI ordinata, operativa e pensata per chi lavora davvero in sala.</p>
         </div>
 
-        <p class="brand-foot">Frontend operativo per ristorazione moderna</p>
+        <p class="brand-foot">Frontend operativo per hospitality moderna</p>
       </section>
 
-      <section class="login-card">
+      <section class="login-card" [class.login-card--loading]="authLoading" [attr.aria-busy]="authLoading">
+        <div class="auth-overlay" *ngIf="authLoading">
+          <app-brand-loader
+            label="Accesso in corso"
+            hint="Verifica credenziali e apertura della Sala"
+          />
+        </div>
+
         <span class="eyebrow">Backoffice</span>
         <h1>Accedi a WaiterO</h1>
         <p>Accedi con email e password oppure continua con Google se il tuo account e gia stato abilitato.</p>
 
         <form class="local-login" (ngSubmit)="submitLocalLogin()">
           <label>
-            Email ristoratore
-            <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+            Email account locale
+            <input
+              #emailInput
+              type="email"
+              name="email"
+              [(ngModel)]="email"
+              [attr.autocomplete]="isNativeMobile ? 'off' : 'email'"
+              [attr.autocapitalize]="isNativeMobile ? 'none' : null"
+              [attr.autocorrect]="isNativeMobile ? 'off' : null"
+              [attr.spellcheck]="isNativeMobile ? 'false' : null"
+              [attr.data-lpignore]="isNativeMobile ? 'true' : null"
+              [attr.data-1p-ignore]="isNativeMobile ? 'true' : null"
+              inputmode="email"
+              [disabled]="authLoading"
+              required
+            />
           </label>
 
           <label>
             Password
-            <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
+            <input
+              #passwordInput
+              type="password"
+              name="password"
+              [(ngModel)]="password"
+              [attr.autocomplete]="isNativeMobile ? 'off' : 'current-password'"
+              [attr.autocapitalize]="isNativeMobile ? 'none' : null"
+              [attr.autocorrect]="isNativeMobile ? 'off' : null"
+              [attr.spellcheck]="isNativeMobile ? 'false' : null"
+              [attr.data-lpignore]="isNativeMobile ? 'true' : null"
+              [attr.data-1p-ignore]="isNativeMobile ? 'true' : null"
+              [disabled]="authLoading"
+              required
+            />
           </label>
 
-          <button type="submit" class="primary-login" [disabled]="localLoading">
-            {{ localLoading ? 'Accesso in corso...' : 'Accedi' }}
+          <button type="submit" class="primary-login" [disabled]="authLoading">
+            {{ authLoading ? 'Accesso in corso...' : 'Accedi' }}
           </button>
         </form>
 
         <div class="divider"><span>Oppure con Google</span></div>
 
         <div class="login-actions">
-          <div #googleButtonHost class="google-host" [class.is-hidden]="buttonReady"></div>
-          <button type="button" class="google-fallback" *ngIf="loadingButton" disabled>Caricamento accesso Google...</button>
-          <button type="button" class="google-fallback" *ngIf="loadError" (click)="retryRender()">Riprova Google</button>
+          <ng-container *ngIf="isNativeMobile; else webGoogleLogin">
+            <button type="button" class="google-fallback" *ngIf="loadingButton && !authLoading" disabled>Preparazione accesso Google...</button>
+            <button type="button" class="google-fallback" *ngIf="!loadingButton && !authLoading" (click)="signInWithGoogleNative()">
+              Continua con Google
+            </button>
+          </ng-container>
+          <ng-template #webGoogleLogin>
+            <div #googleButtonHost class="google-host" [class.is-hidden]="buttonReady || authLoading"></div>
+            <button type="button" class="google-fallback" *ngIf="loadingButton && !authLoading" disabled>Caricamento accesso Google...</button>
+            <button type="button" class="google-fallback" *ngIf="loadError && !authLoading" (click)="retryRender()">Riprova Google</button>
+          </ng-template>
         </div>
 
         <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
@@ -124,6 +171,7 @@ declare global {
     }
 
     .login-card {
+      position: relative;
       width: min(430px, 100%);
       justify-self: center;
       align-self: center;
@@ -133,6 +181,24 @@ declare global {
       background: rgba(255, 255, 255, 0.94);
       box-shadow: 0 20px 44px rgba(20, 25, 34, 0.08);
       text-align: left;
+      overflow: hidden;
+    }
+
+    .login-card--loading > *:not(.auth-overlay) {
+      opacity: 0.28;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .auth-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(2px);
     }
 
     .eyebrow {
@@ -256,36 +322,45 @@ declare global {
 })
 export class LoginComponent implements AfterViewInit {
   @ViewChild('googleButtonHost', { static: true }) private googleButtonHost?: ElementRef<HTMLDivElement>;
+  @ViewChild('emailInput') private emailInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('passwordInput') private passwordInput?: ElementRef<HTMLInputElement>;
 
   private auth = inject(AuthService);
   private platformId = inject(PLATFORM_ID);
+  readonly isNativeMobile = Capacitor.isNativePlatform();
   email = '';
   password = '';
-  localLoading = false;
+  authLoading = false;
   loadingButton = true;
   buttonReady = false;
   loadError = false;
   errorMessage = '';
+  private nativeGoogleReady = false;
 
   ngAfterViewInit(): void {
+    if (this.isNativeMobile) {
+      void this.initializeNativeGoogleLogin();
+      return;
+    }
+
     void this.renderGoogleButton();
   }
 
   submitLocalLogin(): void {
-    if (this.localLoading) {
+    if (this.authLoading) {
       return;
     }
 
-    this.errorMessage = '';
-    this.localLoading = true;
-    void this.auth.loginWithLocalCredentials(this.email, this.password)
-      .catch(err => {
-        console.error('Errore login proprietario', err);
-        this.errorMessage = err?.error?.message ?? 'Credenziali non valide.';
-      })
-      .finally(() => {
-        this.localLoading = false;
-      });
+    const resolvedEmail = this.resolveEmailValue();
+    const resolvedPassword = this.resolvePasswordValue();
+    this.email = resolvedEmail;
+    this.password = resolvedPassword;
+
+    this.runAuth(
+      () => this.auth.loginWithLocalCredentials(resolvedEmail, resolvedPassword),
+      'Credenziali non valide.',
+      'Errore login proprietario'
+    );
   }
 
   retryRender(): void {
@@ -293,7 +368,68 @@ export class LoginComponent implements AfterViewInit {
     this.buttonReady = false;
     this.loadError = false;
     this.errorMessage = '';
+    if (this.isNativeMobile) {
+      void this.initializeNativeGoogleLogin(true);
+      return;
+    }
     void this.renderGoogleButton(true);
+  }
+
+  signInWithGoogleNative(): void {
+    if (this.authLoading || !this.nativeGoogleReady) {
+      return;
+    }
+
+    this.runAuth(
+      async () => {
+        const response = await SocialLogin.login({
+          provider: 'google',
+          options: {
+            scopes: ['email', 'profile'],
+            style: 'bottom',
+            filterByAuthorizedAccounts: false
+          }
+        });
+
+        const result = response.result as GoogleLoginResponseOnline;
+        const idToken = result.idToken;
+        if (!idToken) {
+          throw new Error('Google native login did not return an idToken.');
+        }
+
+        await this.auth.loginWithGoogleIdToken(idToken);
+      },
+      'Account Google non autorizzato.',
+      'Errore login Google nativo'
+    );
+  }
+
+  private async initializeNativeGoogleLogin(forceReload = false): Promise<void> {
+    if (this.nativeGoogleReady && !forceReload) {
+      this.loadingButton = false;
+      this.loadError = false;
+      return;
+    }
+
+    try {
+      await SocialLogin.initialize({
+        google: {
+          webClientId: GOOGLE_WEB_CLIENT_ID,
+          mode: 'online'
+        }
+      });
+      this.nativeGoogleReady = true;
+      this.loadingButton = false;
+      this.buttonReady = true;
+      this.loadError = false;
+    } catch (err) {
+      console.error('Errore inizializzazione Google Sign-In nativo', err);
+      this.nativeGoogleReady = false;
+      this.loadingButton = false;
+      this.buttonReady = false;
+      this.loadError = true;
+      this.errorMessage = 'Impossibile inizializzare Google sull\'app. Verifica la configurazione Android.';
+    }
   }
 
   private async renderGoogleButton(forceReload = false): Promise<void> {
@@ -312,7 +448,7 @@ export class LoginComponent implements AfterViewInit {
       const google = await this.loadGoogleIdentityScript(forceReload);
       host.innerHTML = '';
       google.accounts.id.initialize({
-        client_id: '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com',
+        client_id: GOOGLE_WEB_CLIENT_ID,
         callback: (response: { credential?: string }) => this.handleCredentialResponse(response),
         auto_select: false,
         cancel_on_tap_outside: true
@@ -338,17 +474,59 @@ export class LoginComponent implements AfterViewInit {
   }
 
   private handleCredentialResponse(response: { credential?: string }): void {
+    if (this.authLoading) {
+      return;
+    }
+
     const idToken = response.credential;
     if (!idToken) {
       this.errorMessage = 'Token Google non valido.';
       return;
     }
 
+    this.runAuth(
+      () => this.auth.loginWithGoogleIdToken(idToken),
+      'Account Google non autorizzato.',
+      'Errore login Google'
+    );
+  }
+
+  private runAuth(action: () => Promise<void>, fallbackError: string, logLabel: string): void {
+    if (this.authLoading) {
+      return;
+    }
+
     this.errorMessage = '';
-    void this.auth.loginWithGoogleIdToken(idToken).catch(err => {
-      console.error('Errore login Google', err);
-      this.errorMessage = err?.error?.message ?? 'Account Google non autorizzato.';
+    this.authLoading = true;
+
+    void action().catch(err => {
+      console.error(logLabel, {
+        status: err?.status,
+        statusText: err?.statusText,
+        message: err?.message,
+        error: err?.error,
+        url: err?.url
+      });
+      this.errorMessage = this.resolveAuthErrorMessage(err, fallbackError);
+      this.authLoading = false;
     });
+  }
+
+  private resolveAuthErrorMessage(err: any, fallbackError: string): string {
+    if (err?.status === 0) {
+      return 'Connessione al server bloccata. Verifica configurazione rete/CORS del backend mobile.';
+    }
+
+    return err?.error?.message ?? fallbackError;
+  }
+
+  private resolveEmailValue(): string {
+    const liveValue = this.emailInput?.nativeElement?.value ?? this.email;
+    return liveValue.trim().toLowerCase();
+  }
+
+  private resolvePasswordValue(): string {
+    return this.passwordInput?.nativeElement?.value ?? this.password;
   }
 
   private loadGoogleIdentityScript(forceReload: boolean): Promise<any> {

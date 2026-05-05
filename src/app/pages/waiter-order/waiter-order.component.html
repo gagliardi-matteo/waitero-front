@@ -34,12 +34,20 @@
       <div class="category-row">
         <button
           type="button"
+          class="category-chip"
+          [class.active]="selectedCategory === 'ALL'"
+          (click)="selectedCategory = 'ALL'"
+        >
+          Tutti
+        </button>
+        <button
+          type="button"
           *ngFor="let category of categories"
           class="category-chip"
-          [class.active]="selectedCategory === category"
-          (click)="selectedCategory = category"
+          [class.active]="selectedCategory === category.code"
+          (click)="selectedCategory = category.code"
         >
-          {{ category === 'ALL' ? 'Tutti' : category }}
+          {{ category.label }}
         </button>
       </div>
 

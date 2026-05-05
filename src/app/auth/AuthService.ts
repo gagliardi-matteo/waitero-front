@@ -2,10 +2,14 @@ import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 import { firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { TokenPayload } from '../models/TokenPayload.model';
 import { environment } from '../../environments/environment';
+import { BusinessType } from '../models/business-type.model';
 
 interface AuthTokens {
   accessToken: string;
@@ -18,6 +22,7 @@ export interface BackofficeProfile {
   nome: string;
   role: TokenPayload['role'];
   restaurantId: number | null;
+  businessType?: BusinessType | null;
   hasPassword: boolean;
 }
 
@@ -30,24 +35,29 @@ export class AuthService {
   private readonly ACCESS_KEY = 'accessToken';
   private readonly REFRESH_KEY = 'refreshToken';
   private readonly IMPERSONATION_NAME_KEY = 'impersonatedRestaurantName';
+  private readonly nativePlatform = Capacitor.isNativePlatform();
   private refreshPromise: Promise<string | null> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private sessionBootstrapPromise: Promise<void>;
+  private accessTokenCache: string | null = null;
+  private refreshTokenCache: string | null = null;
+  private impersonationNameCache: string | null = null;
 
   readonly authenticated = signal(false);
 
   constructor() {
-    this.bootstrapSession();
+    this.sessionBootstrapPromise = this.bootstrapSession();
   }
 
   async loginWithGoogleIdToken(idToken: string): Promise<void> {
     const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/login`, { idToken }));
-    this.storeTokens(tokens);
+    await this.storeTokens(tokens);
     await this.navigateAfterLogin(tokens.accessToken);
   }
 
   async loginWithLocalCredentials(email: string, password: string): Promise<void> {
     const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/local-login`, { email, password }));
-    this.storeTokens(tokens);
+    await this.storeTokens(tokens);
     await this.navigateAfterLogin(tokens.accessToken);
   }
 
@@ -64,6 +74,8 @@ export class AuthService {
   }
 
   async ensureValidAccessToken(): Promise<string | null> {
+    await this.sessionBootstrapPromise;
+
     const accessToken = this.getStoredAccessToken();
     if (this.isTokenUsable(accessToken)) {
       return accessToken;
@@ -99,7 +111,7 @@ export class AuthService {
       return '/admin/restaurants';
     }
 
-    return '/menu-management';
+    return '/tables-dashboard';
   }
 
   getRole(): TokenPayload['role'] | null {
@@ -115,16 +127,16 @@ export class AuthService {
   }
 
   getImpersonatedRestaurantName(): string | null {
+    if (this.isNativeApp()) {
+      return this.impersonationNameCache;
+    }
+
     return this.isBrowser() ? localStorage.getItem(this.IMPERSONATION_NAME_KEY) : null;
   }
 
   beginImpersonation(accessToken: string, restaurantName: string): void {
-    if (!this.isBrowser()) {
-      return;
-    }
-
-    localStorage.setItem(this.ACCESS_KEY, accessToken);
-    localStorage.setItem(this.IMPERSONATION_NAME_KEY, restaurantName);
+    this.setStoredAccessToken(accessToken);
+    this.setStoredImpersonationName(restaurantName);
     this.authenticated.set(true);
     this.scheduleRefresh(accessToken);
   }
@@ -134,9 +146,7 @@ export class AuthService {
       return;
     }
 
-    if (this.isBrowser()) {
-      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
-    }
+    this.removeStoredImpersonationName();
 
     const token = await this.refreshAccessToken();
     if (!token) {
@@ -145,6 +155,7 @@ export class AuthService {
   }
 
   logout(): void {
+    void this.logoutNativeGoogleSession();
     this.clearSession(true);
   }
 
@@ -152,11 +163,13 @@ export class AuthService {
     return this.getDecodedAccessToken()?.sub ?? null;
   }
 
-  private bootstrapSession(): void {
-    if (!this.isBrowser()) {
+  private async bootstrapSession(): Promise<void> {
+    if (!this.canUseClientStorage()) {
       this.authenticated.set(false);
       return;
     }
+
+    await this.hydrateNativeSession();
 
     const accessToken = this.getStoredAccessToken();
     const refreshToken = this.getStoredRefreshToken();
@@ -191,8 +204,8 @@ export class AuthService {
 
     this.refreshPromise = firstValueFrom(
       this.http.post<AuthTokens>(`${environment.apiUrl}/auth/refresh-token`, { refreshToken })
-    ).then(tokens => {
-      this.storeTokens(tokens);
+    ).then(async tokens => {
+      await this.storeTokens(tokens);
       return tokens.accessToken;
     }).catch(err => {
       console.error('Errore refresh access token', err);
@@ -205,13 +218,9 @@ export class AuthService {
     return this.refreshPromise;
   }
 
-  private storeTokens(tokens: AuthTokens): void {
-    if (!this.isBrowser()) {
-      return;
-    }
-
-    localStorage.setItem(this.ACCESS_KEY, tokens.accessToken);
-    localStorage.setItem(this.REFRESH_KEY, tokens.refreshToken);
+  private async storeTokens(tokens: AuthTokens): Promise<void> {
+    this.setStoredAccessToken(tokens.accessToken);
+    this.setStoredRefreshToken(tokens.refreshToken);
     this.syncImpersonationState(tokens.accessToken);
     this.authenticated.set(true);
     this.scheduleRefresh(tokens.accessToken);
@@ -223,11 +232,9 @@ export class AuthService {
       this.refreshTimer = null;
     }
 
-    if (this.isBrowser()) {
-      localStorage.removeItem(this.ACCESS_KEY);
-      localStorage.removeItem(this.REFRESH_KEY);
-      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
-    }
+    this.removeStoredAccessToken();
+    this.removeStoredRefreshToken();
+    this.removeStoredImpersonationName();
 
     this.authenticated.set(false);
 
@@ -236,8 +243,20 @@ export class AuthService {
     }
   }
 
+  private async logoutNativeGoogleSession(): Promise<void> {
+    if (!this.isNativeApp()) {
+      return;
+    }
+
+    try {
+      await SocialLogin.logout({ provider: 'google' });
+    } catch {
+      // Ignore when no native Google session is active.
+    }
+  }
+
   private scheduleRefresh(accessToken: string): void {
-    if (!this.isBrowser()) {
+    if (!this.canUseClientStorage()) {
       return;
     }
 
@@ -264,10 +283,18 @@ export class AuthService {
   }
 
   private getStoredAccessToken(): string | null {
+    if (this.isNativeApp()) {
+      return this.accessTokenCache;
+    }
+
     return this.isBrowser() ? localStorage.getItem(this.ACCESS_KEY) : null;
   }
 
   private getStoredRefreshToken(): string | null {
+    if (this.isNativeApp()) {
+      return this.refreshTokenCache;
+    }
+
     return this.isBrowser() ? localStorage.getItem(this.REFRESH_KEY) : null;
   }
 
@@ -299,26 +326,121 @@ export class AuthService {
   }
 
   private syncImpersonationState(accessToken: string): void {
-    if (!this.isBrowser()) {
-      return;
-    }
-
     const decoded = this.decodeToken(accessToken);
     if (!decoded?.actingRestaurantId) {
-      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
+      this.removeStoredImpersonationName();
     }
   }
 
-  private navigateAfterLogin(accessToken: string): Promise<boolean> {
+  private async navigateAfterLogin(accessToken: string): Promise<void> {
     const decoded = this.decodeToken(accessToken);
     const target = decoded?.role === 'MASTER' && !decoded?.actingRestaurantId
       ? '/admin/restaurants'
-      : '/menu-management';
-    return this.router.navigate([target]);
+      : '/tables-dashboard';
+    const navigated = await this.router.navigate([target]);
+    if (!navigated) {
+      throw new Error(`Navigation to ${target} failed`);
+    }
   }
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  private isNativeApp(): boolean {
+    return this.isBrowser() && this.nativePlatform;
+  }
+
+  private canUseClientStorage(): boolean {
+    return this.isBrowser();
+  }
+
+  private async hydrateNativeSession(): Promise<void> {
+    if (!this.isNativeApp()) {
+      return;
+    }
+
+    const [accessToken, refreshToken, impersonationName] = await Promise.all([
+      Preferences.get({ key: this.ACCESS_KEY }),
+      Preferences.get({ key: this.REFRESH_KEY }),
+      Preferences.get({ key: this.IMPERSONATION_NAME_KEY })
+    ]);
+
+    this.accessTokenCache = accessToken.value;
+    this.refreshTokenCache = refreshToken.value;
+    this.impersonationNameCache = impersonationName.value;
+  }
+
+  private setStoredAccessToken(accessToken: string): void {
+    if (this.isNativeApp()) {
+      this.accessTokenCache = accessToken;
+      void Preferences.set({ key: this.ACCESS_KEY, value: accessToken });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.setItem(this.ACCESS_KEY, accessToken);
+    }
+  }
+
+  private setStoredRefreshToken(refreshToken: string): void {
+    if (this.isNativeApp()) {
+      this.refreshTokenCache = refreshToken;
+      void Preferences.set({ key: this.REFRESH_KEY, value: refreshToken });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.setItem(this.REFRESH_KEY, refreshToken);
+    }
+  }
+
+  private setStoredImpersonationName(restaurantName: string): void {
+    if (this.isNativeApp()) {
+      this.impersonationNameCache = restaurantName;
+      void Preferences.set({ key: this.IMPERSONATION_NAME_KEY, value: restaurantName });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.setItem(this.IMPERSONATION_NAME_KEY, restaurantName);
+    }
+  }
+
+  private removeStoredAccessToken(): void {
+    if (this.isNativeApp()) {
+      this.accessTokenCache = null;
+      void Preferences.remove({ key: this.ACCESS_KEY });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.ACCESS_KEY);
+    }
+  }
+
+  private removeStoredRefreshToken(): void {
+    if (this.isNativeApp()) {
+      this.refreshTokenCache = null;
+      void Preferences.remove({ key: this.REFRESH_KEY });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.REFRESH_KEY);
+    }
+  }
+
+  private removeStoredImpersonationName(): void {
+    if (this.isNativeApp()) {
+      this.impersonationNameCache = null;
+      void Preferences.remove({ key: this.IMPERSONATION_NAME_KEY });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.IMPERSONATION_NAME_KEY);
+    }
   }
 }
 

@@ -31,17 +31,17 @@
   <div *ngFor="let entry of menuByCategory" class="category-section">
     <div
       class="category-heading"
-      [appExplainTooltip]="categorySectionTooltip(entry[0], entry[1])"
+      [appExplainTooltip]="categorySectionTooltip(entry)"
       [explainTooltipEnabled]="explainabilityEnabled"
     >
-      <h2 class="category-title">{{ entry[0] }}</h2>
-      <span class="category-count">{{ entry[1].length }} piatti</span>
+      <h2 class="category-title">{{ entry.label }}</h2>
+      <span class="category-count">{{ entry.items.length }} piatti</span>
     </div>
 
     <div class="menu-grid">
       <a
         class="menu-card"
-        *ngFor="let item of entry[1]; trackBy: trackDish"
+        *ngFor="let item of entry.items; trackBy: trackDish"
         [routerLink]="['/ristoratore/piatto', item.id]"
         [appExplainTooltip]="dishCardTooltip(item)"
         [explainTooltipEnabled]="explainabilityEnabled"
@@ -52,7 +52,7 @@
         </div>
         <div class="info">
           <h3 class="name">{{ item.nome }}</h3>
-          <p class="description">{{ item.descrizione || item.categoria }}</p>
+          <p class="description">{{ item.descrizione || categoryLabel(item) }}</p>
           <div class="card-footer">
             <span class="price">{{ item.prezzo }}&euro;</span>
             <span class="metric">{{ item.numeroOrdini ?? 0 }} ordini - {{ formatRate(item.viewToOrderRate) }}</span>

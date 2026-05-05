@@ -36,7 +36,7 @@
             [explainTooltipEnabled]="explainabilityEnabled"
           >
             <span>{{ item.nome }}</span>
-            <small>{{ item.categoria }}</small>
+            <small>{{ categoryLabel(item) }}</small>
           </div>
         </div>
         <ng-template #noRecommended><p>Nessun candidato nuovo da marcare come consigliato.</p></ng-template>

@@ -35,7 +35,7 @@ export class SidebarComponent implements OnInit {
   ];
 
   readonly masterPrimaryItems: NavItem[] = [
-    { label: 'Ristoranti', icon: 'store', route: '/admin/restaurants' }
+    { label: 'Locali', icon: 'store', route: '/admin/restaurants' }
   ];
 
   readonly masterImpersonatingSecondaryItems: NavItem[] = [
@@ -77,7 +77,7 @@ export class SidebarComponent implements OnInit {
       return 'WaiterO';
     }
 
-    return this.authService.getImpersonatedRestaurantName() || this.restaurantName || 'Ristorante';
+    return this.authService.getImpersonatedRestaurantName() || this.restaurantName || 'Locale';
   }
 
   get brandCaption(): string {
@@ -87,7 +87,7 @@ export class SidebarComponent implements OnInit {
     if (this.authService.isMaster()) {
       return 'Master in impersonazione';
     }
-    return 'Backoffice ristorante';
+    return 'Backoffice locale';
   }
 
   get footerLabel(): string {
@@ -134,7 +134,7 @@ export class SidebarComponent implements OnInit {
         this.restaurantName = settings.nome;
       },
       error: err => {
-        console.error('Errore caricamento nome ristorante:', err);
+        console.error('Errore caricamento nome locale:', err);
       }
     });
   }

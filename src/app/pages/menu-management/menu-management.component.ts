@@ -14,6 +14,7 @@ import { MenuInsightsPanelComponent } from './components/menu-insights-panel/men
 import { MenuAutopilotPanelComponent } from './components/menu-autopilot-panel/menu-autopilot-panel.component';
 import { UiFeaturesService } from '../../services/ui-features.service';
 import { ExplainTooltipDirective } from '../../shared/explain-tooltip/explain-tooltip.directive';
+import { DishCategoryGroup, dishCategoryLabel, groupDishesByCategory } from '../../shared/dish-category';
 
 interface AutopilotCategoryPlan {
   categoria: string;
@@ -47,7 +48,7 @@ export class MenuManagementComponent implements OnInit {
     this.loadExplainability();
     this.userId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
     if (!this.userId) {
-      alert('Ristorante non disponibile');
+      alert('Locale non disponibile');
       return;
     }
 
@@ -85,31 +86,11 @@ export class MenuManagementComponent implements OnInit {
     this.updateRecommended(item, !item.consigliato);
   }
 
-  get menuByCategory(): [string, Piatto[]][] {
-    const categoriaOrder: string[] = ['ANTIPASTO', 'PRIMO', 'SECONDO', 'CONTORNO', 'DOLCE', 'BEVANDA'];
-
-    const normalizeCategoria = (raw: string | null | undefined): string => {
-      if (!raw) return 'SENZA CATEGORIA';
-      return raw.trim().toUpperCase();
-    };
-
-    const map = new Map<string, Piatto[]>();
-
-    for (const item of this.piatti) {
-      const categoria = normalizeCategoria(item.categoria);
-      if (!map.has(categoria)) {
-        map.set(categoria, []);
-      }
-      map.get(categoria)!.push(item);
-    }
-
-    return Array.from(map.entries())
-      .sort((a, b) => {
-        const indexA = categoriaOrder.indexOf(a[0]);
-        const indexB = categoriaOrder.indexOf(b[0]);
-        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-      })
-      .map(([categoria, items]) => [categoria, items.sort((a, b) => (b.numeroOrdini ?? 0) - (a.numeroOrdini ?? 0) || a.id - b.id)] as [string, Piatto[]]);
+  get menuByCategory(): DishCategoryGroup[] {
+    return groupDishesByCategory(
+      this.piatti,
+      (left, right) => (right.numeroOrdini ?? 0) - (left.numeroOrdini ?? 0) || left.id - right.id
+    );
   }
 
   get topPerformerCount(): number {
@@ -140,10 +121,10 @@ export class MenuManagementComponent implements OnInit {
 
   get autopilotCategoryPlans(): AutopilotCategoryPlan[] {
     return this.menuByCategory
-      .map(([categoria, items]) => {
-        const ranked = rankDishes(items);
+      .map(group => {
+        const ranked = rankDishes(group.items);
         return {
-          categoria,
+          categoria: group.label,
           spotlight: ranked[0] ?? null,
           nextDishes: ranked.slice(1, 3)
         };
@@ -184,6 +165,10 @@ export class MenuManagementComponent implements OnInit {
 
   formatRate(value: number | undefined): string {
     return `${Math.round((value ?? 0) * 100)}%`;
+  }
+
+  categoryLabel(item: Piatto): string {
+    return dishCategoryLabel(item);
   }
 
   trackBadge(index: number, allergen: string): string {
@@ -263,20 +248,20 @@ export class MenuManagementComponent implements OnInit {
     ]);
   }
 
-  categorySectionTooltip(categoria: string, items: Piatto[]): string {
+  categorySectionTooltip(group: DishCategoryGroup): string {
     return this.joinTooltip([
-      `Categoria ${categoria}.`,
-      'I piatti vengono raggruppati per categoria normalizzata in maiuscolo.',
-      "L'ordine delle categorie e' fisso: ANTIPASTO, PRIMO, SECONDO, CONTORNO, DOLCE, BEVANDA.",
+      `Categoria ${group.label}.`,
+      'I piatti vengono raggruppati usando la categoria restituita dal backend per il locale corrente.',
+      "L'ordine dei blocchi usa sortOrder della categoria e, a parita, la label.",
       'Dentro ogni categoria i piatti sono ordinati per numeroOrdini decrescente e, a parita, per id crescente.',
-      `Piatti mostrati in questa sezione: ${items.length}.`
+      `Piatti mostrati in questa sezione: ${group.items.length}.`
     ]);
   }
 
   dishCardTooltip(item: Piatto): string {
     return this.joinTooltip([
       `${item.nome}.`,
-      'Il contenuto del piatto arriva da /menu/piattiRistoratore/{ristoranteId}. Le metriche arrivano da /analytics/dish-performance e vengono fuse lato frontend.',
+      'Il contenuto del piatto arriva dal catalogo menu del locale. Le metriche arrivano da /analytics/dish-performance e vengono fuse lato frontend.',
       'Metriche usate: orderCount da customer_orders/customer_order_items; views da event_log.view_dish; clicks da event_log.click_dish; addToCart da event_log.add_to_cart.',
       'Formule: viewToOrderRate = orderCount / views. viewToCartRate = addToCart / views.',
       "Label backend: top_performer se orderCount >= 5 oppure views >= 10 e conversione >= 15%; high_interest_low_conversion se views >= 10 e ordini = 0; cart_abandonment se addToCart > 0 e ordini = 0.",
