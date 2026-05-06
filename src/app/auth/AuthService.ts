@@ -50,7 +50,11 @@ export class AuthService {
   }
 
   async loginWithGoogleIdToken(idToken: string): Promise<void> {
+    console.info('[Auth] loginWithGoogleIdToken -> POST', `${environment.apiUrl}/auth/login`, {
+      tokenLength: idToken.length
+    });
     const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/login`, { idToken }));
+    console.info('[Auth] loginWithGoogleIdToken <- success');
     await this.storeTokens(tokens);
     await this.navigateAfterLogin(tokens.accessToken);
   }

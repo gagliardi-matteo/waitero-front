@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { SocialLogin, type GoogleLoginResponseOnline } from '@capgo/capacitor-social-login';
 import { AuthService } from '../auth/AuthService';
 import { BrandLoaderComponent } from '../shared/brand-loader/brand-loader.component';
+import { environment } from '../../environments/environment';
 
 declare global {
   interface Window {
@@ -12,7 +13,9 @@ declare global {
   }
 }
 
-const GOOGLE_WEB_CLIENT_ID = '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com';
+const GOOGLE_SERVER_CLIENT_ID = (environment as {
+  googleAuth?: { serverClientId?: string };
+}).googleAuth?.serverClientId ?? '910347869788-astuldpi4hi3hb0osucuoclhfjdh5dtj.apps.googleusercontent.com';
 
 @Component({
   selector: 'app-login',
@@ -382,12 +385,14 @@ export class LoginComponent implements AfterViewInit {
 
     this.runAuth(
       async () => {
+        await this.clearNativeGoogleSession();
         const response = await SocialLogin.login({
           provider: 'google',
           options: {
             scopes: ['email', 'profile'],
             style: 'bottom',
-            filterByAuthorizedAccounts: false
+            filterByAuthorizedAccounts: false,
+            autoSelectEnabled: false
           }
         });
 
@@ -397,11 +402,38 @@ export class LoginComponent implements AfterViewInit {
           throw new Error('Google native login did not return an idToken.');
         }
 
-        await this.auth.loginWithGoogleIdToken(idToken);
+        console.info('[GoogleNative] token received', {
+          email: result.profile?.email ?? null,
+          providerId: result.profile?.id ?? null,
+          tokenLength: idToken.length
+        });
+
+        try {
+          await this.auth.loginWithGoogleIdToken(idToken);
+        } catch (err: unknown) {
+          console.error('[GoogleNative] backend login failed', err);
+          const authError = err as { error?: { message?: string } };
+          const email = result.profile?.email ?? 'sconosciuta';
+          const providerId = result.profile?.id ?? 'sconosciuto';
+          if (authError.error && typeof authError.error === 'object') {
+            authError.error.message = `${authError.error.message ?? 'Login Google rifiutato.'} Account selezionato: ${email}. Provider ID: ${providerId}.`;
+          } else {
+            authError.error = { message: `Login Google rifiutato. Account selezionato: ${email}. Provider ID: ${providerId}.` };
+          }
+          throw authError;
+        }
       },
       'Account Google non autorizzato.',
       'Errore login Google nativo'
     );
+  }
+
+  private async clearNativeGoogleSession(): Promise<void> {
+    try {
+      await SocialLogin.logout({ provider: 'google' });
+    } catch {
+      // Ignore when Android has no cached Google session for this app yet.
+    }
   }
 
   private async initializeNativeGoogleLogin(forceReload = false): Promise<void> {
@@ -412,12 +444,12 @@ export class LoginComponent implements AfterViewInit {
     }
 
     try {
-      await SocialLogin.initialize({
-        google: {
-          webClientId: GOOGLE_WEB_CLIENT_ID,
+        await SocialLogin.initialize({
+          google: {
+          webClientId: GOOGLE_SERVER_CLIENT_ID,
           mode: 'online'
-        }
-      });
+          }
+        });
       this.nativeGoogleReady = true;
       this.loadingButton = false;
       this.buttonReady = true;
@@ -448,7 +480,7 @@ export class LoginComponent implements AfterViewInit {
       const google = await this.loadGoogleIdentityScript(forceReload);
       host.innerHTML = '';
       google.accounts.id.initialize({
-        client_id: GOOGLE_WEB_CLIENT_ID,
+        client_id: GOOGLE_SERVER_CLIENT_ID,
         callback: (response: { credential?: string }) => this.handleCredentialResponse(response),
         auto_select: false,
         cancel_on_tap_outside: true
@@ -517,7 +549,7 @@ export class LoginComponent implements AfterViewInit {
       return 'Connessione al server bloccata. Verifica configurazione rete/CORS del backend mobile.';
     }
 
-    return err?.error?.message ?? fallbackError;
+    return err?.error?.message ?? err?.message ?? fallbackError;
   }
 
   private resolveEmailValue(): string {
