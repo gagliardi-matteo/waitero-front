@@ -4,15 +4,78 @@
       <h1>Menu</h1>
       <p class="page-subtitle">Gestisci i piatti con una vista piu pulita e rapida.</p>
     </div>
-    <button
-      class="add-button"
-      [routerLink]="['/add-dish']"
-      [appExplainTooltip]="addDishButtonTooltip()"
-      [explainTooltipEnabled]="explainabilityEnabled"
-    >
-      Inserisci Piatto
-    </button>
+    <div class="header-actions">
+      <button
+        class="secondary-button"
+        type="button"
+        (click)="menuImportInput.click()"
+        [appExplainTooltip]="importMenuButtonTooltip()"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
+        Importa Excel
+      </button>
+      <button
+        class="add-button"
+        [routerLink]="['/add-dish']"
+        [appExplainTooltip]="addDishButtonTooltip()"
+        [explainTooltipEnabled]="explainabilityEnabled"
+      >
+        Inserisci Piatto
+      </button>
+    </div>
   </div>
+
+  <section class="import-panel">
+    <div>
+      <h2>Importa menù da Excel</h2>
+      <p>Carica un file `.xlsx` con una riga per ogni piatto. Le colonne da usare sono: Nome, Categoria, Prezzo, Descrizione, Ingredienti, Allergeni, Consigliato, Disponibile, Immagine.</p>
+    </div>
+
+    <div class="import-controls">
+      <input #menuImportInput type="file" accept=".xlsx,.xls" (change)="onMenuImportFileSelected($event)" />
+      <button
+        class="add-button"
+        type="button"
+        [disabled]="!menuImportFile || importingMenu"
+        (click)="importMenuFromFile()"
+      >
+        {{ importingMenu ? 'Importazione in corso...' : 'Importa file' }}
+      </button>
+    </div>
+
+    <div class="import-actions">
+      <button class="secondary-button" type="button" (click)="downloadMenuTemplate()">
+        Scarica template Excel
+      </button>
+      <button class="secondary-button" type="button" (click)="downloadCurrentMenuExport()">
+        Scarica menù Excel + PDF
+      </button>
+    </div>
+
+    <p class="import-note">L'export del menù scarica direttamente un file Excel e un file PDF separati.</p>
+
+    <div class="import-selected" *ngIf="menuImportFile">
+      File selezionato: <strong>{{ menuImportFile.name }}</strong>
+    </div>
+
+    <div class="import-result" *ngIf="menuImportResult">
+      <div class="import-summary">
+        <span>Righe lette: {{ menuImportResult.totalRows }}</span>
+        <span>Creati: {{ menuImportResult.createdRows }}</span>
+        <span>Aggiornati: {{ menuImportResult.updatedRows }}</span>
+        <span>Errori: {{ menuImportResult.failedRows }}</span>
+      </div>
+
+      <div class="import-errors" *ngIf="menuImportResult.failedRows > 0">
+        <h3>Righe da correggere</h3>
+        <div class="import-error" *ngFor="let row of menuImportResult.rowResults" [class.error]="row.status === 'ERRORE'" [class.success]="row.status !== 'ERRORE'">
+          <strong>Riga {{ row.rowNumber }}</strong>
+          <span *ngIf="row.nome"> - {{ row.nome }}</span>
+          <p>{{ row.message }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <app-menu-insights-panel
     [topPerformerCount]="topPerformerCount"
@@ -39,45 +102,53 @@
     </div>
 
     <div class="menu-grid">
-      <a
-        class="menu-card"
-        *ngFor="let item of entry.items; trackBy: trackDish"
-        [routerLink]="['/ristoratore/piatto', item.id]"
-        [appExplainTooltip]="dishCardTooltip(item)"
-        [explainTooltipEnabled]="explainabilityEnabled"
-      >
-        <div class="card-image-shell">
-          <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
-          <span class="top-badge" *ngIf="item.consigliato">Top</span>
-        </div>
-        <div class="info">
-          <h3 class="name">{{ item.nome }}</h3>
-          <p class="description">{{ item.descrizione || categoryLabel(item) }}</p>
-          <div class="card-footer">
-            <span class="price">{{ item.prezzo }}&euro;</span>
-            <span class="metric">{{ item.numeroOrdini ?? 0 }} ordini - {{ formatRate(item.viewToOrderRate) }}</span>
+      <div class="menu-card-shell" *ngFor="let item of entry.items; trackBy: trackDish">
+        <article
+          class="menu-card"
+          [appExplainTooltip]="dishCardTooltip(item)"
+          [explainTooltipEnabled]="explainabilityEnabled"
+        >
+          <div
+            class="menu-card__body"
+            role="button"
+            tabindex="0"
+            (click)="openDish(item)"
+            (keydown.enter)="openDish(item)"
+            (keydown.space)="$event.preventDefault(); openDish(item)"
+          >
+            <div class="card-image-shell">
+              <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
+              <span class="top-badge" *ngIf="item.consigliato">Top</span>
+            </div>
+            <div class="info">
+              <h3 class="name">{{ item.nome }}</h3>
+              <p class="description">{{ item.descrizione || categoryLabel(item) }}</p>
+              <div class="card-footer">
+                <span class="price">{{ item.prezzo }}&euro;</span>
+                <span class="metric">{{ item.numeroOrdini ?? 0 }} ordini - {{ formatRate(item.viewToOrderRate) }}</span>
+              </div>
+            </div>
           </div>
-          <div class="actions" (click)="$event.stopPropagation()">
+        </article>
+
+        <div class="actions">
             <button
+              type="button"
               class="text-btn"
-              [routerLink]="['/ristoratore/piatto/modifica', item.id]"
-              [appExplainTooltip]="editDishButtonTooltip(item)"
-              [explainTooltipEnabled]="explainabilityEnabled"
+              (click)="editDish(item, $event)"
             >
               Modifica
             </button>
             <button
+              type="button"
               class="text-btn danger"
               [disabled]="deletingDishId === item.id"
               (click)="deleteDish(item, $event)"
-              [appExplainTooltip]="deleteDishButtonTooltip(item)"
-              [explainTooltipEnabled]="explainabilityEnabled"
             >
               Elimina
             </button>
-          </div>
         </div>
-      </a>
+      </div>
     </div>
   </div>
 </div>

@@ -324,7 +324,7 @@ const GOOGLE_SERVER_CLIENT_ID = (environment as {
   `]
 })
 export class LoginComponent implements AfterViewInit {
-  @ViewChild('googleButtonHost', { static: true }) private googleButtonHost?: ElementRef<HTMLDivElement>;
+  @ViewChild('googleButtonHost') private googleButtonHost?: ElementRef<HTMLDivElement>;
   @ViewChild('emailInput') private emailInput?: ElementRef<HTMLInputElement>;
   @ViewChild('passwordInput') private passwordInput?: ElementRef<HTMLInputElement>;
 
@@ -469,10 +469,12 @@ export class LoginComponent implements AfterViewInit {
       return;
     }
 
-    const host = this.googleButtonHost?.nativeElement;
+    const host = await this.waitForGoogleButtonHost();
     if (!host) {
+      console.warn('Google button host not ready yet');
       this.loadingButton = false;
       this.loadError = true;
+      this.errorMessage = 'Contenitore Google non pronto dopo l\'hydration della pagina.';
       return;
     }
 
@@ -497,12 +499,34 @@ export class LoginComponent implements AfterViewInit {
       this.buttonReady = true;
       this.loadError = false;
     } catch (err) {
-      console.error('Errore caricamento Google Identity', err);
+      console.error('Errore caricamento Google Identity', {
+        origin: window.location.origin,
+        message: err instanceof Error ? err.message : String(err),
+        error: err
+      });
       this.loadingButton = false;
       this.buttonReady = false;
       this.loadError = true;
-      this.errorMessage = 'Impossibile caricare il pulsante Google. Riprova.';
+      const detail = err instanceof Error ? err.message : String(err);
+      this.errorMessage = `Impossibile caricare Google su ${window.location.origin}. ${detail}. Verifica le origini autorizzate nel client OAuth web.`;
     }
+  }
+
+  private async waitForGoogleButtonHost(maxFrames = 20): Promise<HTMLDivElement | null> {
+    const immediateHost = this.googleButtonHost?.nativeElement;
+    if (immediateHost) {
+      return immediateHost;
+    }
+
+    for (let frame = 0; frame < maxFrames; frame += 1) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const host = this.googleButtonHost?.nativeElement;
+      if (host) {
+        return host;
+      }
+    }
+
+    return null;
   }
 
   private handleCredentialResponse(response: { credential?: string }): void {

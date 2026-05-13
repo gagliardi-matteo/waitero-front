@@ -4,6 +4,7 @@ import { SidebarComponent } from './util/sidebar/sidebar.component';
 import { AuthService } from './auth/AuthService';
 import { NgIf } from '@angular/common';
 import { MobileNativeService } from './services/mobile-native.service';
+import { OrientationLockService } from './services/orientation-lock.service';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +17,7 @@ export class AppComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private mobileNativeService = inject(MobileNativeService);
+  private orientationLockService = inject(OrientationLockService);
 
   private readonly backofficeRoutes = [
     '/admin',
@@ -33,6 +35,7 @@ export class AppComponent {
 
   constructor() {
     void this.mobileNativeService.initialize();
+    this.orientationLockService.initialize();
   }
 
   isLoggedIn(): boolean {

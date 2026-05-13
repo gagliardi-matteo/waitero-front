@@ -58,7 +58,7 @@ export class AnalyticsDashboardComponent implements OnInit {
       },
       error: err => {
         console.error('Errore caricamento analytics dashboard', err);
-        this.errorMessage = 'Impossibile caricare le metriche del locale.';
+        this.errorMessage = 'Non riesco a caricare i dati del locale.';
         this.loading = false;
       }
     });
@@ -88,10 +88,10 @@ export class AnalyticsDashboardComponent implements OnInit {
     }
 
     const confirmed = window.confirm(
-      'Applicare automaticamente i suggerimenti?\n\n' +
-      '- i piatti da promuovere verranno segnati come consigliati\n' +
-      '- i piatti da rivedere verranno de-prioritizzati\n' +
-      '- i piatti da rimuovere verranno nascosti dal menu'
+      'Vuoi applicare i suggerimenti automatici?\n\n' +
+      '- i piatti forti verranno messi in evidenza\n' +
+      '- i piatti che convincono poco verranno messi più in basso\n' +
+      '- i piatti deboli verranno nascosti dal menu'
     );
     if (!confirmed) {
       return;
@@ -110,7 +110,7 @@ export class AnalyticsDashboardComponent implements OnInit {
       error: err => {
         console.error('Errore applicazione suggerimenti automatici', err);
         this.applyingInsights = false;
-        this.applySummaryMessage = 'Impossibile applicare i suggerimenti automatici.';
+        this.applySummaryMessage = 'Non riesco ad applicare i suggerimenti.';
         this.insightsExpanded = true;
       }
     });
@@ -150,22 +150,22 @@ export class AnalyticsDashboardComponent implements OnInit {
 
   get trafficQualityLabel(): string {
     if (this.conversionRate >= 0.2) {
-      return 'Traffico ad alta intenzione';
+      return 'Molti visitatori diventano clienti';
     }
     if (this.conversionRate >= 0.1) {
-      return 'Traffico con buon potenziale';
+      return 'Buon rapporto tra visite e ordini';
     }
-    return 'Molte visite, poca conversione';
+    return 'Tante visite, pochi ordini';
   }
 
   get revenueSignalLabel(): string {
     if (this.averageOrderValue >= 30) {
-      return 'Scontrino medio forte';
+      return 'Spesa media alta';
     }
     if (this.averageOrderValue >= 18) {
-      return 'Scontrino medio stabile';
+      return 'Spesa media nella norma';
     }
-    return 'Spazio per upsell e bundle';
+    return 'Spazio per aumentare la spesa media';
   }
 
   get funnelSteps(): Array<{ label: string; value: number; ratio: number }> {
@@ -184,43 +184,43 @@ export class AnalyticsDashboardComponent implements OnInit {
   performanceBadgeLabel(label: string): string {
     switch (label) {
       case 'top_performer':
-        return 'Top performer';
+        return 'Più forte del menu';
       case 'high_interest_low_conversion':
-        return 'Molto visto, poco ordinato';
+        return 'Piace ma si ordina poco';
       case 'cart_abandonment':
-        return 'Entrata carrello, non chiuso';
+        return 'Iniziato ma non completato';
       default:
-        return 'Stabile';
+        return 'Nella media';
     }
   }
 
   revenueOpportunityTypeLabel(type: string): string {
     switch (type) {
       case 'price_increase_test':
-        return 'Test prezzo';
+        return 'Prova un prezzo diverso';
       case 'margin_upgrade':
-        return 'Margine';
+        return 'Più margine';
       case 'bundle_or_reposition':
-        return 'Bundle';
+        return 'Da abbinare';
       case 'visibility_anchor':
-        return 'Anchor';
+        return 'Più visibilità';
       default:
-        return 'Revenue';
+        return 'Più incasso';
     }
   }
 
   benchmarkLabel(label: string): string {
     switch (label) {
       case 'outperforming_category':
-        return 'Sopra categoria';
+        return 'Va meglio della media';
       case 'under_category_benchmark':
-        return 'Sotto categoria';
+        return 'Va peggio della media';
       case 'post_cart_friction':
-        return 'Attrito carrello';
+        return 'Rallenta prima dell’ordine';
       case 'above_restaurant_average':
-        return 'Sopra media locale';
+        return 'Sopra la media del locale';
       default:
-        return 'Benchmark';
+        return 'Confronto';
     }
   }
 
@@ -244,36 +244,184 @@ export class AnalyticsDashboardComponent implements OnInit {
     return `${insight.type}-${insight.dishId ?? 'none'}-${insight.targetDishId ?? 'none'}-${index}`;
   }
 
+  refreshButtonTooltipSimple(): string {
+    return 'Ricarica i dati della pagina.';
+  }
+
+  openOrdersButtonTooltipSimple(): string {
+    return 'Apre la lista degli ordini.';
+  }
+
+  automaticInsightsBoxTooltipSimple(): string {
+    return 'Qui trovi suggerimenti automatici per migliorare i piatti.';
+  }
+
+  automaticInsightsToggleTooltipSimple(): string {
+    return 'Mostra o nasconde i suggerimenti automatici.';
+  }
+
+  applyAutomaticInsightsTooltipSimple(): string {
+    return 'Applica i suggerimenti al menu dopo la tua conferma.';
+  }
+
+  insightItemTooltipSimple(insight: Insight): string {
+    return this.joinTooltip([
+      this.insightTitle(insight),
+      'Basato sui dati recenti del locale.',
+      this.insightRuleTooltipSimple(insight),
+      `Spiegazione: ${insight.message}`
+    ]);
+  }
+
+  conversionTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.formatPercent(this.conversionRate)}.`,
+      'Mostra quante volte una scheda piatto vista diventa un ordine.'
+    ]);
+  }
+
+  averageOrderValueTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.formatMoney(this.averageOrderValue)}.`,
+      'Mostra quanto spende in media un cliente a ordine.'
+    ]);
+  }
+
+  totalOrdersTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.overview?.orders ?? 0}.`,
+      'Conta quanti ordini sono arrivati davvero.'
+    ]);
+  }
+
+  dropoffTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.formatPercent(this.dropoffRate)}.`,
+      'Mostra quante persone guardano il menu ma non arrivano a ordinare.'
+    ]);
+  }
+
+  funnelStepTooltipSimple(step: { label: string; value: number; ratio: number }): string {
+    switch (step.label) {
+      case 'Visualizzazioni piatti':
+        return this.joinTooltip([
+          `Valore attuale: ${step.value}.`,
+          'Quante volte un piatto è stato aperto.'
+        ]);
+      case 'Sessioni attive':
+        return this.joinTooltip([
+          `Valore attuale: ${step.value}.`,
+          'Quante sessioni sono state aperte.'
+        ]);
+      case 'Ordini inviati':
+        return this.joinTooltip([
+          `Valore attuale: ${step.value}.`,
+          'Quanti ordini sono arrivati.'
+        ]);
+      default:
+        return '';
+    }
+  }
+
+  servedSeatsTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.overview?.sessions ?? 0}.`,
+      'Mostra quante persone hanno aperto il menu o la pagina.'
+    ]);
+  }
+
+  menuViewsTooltipSimple(): string {
+    return this.joinTooltip([
+      `Valore attuale: ${this.overview?.views ?? 0}.`,
+      'Conta quante schede piatto sono state aperte.'
+    ]);
+  }
+
+  topPerformerTooltipSimple(): string {
+    return this.joinTooltip([
+      `Conteggio attuale: ${this.topPerformerCount}.`,
+      'Conta i piatti che stanno andando meglio.'
+    ]);
+  }
+
+  dishPerformancePanelTooltipSimple(): string {
+    return this.joinTooltip([
+      'Qui vedi ogni piatto con i suoi numeri principali.',
+      'Serve per capire quali piatti attirano attenzione e quali vendono meglio.'
+    ]);
+  }
+
+  dishRowTooltipSimple(dish: DishPerformance): string {
+    return this.joinTooltip([
+      `${dish.dishName}.`,
+      `Ordini reali: ${dish.orderCount}.`,
+      `Aperture della scheda: ${dish.views}.`,
+      `Passaggi verso il carrello: ${dish.addToCart}.`,
+      `Andamento recente: ${this.trendDisplay(dish)}.`,
+      `Incasso stimato: ${this.formatMoney(dish.orderCount * dish.price)}.`
+    ]);
+  }
+
+  trendTooltipSimple(dish: DishPerformance): string {
+    if (dish.trendDirection === 'insufficient_data') {
+      return this.joinTooltip([
+        `${dish.dishName}.`,
+        'Trend non ancora disponibile.',
+        'Serve un po’ di storico per fare il confronto.'
+      ]);
+    }
+
+    return this.joinTooltip([
+      `${dish.dishName}.`,
+      'Confronto tra un periodo recente e quello precedente.',
+      `Differenza mostrata: ${this.trendDisplay(dish)}.`
+    ]);
+  }
+
+  private insightRuleTooltipSimple(insight: Insight): string {
+    switch (insight.type) {
+      case 'PROMOTE':
+        return 'Questo piatto piace e merita più visibilità.';
+      case 'FIX_CONVERSION':
+        return 'Il piatto incuriosisce, ma viene ordinato poco.';
+      case 'UPSELL':
+        return 'Questo piatto si abbina bene a un altro.';
+      case 'REMOVE':
+        return 'Il piatto riceve visite ma convince poco.';
+      default:
+        return 'Suggerimento generato automaticamente.';
+    }
+  }
+
   refreshButtonTooltip(): string {
     return this.joinTooltip([
-      'Azione UI.',
-      'Richiama loadOverview() e ricarica il payload /analytics/dashboard.',
-      'Non applica insight automatici e non modifica dati persistenti.'
+      'Ricarica i dati della pagina.',
+      'Non cambia nulla nel menu o negli ordini.',
+      'Serve solo ad aggiornare i numeri a schermo.'
     ]);
   }
 
   openOrdersButtonTooltip(): string {
     return this.joinTooltip([
-      'Azione UI.',
-      "Naviga verso la pagina /orders per vedere lo stato operativo degli ordini.",
-      'Non esegue scritture e non ricalcola metriche.'
+      'Apre la lista degli ordini.',
+      'Non modifica nessun dato.',
+      'Ti porta dove controlli cosa sta succedendo adesso.'
     ]);
   }
 
   automaticInsightsBoxTooltip(): string {
     return this.joinTooltip([
-      'Questo blocco usa Dish Intelligence, separato dalla dashboard legacy.',
-      'Time range di default: ultimi 30 giorni.',
-      'Segnali usati: view_menu_item -> impressions, click_dish -> clicks, view_dish -> views, ordini pagati/completed -> orderCount e revenuePerDish, co-occorrenze ordini -> affinity/lift per upsell.'
+      'Qui trovi suggerimenti automatici per migliorare i piatti.',
+      'Guardano gli ultimi 30 giorni.',
+      'Usano i dati reali di visite, clic e ordini.'
     ]);
   }
 
   automaticInsightsToggleTooltip(): string {
     return this.joinTooltip([
-      'Azione UI locale.',
-      "Apre o chiude la sezione 'Suggerimenti automatici'.",
-      'Da chiusa restano visibili solo titolo e bottone di applicazione; da aperta compaiono riepilogo e lista insight.',
-      'Non richiama API e non modifica dati.'
+      'Mostra o nasconde i suggerimenti automatici.',
+      'Non cambia i dati.',
+      'Serve solo a leggere meglio la sezione.'
     ]);
   }
 

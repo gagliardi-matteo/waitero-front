@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../auth/AuthService';
 import { environment } from '../../../environments/environment';
 import { BusinessType, businessTypeLabel } from '../../models/business-type.model';
+import { UiFeaturesService } from '../../services/ui-features.service';
 
 interface AdminRestaurantSummary {
   id: number;
@@ -53,6 +54,7 @@ export class AdminRestaurantsComponent implements OnInit {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private uiFeaturesService = inject(UiFeaturesService);
 
   searchTerm = '';
   loading = false;
@@ -60,6 +62,8 @@ export class AdminRestaurantsComponent implements OnInit {
   creating = false;
   enteringRestaurantId: number | null = null;
   resettingRestaurantId: number | null = null;
+  tooltipFeatureEnabled = true;
+  tooltipFeatureSaving = false;
   errorMessage = '';
   successMessage = '';
   restaurants: AdminRestaurantSummary[] = [];
@@ -68,8 +72,15 @@ export class AdminRestaurantsComponent implements OnInit {
   resetPasswords: Record<number, string> = {};
 
   ngOnInit(): void {
+    this.loadUiFeatures();
     this.loadRestaurants();
     this.loadAuditLogs();
+  }
+
+  loadUiFeatures(): void {
+    this.uiFeaturesService.getFeatures().subscribe(features => {
+      this.tooltipFeatureEnabled = features.explainabilityBalloonsEnabled;
+    });
   }
 
   loadRestaurants(): void {
@@ -104,6 +115,35 @@ export class AdminRestaurantsComponent implements OnInit {
       error: err => {
         console.error('Errore caricamento audit admin', err);
         this.loadingAudit = false;
+      }
+    });
+  }
+
+  updateTooltipVisibility(enabled: boolean): void {
+    if (this.tooltipFeatureSaving || enabled === this.tooltipFeatureEnabled) {
+      return;
+    }
+
+    const previous = this.tooltipFeatureEnabled;
+    this.tooltipFeatureEnabled = enabled;
+    this.tooltipFeatureSaving = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.uiFeaturesService.updateExplainabilityBalloonsEnabled(enabled).subscribe({
+      next: features => {
+        this.tooltipFeatureEnabled = features.explainabilityBalloonsEnabled;
+        this.tooltipFeatureSaving = false;
+        this.successMessage = this.tooltipFeatureEnabled
+          ? 'Tooltip riattivati per tutti i ristoratori.'
+          : 'Tooltip disattivati per tutti i ristoratori.';
+        this.loadAuditLogs();
+      },
+      error: err => {
+        console.error('Errore aggiornamento visibilita tooltip', err);
+        this.tooltipFeatureEnabled = previous;
+        this.tooltipFeatureSaving = false;
+        this.errorMessage = err.error?.message ?? 'Impossibile aggiornare la visibilita dei tooltip.';
       }
     });
   }
@@ -197,7 +237,8 @@ export class AdminRestaurantsComponent implements OnInit {
     const labels: Record<string, string> = {
       ADMIN_CREATE_RESTAURANT: 'Creazione locale',
       ADMIN_RESET_RESTAURANT_PASSWORD: 'Reset password',
-      ADMIN_START_IMPERSONATION: 'Accesso supporto'
+      ADMIN_START_IMPERSONATION: 'Accesso supporto',
+      UI_TOOLTIP_VISIBILITY_UPDATED: 'Visibilita tooltip'
     };
     if (labels[action]) {
       return labels[action];

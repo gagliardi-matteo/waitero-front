@@ -1,57 +1,57 @@
 <div class="content analytics-dashboard-page">
   <div class="page-header">
     <div>
-      <h1>Analytics</h1>
-      <p>Performance del locale.</p>
+      <h1>Andamento locale</h1>
+      <p>Qui trovi i numeri principali spiegati in modo semplice.</p>
     </div>
     <div class="page-actions">
       <button
         type="button"
         class="ghost-btn"
         (click)="loadOverview()"
-        [appExplainTooltip]="refreshButtonTooltip()"
+        [appExplainTooltip]="refreshButtonTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        Aggiorna
+        Aggiorna dati
       </button>
       <button
         type="button"
         class="primary-btn"
         [routerLink]="['/orders']"
-        [appExplainTooltip]="openOrdersButtonTooltip()"
+        [appExplainTooltip]="openOrdersButtonTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        Apri ordini
+        Vai agli ordini
       </button>
     </div>
   </div>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
   <div class="loading-card" *ngIf="loading">
-    <app-brand-loader
-      [compact]="true"
-      label="Caricamento analytics"
-      hint="Elaborazione metriche del locale"
-    />
-  </div>
+      <app-brand-loader
+        [compact]="true"
+        label="Caricamento dati"
+        hint="Sto recuperando i numeri del locale"
+      />
+    </div>
 
   <ng-container *ngIf="!loading && overview as data">
     <div
       class="insights-box"
       *ngIf="insights.length > 0 || applySummaryMessage"
-      [appExplainTooltip]="automaticInsightsBoxTooltip()"
+      [appExplainTooltip]="automaticInsightsBoxTooltipSimple()"
       [explainTooltipEnabled]="explainabilityEnabled"
-    >
+      >
       <div class="insights-head">
         <button
           type="button"
           class="insights-toggle"
           (click)="toggleInsightsExpanded()"
           [attr.aria-expanded]="insightsExpanded"
-          [appExplainTooltip]="automaticInsightsToggleTooltip()"
+          [appExplainTooltip]="automaticInsightsToggleTooltipSimple()"
           [explainTooltipEnabled]="explainabilityEnabled"
         >
-          <span>Suggerimenti automatici</span>
+          <span>Suggerimenti semplici</span>
           <span class="material-symbols-outlined">{{ insightsExpanded ? 'expand_less' : 'expand_more' }}</span>
         </button>
         <button
@@ -60,10 +60,10 @@
           class="primary-btn"
           (click)="applyAutomaticInsights()"
           [disabled]="applyingInsights"
-          [appExplainTooltip]="applyAutomaticInsightsTooltip()"
+          [appExplainTooltip]="applyAutomaticInsightsTooltipSimple()"
           [explainTooltipEnabled]="explainabilityEnabled"
         >
-          {{ applyingInsights ? 'Applicazione...' : 'Applica automaticamente' }}
+          {{ applyingInsights ? 'Applico...' : 'Applica suggerimenti' }}
         </button>
       </div>
 
@@ -73,7 +73,7 @@
         <ul *ngIf="insights.length > 0; else noInsightsLeftTpl">
           <li
             *ngFor="let insight of insights; trackBy: trackAutoInsight"
-            [appExplainTooltip]="insightItemTooltip(insight)"
+            [appExplainTooltip]="insightItemTooltipSimple(insight)"
             [explainTooltipEnabled]="explainabilityEnabled"
           >
             <strong>{{ insightTitle(insight) }}</strong>
@@ -90,45 +90,45 @@
     <div class="kpi-row">
       <article
         class="kpi-card"
-        [appExplainTooltip]="conversionTooltip()"
+        [appExplainTooltip]="conversionTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Conversione</span>
+        <span>Da visite a ordini</span>
         <strong>{{ conversionRate | percent:'1.1-1' }}</strong>
       </article>
       <article
         class="kpi-card"
-        [appExplainTooltip]="averageOrderValueTooltip()"
+        [appExplainTooltip]="averageOrderValueTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Scontrino medio</span>
+        <span>Spesa media per ordine</span>
         <strong>{{ averageOrderValue | number:'1.2-2' }} &euro;</strong>
       </article>
       <article
         class="kpi-card"
-        [appExplainTooltip]="totalOrdersTooltip()"
+        [appExplainTooltip]="totalOrdersTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Ordini totali</span>
+        <span>Ordini ricevuti</span>
         <strong>{{ data.orders | number:'1.0-0' }}</strong>
       </article>
       <article
         class="kpi-card"
-        [appExplainTooltip]="dropoffTooltip()"
+        [appExplainTooltip]="dropoffTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Drop-off rate</span>
+        <span>Sessioni senza ordine</span>
         <strong>{{ dropoffRate | percent:'1.1-1' }}</strong>
       </article>
     </div>
 
     <section class="simple-panel funnel-panel">
-      <h3>Funnel digitale</h3>
+      <h3>Percorso del cliente</h3>
       <div class="funnel-list">
         <div
           class="funnel-step"
           *ngFor="let step of funnelSteps; trackBy: trackStep"
-          [appExplainTooltip]="funnelStepTooltip(step)"
+          [appExplainTooltip]="funnelStepTooltipSimple(step)"
           [explainTooltipEnabled]="explainabilityEnabled"
         >
           <div class="step-labels">
@@ -146,37 +146,37 @@
     <div class="kpi-row secondary">
       <article
         class="kpi-card small"
-        [appExplainTooltip]="servedSeatsTooltip()"
+        [appExplainTooltip]="servedSeatsTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Coperti serviti</span>
+        <span>Accessi al menu</span>
         <strong>{{ data.sessions | number:'1.0-0' }}</strong>
       </article>
       <article
         class="kpi-card small"
-        [appExplainTooltip]="menuViewsTooltip()"
+        [appExplainTooltip]="menuViewsTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Visualizzazioni menu</span>
+        <span>Schede piatto aperte</span>
         <strong>{{ data.views | number:'1.0-0' }}</strong>
       </article>
       <article
         class="kpi-card small"
-        [appExplainTooltip]="topPerformerTooltip()"
+        [appExplainTooltip]="topPerformerTooltipSimple()"
         [explainTooltipEnabled]="explainabilityEnabled"
       >
-        <span>Top performer</span>
+        <span>Piatti forti</span>
         <strong>{{ topPerformerCount | number:'1.0-0' }}</strong>
       </article>
     </div>
 
     <section
       class="simple-panel"
-      [appExplainTooltip]="dishPerformancePanelTooltip()"
+      [appExplainTooltip]="dishPerformancePanelTooltipSimple()"
       [explainTooltipEnabled]="explainabilityEnabled"
     >
       <div class="table-head">
-        <h3>Performance per piatto</h3>
+        <h3>Andamento dei piatti</h3>
       </div>
       <div class="table-shell" *ngIf="dishPerformance.length > 0; else noDishTpl">
         <table class="dish-table">
@@ -184,26 +184,26 @@
             <tr>
               <th>Piatto</th>
               <th>Ordini</th>
-              <th>Revenue</th>
-              <th>Conversione</th>
-              <th>Trend</th>
+              <th>Incasso stimato</th>
+              <th>Da visite a ordini</th>
+              <th>Andamento</th>
             </tr>
           </thead>
           <tbody>
             <tr
               *ngFor="let dish of dishPerformance; trackBy: trackDish"
-              [appExplainTooltip]="dishRowTooltip(dish)"
+              [appExplainTooltip]="dishRowTooltipSimple(dish)"
               [explainTooltipEnabled]="explainabilityEnabled"
             >
               <td data-label="Piatto"><strong>{{ dish.dishName }}</strong></td>
               <td data-label="Ordini">{{ dish.orderCount | number:'1.0-0' }}</td>
-              <td data-label="Revenue">{{ (dish.orderCount * dish.price) | number:'1.0-0' }} &euro;</td>
-              <td data-label="Conversione">{{ dish.viewToOrderRate | percent:'1.1-1' }}</td>
-              <td data-label="Trend">
+              <td data-label="Incasso stimato">{{ (dish.orderCount * dish.price) | number:'1.0-0' }} &euro;</td>
+              <td data-label="Da visite a ordini">{{ dish.viewToOrderRate | percent:'1.1-1' }}</td>
+              <td data-label="Andamento">
                 <span
                   class="trend"
                   [ngClass]="trendClass(dish)"
-                  [appExplainTooltip]="trendTooltip(dish)"
+                  [appExplainTooltip]="trendTooltipSimple(dish)"
                   [explainTooltipEnabled]="explainabilityEnabled"
                 >
                   {{ trendDisplay(dish) }}
@@ -214,7 +214,7 @@
         </table>
       </div>
       <ng-template #noDishTpl>
-        <div class="empty-state">Nessun piatto disponibile per l'analisi.</div>
+        <div class="empty-state">Non ci sono piatti da mostrare ancora.</div>
       </ng-template>
     </section>
   </ng-container>

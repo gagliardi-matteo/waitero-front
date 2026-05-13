@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../auth/AuthService';
@@ -15,11 +15,41 @@ import { MenuAutopilotPanelComponent } from './components/menu-autopilot-panel/m
 import { UiFeaturesService } from '../../services/ui-features.service';
 import { ExplainTooltipDirective } from '../../shared/explain-tooltip/explain-tooltip.directive';
 import { DishCategoryGroup, dishCategoryLabel, groupDishesByCategory } from '../../shared/dish-category';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface AutopilotCategoryPlan {
   categoria: string;
   spotlight: Piatto | null;
   nextDishes: Piatto[];
+}
+
+interface MenuImportRowResult {
+  rowNumber: number;
+  nome: string | null;
+  status: string;
+  message: string;
+}
+
+interface MenuImportResult {
+  totalRows: number;
+  createdRows: number;
+  updatedRows: number;
+  failedRows: number;
+  rowResults: MenuImportRowResult[];
+}
+
+interface DishExportRow {
+  nome: string;
+  categoria: string;
+  prezzo: number | string;
+  descrizione: string;
+  ingredienti: string;
+  allergeni: string;
+  consigliato: string;
+  disponibile: string;
+  immagine: string;
 }
 
 @Component({
@@ -35,8 +65,12 @@ export class MenuManagementComponent implements OnInit {
   deletingDishId: number | null = null;
   togglingRecommendedId: number | null = null;
   explainabilityEnabled = false;
+  menuImportFile: File | null = null;
+  importingMenu = false;
+  menuImportResult: MenuImportResult | null = null;
 
   private uiFeaturesService = inject(UiFeaturesService);
+  private router = inject(Router);
 
   constructor(
     private http: HttpClient,
@@ -79,6 +113,79 @@ export class MenuManagementComponent implements OnInit {
         alert(err.error?.message ?? 'Impossibile eliminare il piatto.');
       }
     });
+  }
+
+  onMenuImportFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.menuImportFile = input.files?.[0] ?? null;
+    this.menuImportResult = null;
+  }
+
+  importMenuFromFile(): void {
+    if (!this.menuImportFile || this.importingMenu) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', this.menuImportFile);
+
+    this.importingMenu = true;
+    this.http.post<MenuImportResult>(`${environment.apiUrl}/menu/piatti/import`, formData).subscribe({
+      next: result => {
+        this.menuImportResult = result;
+        this.importingMenu = false;
+        this.menuImportFile = null;
+        this.loadPiatti();
+      },
+      error: err => {
+        console.error('Errore import menu:', err);
+        this.importingMenu = false;
+        alert(err.error?.message ?? 'Impossibile importare il menu dal file Excel.');
+      }
+    });
+  }
+
+  downloadMenuTemplate(): void {
+    const workbook = XLSX.utils.book_new();
+    const templateSheet = XLSX.utils.aoa_to_sheet([
+      ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile', 'Immagine']
+    ]);
+    const instructionsSheet = XLSX.utils.aoa_to_sheet([
+      ['Compila almeno Nome, Categoria e Prezzo.'],
+      ['La categoria deve essere scritta con il nome visibile nel menu del locale.'],
+      ['Consigliato e Disponibile accettano SI/NO, true/false, 1/0.'],
+      ['Immagine deve contenere un URL o il nome del file immagine.']
+    ]);
+
+    templateSheet['!cols'] = [
+      { wch: 24 }, { wch: 22 }, { wch: 12 }, { wch: 28 }, { wch: 28 },
+      { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 24 }
+    ];
+    instructionsSheet['!cols'] = [{ wch: 90 }];
+
+    XLSX.utils.book_append_sheet(workbook, templateSheet, 'Template');
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Istruzioni');
+    this.downloadWorkbook(workbook, 'waitero-menu-template.xlsx');
+  }
+
+  downloadCurrentMenuExport(): void {
+    if (!this.piatti.length) {
+      alert('Nessun piatto disponibile da esportare.');
+      return;
+    }
+
+    const workbook = XLSX.utils.book_new();
+    const rows = this.buildDishExportRows();
+    const sheet = XLSX.utils.json_to_sheet(rows);
+    sheet['!cols'] = [
+      { wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 30 }, { wch: 30 },
+      { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 24 }
+    ];
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Menu');
+    this.downloadWorkbook(workbook, `waitero-menu-${this.exportDateStamp()}.xlsx`);
+
+    const pdf = this.buildMenuPdf(rows);
+    this.downloadBlob(pdf, `waitero-menu-${this.exportDateStamp()}.pdf`);
   }
 
   toggleRecommended(item: Piatto, event: Event): void {
@@ -183,6 +290,15 @@ export class MenuManagementComponent implements OnInit {
     return item.id;
   }
 
+  openDish(item: Piatto): void {
+    void this.router.navigate(['/ristoratore/piatto', item.id]);
+  }
+
+  editDish(item: Piatto, event?: Event): void {
+    event?.stopPropagation();
+    void this.router.navigate(['/ristoratore/piatto/modifica', item.id]);
+  }
+
   getImageUrl(imageUrl: string | null | undefined): string {
     if (!imageUrl || imageUrl.trim() === '') {
       return '/placeholder.png';
@@ -248,6 +364,14 @@ export class MenuManagementComponent implements OnInit {
     ]);
   }
 
+  importMenuButtonTooltip(): string {
+    return this.joinTooltip([
+      'Azione UI.',
+      'Premendo questo bottone carichi un file Excel con piu piatti insieme.',
+      'Ogni riga del file viene trasformata in un piatto del menu.'
+    ]);
+  }
+
   categorySectionTooltip(group: DishCategoryGroup): string {
     return this.joinTooltip([
       `Categoria ${group.label}.`,
@@ -293,6 +417,106 @@ export class MenuManagementComponent implements OnInit {
 
   private formatPercent(value: number | undefined): string {
     return `${((value ?? 0) * 100).toFixed(1)}%`;
+  }
+
+  private buildDishExportRows(): DishExportRow[] {
+    return this.menuByCategory.flatMap(group =>
+      group.items.map(item => ({
+        nome: item.nome ?? '',
+        categoria: group.label,
+        prezzo: item.prezzo ?? '',
+        descrizione: item.descrizione ?? '',
+        ingredienti: item.ingredienti ?? '',
+        allergeni: item.allergeni ?? '',
+        consigliato: item.consigliato ? 'SI' : 'NO',
+        disponibile: item.disponibile ? 'SI' : 'NO',
+        immagine: item.imageUrl ?? ''
+      }))
+    );
+  }
+
+  private buildMenuPdf(rows: DishExportRow[]): Blob {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Menù Waitero', 40, 40);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Esportato il ${this.exportDateStampReadable()}`, 40, 58);
+    doc.text(`Totale piatti: ${rows.length}`, 40, 72);
+
+    autoTable(doc, {
+      startY: 90,
+      head: [[
+        'Nome',
+        'Categoria',
+        'Prezzo',
+        'Descrizione',
+        'Ingredienti',
+        'Allergeni',
+        'Consigliato',
+        'Disponibile'
+      ]],
+      body: rows.map(row => ([
+        row.nome,
+        row.categoria,
+        typeof row.prezzo === 'number' ? `${row.prezzo} €` : row.prezzo,
+        row.descrizione,
+        row.ingredienti,
+        row.allergeni,
+        row.consigliato,
+        row.disponibile
+      ])),
+      styles: {
+        fontSize: 8,
+        cellPadding: 4,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: [216, 122, 44]
+      },
+      columnStyles: {
+        0: { cellWidth: 90 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 120 },
+        4: { cellWidth: 120 },
+        5: { cellWidth: 90 },
+        6: { cellWidth: 55 },
+        7: { cellWidth: 55 }
+      }
+    });
+
+    return doc.output('blob');
+  }
+
+  private downloadWorkbook(workbook: XLSX.WorkBook, filename: string): void {
+    const arrayBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    this.downloadBlob(new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), filename);
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private exportDateStamp(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+
+  private exportDateStampReadable(): string {
+    return new Date().toLocaleDateString('it-IT');
   }
 
   private joinTooltip(parts: Array<string | null | undefined>): string {

@@ -12,6 +12,30 @@
   <p class="admin-console__error" *ngIf="errorMessage">{{ errorMessage }}</p>
   <p class="admin-console__success" *ngIf="successMessage">{{ successMessage }}</p>
 
+  <section class="admin-console__panel admin-console__feature-panel">
+    <div class="admin-console__feature-copy">
+      <span class="admin-console__eyebrow">Esperienza locale</span>
+      <h2>Tooltip informativi</h2>
+      <p>
+        Decidi se i ristoratori vedono i tooltip di spiegazione nelle pagine operative.
+        Se li disattivi, spariscono per tutti i ristoratori; puoi riattivarli quando vuoi.
+      </p>
+    </div>
+
+    <label class="admin-console__switch">
+      <input
+        type="checkbox"
+        [ngModel]="tooltipFeatureEnabled"
+        (ngModelChange)="updateTooltipVisibility($event)"
+        [disabled]="tooltipFeatureSaving"
+        name="tooltipFeatureEnabled"
+      />
+      <span>
+        {{ tooltipFeatureSaving ? 'Aggiornamento...' : (tooltipFeatureEnabled ? 'Visibili' : 'Nascosti') }}
+      </span>
+    </label>
+  </section>
+
   <section class="admin-console__panel">
     <div class="admin-console__panel-head">
       <span class="admin-console__eyebrow">Nuovo tenant</span>

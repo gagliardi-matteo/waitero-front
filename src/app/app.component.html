@@ -2,6 +2,13 @@
   <app-sidebar *ngIf="showSidebar()"></app-sidebar>
 
   <div class="content" [class.with-sidebar]="showSidebar()" [class.content--customer-menu]="isCustomerMenuRoute()">
+    <div class="portrait-guard">
+      <div class="portrait-guard__card">
+        <strong>Ruota il telefono</strong>
+        <span>La visualizzazione orizzontale non e supportata su schermi mobili.</span>
+      </div>
+    </div>
+
     <div class="impersonation-banner" *ngIf="showImpersonationBanner()">
       <div>
         <strong>Modalita master</strong>
