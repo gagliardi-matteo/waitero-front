@@ -3,6 +3,8 @@
   dishId: number;
   nome: string;
   prezzoUnitario: number;
+  portionKey?: string | null;
+  portionLabel?: string | null;
   quantita: number;
   paidQuantity: number;
   remainingQuantity: number;
@@ -29,7 +31,9 @@ export interface CustomerOrderPayment {
 }
 
 export interface CustomerDraftItem {
+  lineKey: string;
   dishId: number;
+  portionKey?: string | null;
   quantity: number;
 }
 

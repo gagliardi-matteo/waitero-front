@@ -35,7 +35,9 @@
 .map-card,
 .meta-grid > div,
 .duplicate-panel,
-.settings-section {
+.settings-section,
+.billing-status-card,
+.iban-element-host {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-sm);
@@ -94,6 +96,45 @@ label span {
 
 .address-field {
   position: relative;
+}
+
+.billing-section {
+  margin-bottom: 1rem;
+}
+
+.billing-status-card,
+.billing-setup-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.billing-status-card {
+  padding: 1rem;
+  border-radius: 20px;
+}
+
+.billing-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.iban-host-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.iban-element-host {
+  min-height: 48px;
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  background: #fff;
 }
 
 .address-suggestions {
@@ -262,7 +303,8 @@ iframe {
 
   .settings-layout,
   .hour-row,
-  .settings-inline-grid {
+  .settings-inline-grid,
+  .billing-status-grid {
     grid-template-columns: 1fr;
   }
 

@@ -21,6 +21,14 @@
 .import-error.success { border-color:rgba(34,197,94,.2); }
 .import-error.error { border-color:rgba(239,68,68,.25); background:rgba(239,68,68,.04); }
 .import-error p { margin-top:.35rem; color:var(--text-muted); }
+.browse-tools { display:grid; gap:.9rem; margin:1.2rem 0 1.4rem; padding:1rem 1.1rem; border:1px solid var(--border); border-radius:22px; background:rgba(255,255,255,.84); box-shadow:var(--shadow-xs); }
+.browse-search { display:grid; gap:.4rem; font-weight:700; }
+.browse-search span { color:var(--text-muted); font-size:.82rem; }
+.browse-search input { width:100%; min-height:44px; padding:0 .95rem; border:1px solid var(--border); border-radius:14px; background:#fff; font:inherit; }
+.browse-categories { display:flex; gap:.55rem; flex-wrap:wrap; }
+.category-pill { min-height:38px; padding:0 .9rem; border:1px solid var(--border); border-radius:999px; background:var(--surface); font:inherit; font-size:.84rem; font-weight:700; color:var(--text-muted); }
+.category-pill.active { border-color:rgba(216,122,44,.35); background:rgba(216,122,44,.12); color:var(--accent-strong); }
+.browse-summary { display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:var(--text-muted); font-size:.84rem; }
 .category-section { margin-bottom:1.8rem; }
 .category-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.8rem; }
 .category-title { font-size:1.15rem; }
@@ -43,4 +51,4 @@
 .text-btn { position: relative; z-index: 3; min-height:36px; padding:0 .75rem; border:1px solid var(--border); border-radius:999px; background:var(--surface-soft); font:inherit; font-size:.8rem; font-weight:700; pointer-events: auto; }
 .text-btn.danger { color:var(--danger); }
 @media (max-width: 900px) { .menu-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-@media (max-width: 640px) { .content { padding:1rem; } .page-header { flex-direction:column; align-items:stretch; } .header-actions { justify-content:flex-start; } .menu-grid { grid-template-columns:1fr; } .import-actions { flex-direction:column; align-items:stretch; } }
+@media (max-width: 640px) { .content { padding:1rem; } .page-header { flex-direction:column; align-items:stretch; } .header-actions { justify-content:flex-start; } .menu-grid { grid-template-columns:1fr; } .import-actions { flex-direction:column; align-items:stretch; } .browse-summary { flex-direction:column; align-items:flex-start; } }

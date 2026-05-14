@@ -10,6 +10,11 @@ export const routes: Routes = [
     canActivate: [masterGuard]
   },
   {
+    path: 'admin/billing',
+    loadComponent: () => import('./pages/admin-billing/admin-billing.component').then(m => m.AdminBillingComponent),
+    canActivate: [masterGuard]
+  },
+  {
     path: 'orders',
     loadComponent: () => import('./pages/orders-active/orders-active.component').then(m => m.OrdersActiveComponent),
     canActivate: [authGuard]

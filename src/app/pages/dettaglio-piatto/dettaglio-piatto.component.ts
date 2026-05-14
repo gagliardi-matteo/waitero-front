@@ -18,10 +18,12 @@ import { TrackingService } from '../../services/tracking.service';
   styleUrl: './dettaglio-piatto.component.scss'
 })
 export class DettaglioPiattoComponent implements OnInit, OnDestroy {
+  readonly dishImagesEnabled = (environment as any).features?.dishImagesEnabled ?? false;
 
   piatto!: Piatto;
   upsellSuggestions: Piatto[] = [];
   errorMessage = '';
+  selectedPortionKey: string | null = null;
   private enteredAt = Date.now();
 
   constructor(
@@ -44,6 +46,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
         next: p => {
           this.errorMessage = '';
           this.piatto = p;
+          this.selectedPortionKey = p.porzioni?.[0]?.key ?? null;
           this.trackingService.trackEvent('view_dish', {
             dishId: p.id,
             metadata: {
@@ -107,7 +110,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId || !this.piatto) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, 1)
+    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, 1, this.selectedPortionKey ?? undefined)
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
@@ -115,7 +118,8 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
             dishId: this.piatto.id,
             metadata: {
               page: 'dish-detail',
-              quantity: this.quantita()
+              quantity: this.quantita(),
+              portionKey: this.selectedPortionKey
             }
           });
         },
@@ -129,7 +133,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId || !this.piatto) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, -1)
+    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, -1, this.selectedPortionKey ?? undefined)
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
@@ -137,7 +141,8 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
             dishId: this.piatto.id,
             metadata: {
               page: 'dish-detail',
-              quantity: this.quantita()
+              quantity: this.quantita(),
+              portionKey: this.selectedPortionKey
             }
           });
         },
@@ -146,6 +151,11 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
   }
 
   addSuggestion(suggestion: Piatto): void {
+    if ((suggestion.porzioni?.length ?? 0) > 0) {
+      void this.router.navigate(['/menu/piatto', suggestion.id]);
+      return;
+    }
+
     const token = this.auth.tokenValue;
     const restaurantId = this.auth.restaurantIdValue;
     const tableId = this.auth.tableIdValue;
@@ -155,7 +165,7 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
-          this.orderService.markDraftAttribution(suggestion.id, 'dish_detail_upsell', this.piatto?.id);
+          this.orderService.markDraftAttribution(suggestion.id, null, 'dish_detail_upsell', this.piatto?.id);
           this.trackingService.trackEvent('add_to_cart', {
             dishId: suggestion.id,
             metadata: {
@@ -169,7 +179,20 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
   }
 
   quantita(): number {
-    return this.piatto ? this.orderService.quantita(this.piatto.id) : 0;
+    return this.piatto ? this.orderService.quantita(this.piatto.id, this.selectedPortionKey) : 0;
+  }
+
+  displayPriceLabel(): string {
+    if (!this.piatto) {
+      return '';
+    }
+
+    const selected = this.piatto.porzioni?.find(item => item.key === this.selectedPortionKey);
+    if (selected) {
+      return `${selected.label} · ${selected.price.toFixed(2)} €`;
+    }
+
+    return `${this.piatto.prezzo.toFixed(2)} €`;
   }
 
   addToCart() {

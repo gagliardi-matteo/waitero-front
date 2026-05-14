@@ -35,7 +35,8 @@ export class SidebarComponent implements OnInit {
   ];
 
   readonly masterPrimaryItems: NavItem[] = [
-    { label: 'Locali', icon: 'store', route: '/admin/restaurants' }
+    { label: 'Locali', icon: 'store', route: '/admin/restaurants' },
+    { label: 'Billing', icon: 'payments', route: '/admin/billing' }
   ];
 
   readonly masterImpersonatingSecondaryItems: NavItem[] = [

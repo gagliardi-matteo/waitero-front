@@ -78,12 +78,33 @@
         </label>
 
         <label>
-          <span>Prezzo</span>
+          <span>Prezzo singolo / fallback</span>
           <input type="number" formControlName="prezzo" />
         </label>
       </section>
 
       <section class="form-section">
+        <h2>Porzioni opzionali</h2>
+        <p>Se definisci una o piu porzioni, il cliente scegliera tra queste opzioni invece di usare il solo prezzo standard.</p>
+
+        <div class="compact-grid" *ngFor="let portion of portionRows; let i = index">
+          <label>
+            <span>Etichetta porzione</span>
+            <input type="text" [(ngModel)]="portion.label" [ngModelOptions]="{ standalone: true }" placeholder="Es. 0,5 L oppure 1 kg" />
+          </label>
+
+          <label>
+            <span>Prezzo porzione</span>
+            <input type="number" [(ngModel)]="portion.price" [ngModelOptions]="{ standalone: true }" min="0" />
+          </label>
+
+          <button type="button" class="ghost-btn" (click)="removePortionRow(i)">Rimuovi porzione</button>
+        </div>
+
+        <button type="button" class="ghost-btn" (click)="addPortionRow()">Aggiungi porzione</button>
+      </section>
+
+      <section class="form-section" *ngIf="dishImagesEnabled">
         <h2>Immagine</h2>
 
         <label>

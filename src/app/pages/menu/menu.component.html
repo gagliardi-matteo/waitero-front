@@ -64,13 +64,14 @@
             <div>
               <div class="dish-name">{{ piatto.nome }}</div>
               <div class="dish-description">{{ piatto.descrizione }}</div>
-              <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
+              <div class="dish-price">{{ displayPriceLabel(piatto) }}</div>
             </div>
           </div>
 
           <div class="dish-image-container">
-            <img class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
+            <img *ngIf="dishImagesEnabled" class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
 
+            <ng-container *ngIf="!hasSelectablePortions(piatto); else recommendedPortionBtn">
             <ng-container *ngIf="quantita(piatto.id) > 0; else recommendedAddBtn">
               <div class="dish-add-overlay" (click)="$event.stopPropagation()">
                 <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">-</button>
@@ -78,9 +79,16 @@
                 <button class="round-btn" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
               </div>
             </ng-container>
+            </ng-container>
 
             <ng-template #recommendedAddBtn>
               <button class="add-button-overlay" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
+            </ng-template>
+
+            <ng-template #recommendedPortionBtn>
+              <button class="portion-button-overlay" (click)="openPortionSelector(piatto, $event)">
+                {{ quantitaTotale(piatto) > 0 ? quantitaTotale(piatto) + ' nel carrello' : 'Scegli' }}
+              </button>
             </ng-template>
           </div>
         </div>
@@ -98,13 +106,14 @@
             <div class="dish-allergen-list" *ngIf="getAllergenBadges(piatto).length > 0">
               <span class="allergen-badge" *ngFor="let allergen of getAllergenBadges(piatto); trackBy: trackBadge">{{ allergen }}</span>
             </div>
-            <div class="dish-price">{{ piatto.prezzo.toFixed(2) }} &euro;</div>
+            <div class="dish-price">{{ displayPriceLabel(piatto) }}</div>
           </div>
         </div>
 
         <div class="dish-image-container">
-          <img class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
+          <img *ngIf="dishImagesEnabled" class="dish-image" [src]="getImageUrl(piatto.imageUrl)" alt="{{ piatto.nome }}" />
 
+          <ng-container *ngIf="!hasSelectablePortions(piatto); else portionBtn">
           <ng-container *ngIf="quantita(piatto.id) > 0; else addBtn">
             <div class="dish-add-overlay" (click)="$event.stopPropagation()">
               <button class="round-btn" (click)="removeFromOrder(piatto); $event.stopPropagation()">-</button>
@@ -112,14 +121,45 @@
               <button class="round-btn" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
             </div>
           </ng-container>
+          </ng-container>
 
           <ng-template #addBtn>
             <button class="add-button-overlay" (click)="addToOrder(piatto); $event.stopPropagation()">+</button>
+          </ng-template>
+
+          <ng-template #portionBtn>
+            <button class="portion-button-overlay" (click)="openPortionSelector(piatto, $event)">
+              {{ quantitaTotale(piatto) > 0 ? quantitaTotale(piatto) + ' nel carrello' : 'Scegli' }}
+            </button>
           </ng-template>
         </div>
       </div>
     </div>
 
-    <app-order-summary [piatti]="ordine" />
+    <div class="portion-selector-backdrop" *ngIf="portionSelectorDish" (click)="closePortionSelector()">
+      <div class="portion-selector-sheet" (click)="$event.stopPropagation()">
+        <div class="portion-selector-head">
+          <div>
+            <strong>{{ portionSelectorDish.nome }}</strong>
+            <p>Scegli la porzione da aggiungere al carrello.</p>
+          </div>
+          <button type="button" class="portion-close" (click)="closePortionSelector()">Chiudi</button>
+        </div>
+
+        <div class="portion-row" *ngFor="let portion of portionSelectorDish.porzioni ?? []">
+          <div class="portion-meta">
+            <div class="portion-label">{{ portion.label }}</div>
+            <div class="portion-price">{{ portion.price | number: '1.2-2' }} &euro;</div>
+          </div>
+          <div class="portion-actions">
+            <button type="button" class="round-btn" (click)="removeFromOrder(portionSelectorDish, portion.key)">-</button>
+            <span class="qty-number">{{ quantitaPorzione(portionSelectorDish, portion.key) }}</span>
+            <button type="button" class="round-btn filled" (click)="addToOrder(portionSelectorDish, portion.key)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <app-order-summary />
   </div>
 </div>

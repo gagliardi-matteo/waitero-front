@@ -16,6 +16,7 @@ interface SubmitOrderPayload {
   items: Array<{
     dishId: number;
     quantity: number;
+    portionKey?: string;
     source?: string;
     sourceDishId?: number;
   }>;
@@ -62,13 +63,14 @@ export class CustomerOrderService {
       .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 
-  mutateDraft(token: string, restaurantId: string, tableId: string, dishId: number, delta: number): Observable<CustomerDraft> {
+  mutateDraft(token: string, restaurantId: string, tableId: string, dishId: number, delta: number, portionKey?: string): Observable<CustomerDraft> {
     return this.http.post<CustomerDraft>(`${environment.apiUrl}/customer/orders/draft/items`, {
       token,
       restaurantId,
       tableId,
       dishId,
       delta,
+      portionKey,
       deviceId: this.auth.deviceIdValue,
       fingerprint: this.auth.fingerprintValue
     }).pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));

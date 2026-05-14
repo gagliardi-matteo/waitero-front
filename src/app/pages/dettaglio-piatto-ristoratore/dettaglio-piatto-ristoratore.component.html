@@ -18,7 +18,7 @@
   </button>
 
   <section class="hero-card">
-    <div class="hero-media">
+    <div class="hero-media" *ngIf="dishImagesEnabled">
       <img [src]="getImageUrl(piatto.imageUrl)" [alt]="piatto.nome" />
     </div>
 

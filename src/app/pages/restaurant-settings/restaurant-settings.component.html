@@ -57,6 +57,84 @@
         </form>
       </section>
 
+      <section class="settings-section billing-section" *ngIf="showBillingSettings">
+        <div class="section-headline">
+          <span class="section-kicker">Billing locale</span>
+          <h2>Addebito automatico SEPA</h2>
+        </div>
+
+        <p *ngIf="billingLoading" class="helper">Caricamento configurazione billing...</p>
+
+        <div *ngIf="!billingLoading && billingUnavailable" class="billing-status-card">
+          <strong>Billing non ancora disponibile</strong>
+          <p>Il master deve prima attivare il billing del locale e impostare la data contratto.</p>
+        </div>
+
+        <div *ngIf="!billingLoading && billingAccount && !billingAccount.billingEnabled" class="billing-status-card">
+          <strong>Billing non attivo</strong>
+          <p>Il locale esiste nel sistema di billing, ma l'addebito mensile non e ancora stato abilitato dal master.</p>
+        </div>
+
+        <div *ngIf="!billingLoading && billingAccount?.billingEnabled" class="billing-status-card">
+          <div class="billing-status-grid">
+            <div>
+              <span class="meta-label">Stato</span>
+              <strong>{{ billingConfigured ? 'Mandato SEPA configurato' : 'Mandato SEPA mancante' }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Billing day</span>
+              <strong>{{ billingAccount?.billingDay }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Commissione</span>
+              <strong>{{ billingAccount?.commissionPercentage }}</strong>
+            </div>
+            <div>
+              <span class="meta-label">Fee minima</span>
+              <strong>{{ billingAccount?.minimumMonthlyFee | currency:'EUR':'symbol':'1.2-2':'it' }}</strong>
+            </div>
+          </div>
+
+          <p class="helper" *ngIf="billingConfigured">
+            Il backend conserva solo i riferimenti Stripe del mandato. L'IBAN non viene mai salvato da WaiterO.
+          </p>
+          <p class="helper" *ngIf="billingAccount?.defaultPaymentMethodId">
+            Payment method Stripe: {{ billingAccount?.defaultPaymentMethodId }}
+          </p>
+
+          <div class="billing-actions">
+            <button type="button" class="primary-btn" (click)="startSepaSetup()" [disabled]="billingActionLoading">
+              {{ billingActionLoading ? 'Preparazione...' : (billingConfigured ? 'Aggiorna IBAN' : 'Configura IBAN') }}
+            </button>
+          </div>
+        </div>
+
+        <form class="billing-setup-form" *ngIf="billingSetupVisible" [formGroup]="billingForm" (ngSubmit)="confirmSepaSetup()">
+          <label>
+            <span>Intestatario conto</span>
+            <input type="text" formControlName="accountHolderName" autocomplete="name" />
+          </label>
+
+          <label *ngIf="accountProfile">
+            <span>Email mandato</span>
+            <input type="email" [value]="accountProfile.email" disabled />
+          </label>
+
+          <div class="iban-host-field">
+            <span>IBAN</span>
+            <div id="restaurant-billing-iban-element" class="iban-element-host"></div>
+            <small class="helper">Inserisci l'IBAN nel modulo Stripe. WaiterO non salva dati bancari raw.</small>
+          </div>
+
+          <div class="billing-actions">
+            <button type="button" class="ghost-btn" (click)="cancelSepaSetup()" [disabled]="billingActionLoading">Annulla</button>
+            <button type="submit" class="primary-btn" [disabled]="billingActionLoading">
+              {{ billingActionLoading ? 'Conferma in corso...' : 'Conferma mandato SEPA' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
       <form [formGroup]="form" (ngSubmit)="submit()">
         <section class="settings-section">
           <div class="section-headline">

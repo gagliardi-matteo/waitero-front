@@ -17,6 +17,8 @@ export class TablesManagementComponent {
   private static readonly QR_LOGO_SRC = 'assets/brand/logo_b.png';
   private static readonly QR_SIZE = 280;
   private static readonly QR_LOGO_RATIO = 0.22;
+  private static readonly BULK_PRINT_COLUMNS = 3;
+  private static readonly BULK_PRINT_ROWS = 4;
 
   tables: RestaurantTable[] = [];
   loading = true;
@@ -64,6 +66,14 @@ export class TablesManagementComponent {
 
   get totalSeats(): number {
     return this.tables.reduce((sum, table) => sum + table.coperti, 0);
+  }
+
+  get hasTables(): boolean {
+    return this.tables.length > 0;
+  }
+
+  get hasActiveTables(): boolean {
+    return this.tables.some(table => table.attivo);
   }
 
   loadTables(): void {
@@ -162,6 +172,29 @@ export class TablesManagementComponent {
     });
   }
 
+  toggleTableActive(table: RestaurantTable): void {
+    this.errorMessage = '';
+    const payload: RestaurantTablePayload = {
+      numero: table.numero,
+      nome: table.nome,
+      coperti: table.coperti,
+      attivo: !table.attivo
+    };
+
+    this.tableService.updateTable(table.id, payload).subscribe({
+      next: updated => {
+        this.tables = this.tables.map(current => current.id === updated.id ? updated : current);
+        if (this.editingTableId === updated.id) {
+          this.editTable(updated);
+        }
+      },
+      error: err => {
+        console.error('Errore aggiornamento stato tavolo', err);
+        this.errorMessage = err.error?.message ?? 'Aggiornamento stato tavolo non riuscito.';
+      }
+    });
+  }
+
   copyAccessLink(table: RestaurantTable): void {
     if (!this.isBrowser()) {
       return;
@@ -246,6 +279,146 @@ export class TablesManagementComponent {
     printWindow.print();
   }
 
+  async printBulkQrs(activeOnly: boolean): Promise<void> {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    const selectedTables = this.tables
+      .filter(table => !activeOnly || table.attivo)
+      .sort((left, right) => left.numero - right.numero);
+
+    if (selectedTables.length === 0) {
+      this.errorMessage = activeOnly
+        ? 'Non ci sono tavoli attivi da stampare.'
+        : 'Non ci sono tavoli da stampare.';
+      return;
+    }
+
+    this.errorMessage = '';
+    try {
+      await this.ensureQrCodesForTables(selectedTables);
+    } catch (err) {
+      console.error('Errore preparazione QR massivi', err);
+      this.errorMessage = 'Preparazione stampa QR non riuscita.';
+      return;
+    }
+
+    const printableTables = selectedTables
+      .map(table => ({
+        table,
+        qrImage: this.qrImageByTableId[table.id]
+      }))
+      .filter(item => !!item.qrImage);
+
+    if (printableTables.length === 0) {
+      this.errorMessage = 'QR non ancora disponibili.';
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=1200,height=900');
+    if (!printWindow) {
+      this.errorMessage = 'Impossibile aprire la finestra di stampa.';
+      return;
+    }
+
+    const perPage = TablesManagementComponent.BULK_PRINT_COLUMNS * TablesManagementComponent.BULK_PRINT_ROWS;
+    const pages = this.chunkTables(printableTables, perPage);
+    const title = activeOnly ? 'QR tavoli attivi' : 'QR tutti i tavoli';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            * { box-sizing: border-box; }
+            body {
+              margin: 0;
+              font-family: Arial, sans-serif;
+              color: #111827;
+              background: #ffffff;
+            }
+            .page {
+              width: 100%;
+              min-height: calc(297mm - 20mm);
+              display: grid;
+              grid-template-columns: repeat(${TablesManagementComponent.BULK_PRINT_COLUMNS}, 1fr);
+              grid-template-rows: repeat(${TablesManagementComponent.BULK_PRINT_ROWS}, 1fr);
+              gap: 6mm;
+              page-break-after: always;
+              break-after: page;
+            }
+            .page:last-child {
+              page-break-after: auto;
+              break-after: auto;
+            }
+            .card {
+              border: 1px dashed #98a2b3;
+              border-radius: 4mm;
+              padding: 4mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: space-between;
+              text-align: center;
+              min-height: 0;
+            }
+            .brand {
+              font-size: 11px;
+              font-weight: 700;
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+            }
+            .table-number {
+              margin-top: 2mm;
+              font-size: 20px;
+              font-weight: 700;
+            }
+            .table-name {
+              margin-top: 1mm;
+              font-size: 11px;
+              color: #475467;
+            }
+            .qr {
+              width: 100%;
+              max-width: 48mm;
+              aspect-ratio: 1 / 1;
+              object-fit: contain;
+              margin: 3mm 0;
+            }
+            .hint {
+              font-size: 9px;
+              color: #667085;
+              line-height: 1.25;
+            }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          ${pages.map(page => `
+            <section class="page">
+              ${page.map(item => `
+                <article class="card">
+                  <div class="brand">WaiterO</div>
+                  <div class="table-number">Tavolo ${item.table.numero}</div>
+                  <div class="table-name">${this.escapeHtml(item.table.nome)}</div>
+                  <img class="qr" src="${item.qrImage}" alt="QR tavolo ${item.table.numero}" />
+                  <div class="hint">Scansiona per aprire il menu e ordinare</div>
+                </article>
+              `).join('')}
+            </section>
+          `).join('')}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
   cancelEdit(): void {
     this.resetForm();
   }
@@ -260,6 +433,14 @@ export class TablesManagementComponent {
 
   private async generateQrCodes(tables: RestaurantTable[]): Promise<void> {
     await Promise.all(tables.map(table => this.generateQrCode(table)));
+  }
+
+  private async ensureQrCodesForTables(tables: RestaurantTable[]): Promise<void> {
+    await Promise.all(tables.map(async table => {
+      if (!this.qrImageByTableId[table.id]) {
+        await this.generateQrCode(table);
+      }
+    }));
   }
 
   private async generateQrCode(table: RestaurantTable): Promise<void> {
@@ -362,6 +543,27 @@ export class TablesManagementComponent {
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  private chunkTables<T>(items: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+      chunks.push(items.slice(index, index + size));
+    }
+    return chunks;
+  }
+
+  private escapeHtml(value: string | null | undefined): string {
+    const normalized = (value ?? '').trim();
+    if (!normalized) {
+      return '&nbsp;';
+    }
+    return normalized
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }
 

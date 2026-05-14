@@ -4,6 +4,12 @@ export interface IngredienteStrutturato {
   grammi?: number | null;
 }
 
+export interface DishPortion {
+  key: string;
+  label: string;
+  price: number;
+}
+
 export interface Piatto {
   id: number;
   nome: string;
@@ -29,4 +35,5 @@ export interface Piatto {
   score?: number;
   badge?: string | null;
   consigliato?: boolean;
+  porzioni?: DishPortion[];
 }

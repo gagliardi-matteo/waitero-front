@@ -38,11 +38,11 @@ const GOOGLE_SERVER_CLIENT_ID = (environment as {
         <p class="brand-foot">Frontend operativo per hospitality moderna</p>
       </section>
 
-      <section class="login-card" [class.login-card--loading]="authLoading" [attr.aria-busy]="authLoading">
-        <div class="auth-overlay" *ngIf="authLoading">
+      <section class="login-card" [class.login-card--loading]="isBusy" [attr.aria-busy]="isBusy">
+        <div class="auth-overlay" *ngIf="isBusy">
           <app-brand-loader
-            label="Accesso in corso"
-            hint="Verifica credenziali e apertura della Sala"
+            [label]="busyLabel"
+            [hint]="busyHint"
           />
         </div>
 
@@ -334,11 +334,26 @@ export class LoginComponent implements AfterViewInit {
   email = '';
   password = '';
   authLoading = false;
+  googleFlowPending = false;
   loadingButton = true;
   buttonReady = false;
   loadError = false;
   errorMessage = '';
   private nativeGoogleReady = false;
+
+  get isBusy(): boolean {
+    return this.authLoading || this.googleFlowPending;
+  }
+
+  get busyLabel(): string {
+    return this.googleFlowPending && !this.authLoading ? 'Accesso Google in corso' : 'Accesso in corso';
+  }
+
+  get busyHint(): string {
+    return this.googleFlowPending && !this.authLoading
+      ? 'Attendo la risposta di Google prima della verifica account'
+      : 'Verifica credenziali e apertura della Sala';
+  }
 
   ngAfterViewInit(): void {
     if (this.isNativeMobile) {
@@ -379,10 +394,11 @@ export class LoginComponent implements AfterViewInit {
   }
 
   signInWithGoogleNative(): void {
-    if (this.authLoading || !this.nativeGoogleReady) {
+    if (this.isBusy || !this.nativeGoogleReady) {
       return;
     }
 
+    this.googleFlowPending = true;
     this.runAuth(
       async () => {
         await this.clearNativeGoogleSession();
@@ -401,6 +417,8 @@ export class LoginComponent implements AfterViewInit {
         if (!idToken) {
           throw new Error('Google native login did not return an idToken.');
         }
+
+        this.googleFlowPending = false;
 
         console.info('[GoogleNative] token received', {
           email: result.profile?.email ?? null,
@@ -493,7 +511,11 @@ export class LoginComponent implements AfterViewInit {
         size: 'large',
         width: 280,
         text: 'continue_with',
-        shape: 'pill'
+        shape: 'pill',
+        click_listener: () => {
+          this.errorMessage = '';
+          this.googleFlowPending = true;
+        }
       });
       this.loadingButton = false;
       this.buttonReady = true;
@@ -534,6 +556,7 @@ export class LoginComponent implements AfterViewInit {
       return;
     }
 
+    this.googleFlowPending = false;
     const idToken = response.credential;
     if (!idToken) {
       this.errorMessage = 'Token Google non valido.';
@@ -552,6 +575,7 @@ export class LoginComponent implements AfterViewInit {
       return;
     }
 
+    this.googleFlowPending = false;
     this.errorMessage = '';
     this.authLoading = true;
 
@@ -565,6 +589,7 @@ export class LoginComponent implements AfterViewInit {
       });
       this.errorMessage = this.resolveAuthErrorMessage(err, fallbackError);
       this.authLoading = false;
+      this.googleFlowPending = false;
     });
   }
 

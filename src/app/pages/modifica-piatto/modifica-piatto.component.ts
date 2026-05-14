@@ -2,8 +2,9 @@ import { Component, OnInit, inject, ViewChild, ElementRef } from '@angular/core'
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { PiattoService } from '../../services/piatto.service';
-import { Piatto } from '../../models/piatto.model';
+import { DishPortion, Piatto } from '../../models/piatto.model';
 import { environment } from '../../../environments/environment';
 import { STANDARD_ALLERGENS, buildStoredAllergens, splitStoredAllergens } from '../../shared/allergens';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
@@ -11,14 +12,20 @@ import { MenuCategory } from '../../models/menu-category.model';
 import { MenuCategoryService } from '../../services/menu-category.service';
 import { forkJoin } from 'rxjs';
 
+interface PortionFormRow {
+  label: string;
+  price: number | null;
+}
+
 @Component({
   selector: 'app-modifica-piatto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BrandLoaderComponent],
+  imports: [CommonModule, ReactiveFormsModule, BrandLoaderComponent, FormsModule],
   templateUrl: './modifica-piatto.component.html',
   styleUrl: './modifica-piatto.component.scss',
 })
 export class ModificaPiattoComponent implements OnInit {
+  readonly dishImagesEnabled = (environment as any).features?.dishImagesEnabled ?? false;
   form: FormGroup;
   piattoId!: number;
   loading = true;
@@ -28,6 +35,7 @@ export class ModificaPiattoComponent implements OnInit {
   nuovaImmagine?: File;
   standardAllergens = [...STANDARD_ALLERGENS];
   selectedAllergens = new Set<string>();
+  portionRows: PortionFormRow[] = [];
   @ViewChild('fileInput') fileInputRef!: ElementRef<HTMLInputElement>;
 
   private fb = inject(FormBuilder);
@@ -43,7 +51,7 @@ export class ModificaPiattoComponent implements OnInit {
       ingredienti: [''],
       allergeni: [''],
       allergeniCustom: [''],
-      prezzo: [0, [Validators.required, Validators.min(0)]],
+      prezzo: [0, [Validators.min(0)]],
       disponibile: [true],
       consigliato: [false],
       imageUrl: [''],
@@ -72,6 +80,10 @@ export class ModificaPiattoComponent implements OnInit {
           consigliato: !!piatto.consigliato,
           allergeniCustom: parsedAllergens.custom.join(', ')
         });
+        this.portionRows = (piatto.porzioni ?? []).map(portion => ({
+          label: portion.label,
+          price: portion.price
+        }));
         this.syncAllergensField();
         this.imageUrlOriginale = this.getImageUrl(piatto.imageUrl);
         this.loading = false;
@@ -102,8 +114,17 @@ export class ModificaPiattoComponent implements OnInit {
     this.form.patchValue({ allergeni }, { emitEvent: false });
 
     const rawValues = this.form.getRawValue();
+    const porzioni = this.buildPortionsPayload();
+    const prezzoBase = this.resolveBasePrice(rawValues.prezzo, porzioni);
+    if (prezzoBase === null) {
+      alert('Inserisci un prezzo singolo oppure almeno una porzione valida.');
+      return;
+    }
+
     const values = {
       ...rawValues,
+      prezzo: prezzoBase,
+      porzioni,
       categoriaId: rawValues.categoriaId,
       ingredienti: this.normalizeOptionalText(rawValues.ingredienti),
       allergeni: this.normalizeOptionalText(allergeni),
@@ -156,6 +177,14 @@ export class ModificaPiattoComponent implements OnInit {
     }
   }
 
+  addPortionRow(): void {
+    this.portionRows = [...this.portionRows, { label: '', price: null }];
+  }
+
+  removePortionRow(index: number): void {
+    this.portionRows = this.portionRows.filter((_, rowIndex) => rowIndex !== index);
+  }
+
   private normalizeOptionalText(value: string | null | undefined): string | null {
     if (!value) {
       return null;
@@ -170,6 +199,37 @@ export class ModificaPiattoComponent implements OnInit {
       this.form.get('allergeniCustom')?.value
     );
     this.form.patchValue({ allergeni }, { emitEvent: false });
+  }
+
+  private buildPortionsPayload(): DishPortion[] {
+    return this.portionRows
+      .map(row => ({
+        key: this.slugifyPortionKey(row.label),
+        label: row.label.trim(),
+        price: Number(row.price)
+      }))
+      .filter(row => row.label.length > 0 && Number.isFinite(row.price) && row.price >= 0);
+  }
+
+  private resolveBasePrice(rawPrice: unknown, porzioni: DishPortion[]): number | null {
+    if (porzioni.length > 0) {
+      return porzioni[0].price;
+    }
+
+    const numericPrice = Number(rawPrice);
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return null;
+    }
+    return numericPrice;
+  }
+
+  private slugifyPortionKey(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      || 'portion';
   }
 }
 

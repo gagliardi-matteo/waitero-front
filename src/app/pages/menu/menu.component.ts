@@ -26,6 +26,7 @@ import { categoryOptionsFromDishes, dishCategoryCode, groupDishesByCategory, Dis
   styleUrls: ['./menu.component.scss']
 })
 export class MenuComponent implements OnInit, OnDestroy {
+  readonly dishImagesEnabled = (environment as any).features?.dishImagesEnabled ?? false;
   restaurantId: string = '';
   tableId: string = '';
   piatti: Piatto[] = [];
@@ -39,6 +40,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   recommendedDishes: Piatto[] = [];
   recommendedExpanded = true;
   loading = true;
+  portionSelectorDish: Piatto | null = null;
   private eventSource: EventSource | null = null;
   private enteredAt = Date.now();
   private lastScrollBucket = 0;
@@ -166,10 +168,6 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
-  get ordine(): Piatto[] {
-    return this.orderService.getOrdine();
-  }
-
   get hasVisibleDishes(): boolean {
     return this.piattiRaggruppati.length > 0;
   }
@@ -252,6 +250,37 @@ export class MenuComponent implements OnInit, OnDestroy {
   getAllergenBadges(piatto: Piatto): string[] {
     const parsed = splitStoredAllergens(piatto.allergeni);
     return [...parsed.standard, ...parsed.custom];
+  }
+
+  hasSelectablePortions(piatto: Piatto): boolean {
+    return (piatto.porzioni?.length ?? 0) > 0;
+  }
+
+  displayPriceLabel(piatto: Piatto): string {
+    const portions = piatto.porzioni ?? [];
+    if (portions.length === 0) {
+      return `${piatto.prezzo.toFixed(2)} €`;
+    }
+
+    const minPrice = Math.min(...portions.map(item => item.price));
+    return `Da ${minPrice.toFixed(2)} €`;
+  }
+
+  quantitaTotale(piatto: Piatto): number {
+    return this.orderService.totalQuantitaPerDish(piatto.id);
+  }
+
+  quantitaPorzione(piatto: Piatto, portionKey?: string | null): number {
+    return this.orderService.quantita(piatto.id, portionKey);
+  }
+
+  openPortionSelector(piatto: Piatto, event?: Event): void {
+    event?.stopPropagation();
+    this.portionSelectorDish = piatto;
+  }
+
+  closePortionSelector(): void {
+    this.portionSelectorDish = null;
   }
 
   onHorizontalWheel(event: WheelEvent): void {
@@ -398,8 +427,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
-  addToOrder(piatto: Piatto) {
-    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, 1)
+  addToOrder(piatto: Piatto, portionKey?: string) {
+    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, 1, portionKey)
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
@@ -407,7 +436,8 @@ export class MenuComponent implements OnInit, OnDestroy {
             dishId: piatto.id,
             metadata: {
               page: 'menu',
-              quantity: this.quantita(piatto.id)
+              quantity: portionKey ? this.quantitaPorzione(piatto, portionKey) : this.quantitaTotale(piatto),
+              portionKey: portionKey ?? null
             }
           });
         },
@@ -415,8 +445,8 @@ export class MenuComponent implements OnInit, OnDestroy {
       });
   }
 
-  removeFromOrder(piatto: Piatto) {
-    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, -1)
+  removeFromOrder(piatto: Piatto, portionKey?: string) {
+    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, -1, portionKey)
       .subscribe({
         next: draft => {
           this.orderService.setDraft(draft.items);
@@ -424,7 +454,8 @@ export class MenuComponent implements OnInit, OnDestroy {
             dishId: piatto.id,
             metadata: {
               page: 'menu',
-              quantity: this.quantita(piatto.id)
+              quantity: portionKey ? this.quantitaPorzione(piatto, portionKey) : this.quantitaTotale(piatto),
+              portionKey: portionKey ?? null
             }
           });
         },
@@ -433,7 +464,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   quantita(itemId: number): number {
-    return this.orderService.quantita(itemId);
+    return this.orderService.totalQuantitaPerDish(itemId);
   }
 
   getImageUrl(imageUrl: string | null | undefined): string {

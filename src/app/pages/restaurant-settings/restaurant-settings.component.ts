@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,8 +8,48 @@ import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, Restauran
 import { AuthService, BackofficeProfile } from '../../auth/AuthService';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import { businessTypeLabel } from '../../models/business-type.model';
+import { CreateSetupIntentResponse, RestaurantBillingAccountDto, RestaurantBillingService } from '../../services/restaurant-billing.service';
+import { PLATFORM_ID } from '@angular/core';
 
 type DuplicateMode = 'slot' | 'day';
+
+interface StripeIbanElement {
+  mount(selector: string | HTMLElement): void;
+  destroy(): void;
+}
+
+interface StripeElementsInstance {
+  create(type: 'iban', options?: Record<string, unknown>): StripeIbanElement;
+}
+
+interface StripeConfirmResult {
+  error?: {
+    message?: string;
+  };
+  setupIntent?: {
+    id: string;
+    status: string;
+  };
+}
+
+interface StripeInstance {
+  elements(): StripeElementsInstance;
+  confirmSepaDebitSetup(clientSecret: string, data: {
+    payment_method: {
+      sepa_debit: StripeIbanElement;
+      billing_details: {
+        name: string;
+        email?: string;
+      };
+    };
+  }): Promise<StripeConfirmResult>;
+}
+
+declare global {
+  interface Window {
+    Stripe?: (publishableKey: string) => StripeInstance;
+  }
+}
 
 @Component({
   selector: 'app-restaurant-settings',
@@ -24,10 +64,15 @@ export class RestaurantSettingsComponent {
   savingProfile = false;
   changingPassword = false;
   searchingAddress = false;
+  billingLoading = false;
+  billingActionLoading = false;
+  billingUnavailable = false;
+  billingSetupVisible = false;
   errorMessage = '';
   successMessage = '';
   settings: RestaurantSettings | null = null;
   accountProfile: BackofficeProfile | null = null;
+  billingAccount: RestaurantBillingAccountDto | null = null;
   addressSuggestions: AddressSuggestion[] = [];
   selectedSuggestion: AddressSuggestion | null = null;
   duplicateSourceIndex: number | null = null;
@@ -36,9 +81,14 @@ export class RestaurantSettingsComponent {
 
   private fb = inject(FormBuilder);
   private settingsService = inject(RestaurantSettingsService);
+  private billingService = inject(RestaurantBillingService);
   private authService = inject(AuthService);
   private sanitizer = inject(DomSanitizer);
   private destroyRef = inject(DestroyRef);
+  private platformId = inject(PLATFORM_ID);
+  private stripeInstance: StripeInstance | null = null;
+  private ibanElement: StripeIbanElement | null = null;
+  private pendingSetupIntent: CreateSetupIntentResponse | null = null;
 
   readonly weekdays = [
     { value: 'MONDAY', label: 'Lunedi' },
@@ -67,10 +117,16 @@ export class RestaurantSettingsComponent {
     newPassword: ['', [Validators.required, Validators.minLength(8)]]
   });
 
+  readonly billingForm = this.fb.nonNullable.group({
+    accountHolderName: ['', [Validators.required, Validators.maxLength(120)]]
+  });
+
   constructor() {
     this.setupAddressAutocomplete();
     this.loadSettings();
     this.loadAccountProfile();
+    this.loadBillingAccount();
+    this.destroyRef.onDestroy(() => this.destroyIbanElement());
   }
 
   get serviceHoursArray(): FormArray {
@@ -79,6 +135,15 @@ export class RestaurantSettingsComponent {
 
   get showAccountSettings(): boolean {
     return !this.authService.isMaster() && !this.authService.isImpersonating();
+  }
+
+  get showBillingSettings(): boolean {
+    return isPlatformBrowser(this.platformId)
+      && (!this.authService.isMaster() || this.authService.isImpersonating());
+  }
+
+  get billingConfigured(): boolean {
+    return !!this.billingAccount?.defaultPaymentMethodId;
   }
 
   get duplicateSourceLabel(): string {
@@ -120,6 +185,9 @@ export class RestaurantSettingsComponent {
           city: settings.city ?? '',
           allowedRadiusMeters: settings.allowedRadiusMeters ?? 80
         }, { emitEvent: false });
+        if (!this.billingForm.controls.accountHolderName.value) {
+          this.billingForm.patchValue({ accountHolderName: settings.nome ?? '' }, { emitEvent: false });
+        }
         this.serviceHoursArray.clear();
         settings.serviceHours.forEach(slot => this.serviceHoursArray.push(this.createSlot(slot)));
         if (settings.serviceHours.length === 0) {
@@ -145,12 +213,150 @@ export class RestaurantSettingsComponent {
       next: profile => {
         this.accountProfile = profile;
         this.accountForm.patchValue({ nome: profile.nome ?? '' }, { emitEvent: false });
+        this.billingForm.patchValue({ accountHolderName: profile.nome ?? '' }, { emitEvent: false });
         this.syncPasswordValidators(profile);
       },
       error: err => {
         console.error('Errore caricamento profilo account', err);
       }
     });
+  }
+
+  loadBillingAccount(): void {
+    if (!this.showBillingSettings) {
+      return;
+    }
+
+    this.billingLoading = true;
+    this.billingUnavailable = false;
+    this.billingService.getAccount().subscribe({
+      next: account => {
+        this.billingAccount = account;
+        this.billingLoading = false;
+      },
+      error: err => {
+        if (err.status === 404 || err.status === 500) {
+          this.billingAccount = null;
+          this.billingUnavailable = true;
+          this.billingLoading = false;
+          return;
+        }
+        console.error('Errore caricamento billing locale', err);
+        this.errorMessage = err.error?.message ?? 'Impossibile caricare la configurazione di billing del locale.';
+        this.billingLoading = false;
+      }
+    });
+  }
+
+  startSepaSetup(): void {
+    if (!this.billingAccount?.billingEnabled || this.billingActionLoading) {
+      return;
+    }
+
+    this.billingActionLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.destroyIbanElement();
+
+    this.billingService.createSetupIntent().subscribe({
+      next: async response => {
+        if (!response.publishableKey) {
+          this.errorMessage = 'Publishable key Stripe non configurata. Impostala nel backend prima di raccogliere l’IBAN.';
+          this.billingActionLoading = false;
+          return;
+        }
+
+        try {
+          this.pendingSetupIntent = response;
+          this.billingSetupVisible = true;
+          await this.ensureStripeReady(response.publishableKey);
+          queueMicrotask(() => {
+            try {
+              this.mountIbanElement();
+            } finally {
+              this.billingActionLoading = false;
+            }
+          });
+        } catch (error) {
+          console.error('Errore inizializzazione Stripe SEPA', error);
+          this.errorMessage = 'Impossibile inizializzare il form IBAN Stripe.';
+          this.billingSetupVisible = false;
+          this.pendingSetupIntent = null;
+          this.billingActionLoading = false;
+        }
+      },
+      error: err => {
+        console.error('Errore creazione setup intent', err);
+        this.errorMessage = err.error?.message ?? 'Impossibile avviare la configurazione SEPA.';
+        this.billingActionLoading = false;
+      }
+    });
+  }
+
+  async confirmSepaSetup(): Promise<void> {
+    if (!this.pendingSetupIntent || !this.stripeInstance || !this.ibanElement) {
+      this.errorMessage = 'Configurazione Stripe non pronta.';
+      return;
+    }
+    if (this.billingForm.invalid) {
+      this.billingForm.markAllAsTouched();
+      this.errorMessage = 'Inserisci il nome intestatario del conto.';
+      return;
+    }
+    const billingEmail = this.accountProfile?.email?.trim() || this.settings?.email?.trim() || '';
+    if (!billingEmail) {
+      this.errorMessage = 'Email del locale mancante. Serve un indirizzo email valido per creare il mandato SEPA Stripe.';
+      return;
+    }
+
+    this.billingActionLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    try {
+      const result = await this.stripeInstance.confirmSepaDebitSetup(this.pendingSetupIntent.clientSecret, {
+        payment_method: {
+          sepa_debit: this.ibanElement,
+          billing_details: {
+            name: this.billingForm.getRawValue().accountHolderName,
+            email: billingEmail
+          }
+        }
+      });
+
+      if (result.error?.message) {
+        this.errorMessage = result.error.message;
+        this.billingActionLoading = false;
+        return;
+      }
+
+      const setupIntentId = result.setupIntent?.id || this.pendingSetupIntent.setupIntentId;
+      this.billingService.completeSetupIntent(setupIntentId).subscribe({
+        next: account => {
+          this.billingAccount = account;
+          this.billingSetupVisible = false;
+          this.pendingSetupIntent = null;
+          this.destroyIbanElement();
+          this.billingActionLoading = false;
+          this.successMessage = 'Mandato SEPA configurato. Da ora il locale può essere addebitato automaticamente.';
+        },
+        error: err => {
+          console.error('Errore completamento setup intent', err);
+          this.errorMessage = err.error?.message ?? 'Stripe ha raccolto l\'IBAN, ma WaiterO non ha completato l\'associazione del mandato.';
+          this.billingActionLoading = false;
+        }
+      });
+    } catch (error) {
+      console.error('Errore conferma SEPA Stripe', error);
+      this.errorMessage = 'Conferma SEPA non riuscita.';
+      this.billingActionLoading = false;
+    }
+  }
+
+  cancelSepaSetup(): void {
+    this.billingSetupVisible = false;
+    this.pendingSetupIntent = null;
+    this.destroyIbanElement();
   }
 
   saveAccountProfile(): void {
@@ -503,6 +709,64 @@ export class RestaurantSettingsComponent {
       startTime: [slot?.startTime ?? '19:00', Validators.required],
       endTime: [slot?.endTime ?? '22:30', Validators.required]
     });
+  }
+
+  private async ensureStripeReady(publishableKey: string): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      throw new Error('Stripe disponibile solo in ambiente browser');
+    }
+    await this.loadStripeScript();
+    if (!window.Stripe) {
+      throw new Error('Stripe.js non disponibile');
+    }
+    this.stripeInstance = window.Stripe(publishableKey);
+  }
+
+  private loadStripeScript(): Promise<void> {
+    if (window.Stripe) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-waitero-stripe="true"]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Stripe.js load failed')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.async = true;
+      script.dataset['waiteroStripe'] = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Stripe.js load failed'));
+      document.head.appendChild(script);
+    });
+  }
+
+  private mountIbanElement(): void {
+    if (!this.stripeInstance) {
+      throw new Error('Stripe non inizializzato');
+    }
+    this.destroyIbanElement();
+    const mountTarget = document.getElementById('restaurant-billing-iban-element');
+    if (!mountTarget) {
+      throw new Error('Contenitore IBAN non disponibile');
+    }
+    const elements = this.stripeInstance.elements();
+    this.ibanElement = elements.create('iban', {
+      supportedCountries: ['SEPA'],
+      placeholderCountry: 'IT'
+    });
+    this.ibanElement.mount(mountTarget);
+  }
+
+  private destroyIbanElement(): void {
+    if (this.ibanElement) {
+      this.ibanElement.destroy();
+      this.ibanElement = null;
+    }
   }
 }
 

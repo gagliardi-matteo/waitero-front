@@ -4,6 +4,10 @@
       <h1>Gestione tavoli</h1>
       <p>Configura tavoli, QR code e link di accesso.</p>
     </div>
+    <div class="page-actions" *ngIf="hasTables">
+      <button type="button" class="icon-btn" (click)="printBulkQrs(false)">Stampa tutti i QR</button>
+      <button type="button" class="icon-btn" (click)="printBulkQrs(true)" [disabled]="!hasActiveTables">Stampa solo attivi</button>
+    </div>
   </div>
 
   <div class="quick-form-card">
@@ -63,6 +67,7 @@
               <button type="button" class="icon-btn" (click)="copyAccessLink(table)">{{ copiedTableId === table.id ? 'Copiato' : 'Copia' }}</button>
               <button type="button" class="icon-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">QR</button>
               <button type="button" class="icon-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
+              <button type="button" class="icon-btn" (click)="toggleTableActive(table)">{{ table.attivo ? 'Disattiva' : 'Attiva' }}</button>
               <button type="button" class="icon-btn" (click)="regenerateToken(table)">Rigenera</button>
               <button type="button" class="icon-btn" (click)="editTable(table)">Modifica</button>
               <button type="button" class="icon-btn danger" (click)="deleteTable(table)">Elimina</button>
@@ -98,6 +103,7 @@
         <button type="button" class="icon-btn" (click)="copyAccessLink(table)">{{ copiedTableId === table.id ? 'Copiato' : 'Copia' }}</button>
         <button type="button" class="icon-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">QR</button>
         <button type="button" class="icon-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
+        <button type="button" class="icon-btn" (click)="toggleTableActive(table)">{{ table.attivo ? 'Disattiva' : 'Attiva' }}</button>
         <button type="button" class="icon-btn" (click)="regenerateToken(table)">Rigenera</button>
         <button type="button" class="icon-btn" (click)="editTable(table)">Modifica</button>
         <button type="button" class="icon-btn danger" (click)="deleteTable(table)">Elimina</button>

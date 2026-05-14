@@ -28,7 +28,11 @@
   <section class="import-panel">
     <div>
       <h2>Importa menù da Excel</h2>
-      <p>Carica un file `.xlsx` con una riga per ogni piatto. Le colonne da usare sono: Nome, Categoria, Prezzo, Descrizione, Ingredienti, Allergeni, Consigliato, Disponibile, Immagine.</p>
+      <p>
+        Carica un file `.xlsx` con una riga per ogni piatto.
+        Le colonne da usare sono:
+        {{ dishImagesEnabled ? 'Nome, Categoria, Prezzo, Descrizione, Ingredienti, Allergeni, Consigliato, Disponibile, Immagine.' : 'Nome, Categoria, Prezzo, Descrizione, Ingredienti, Allergeni, Consigliato, Disponibile.' }}
+      </p>
     </div>
 
     <div class="import-controls">
@@ -91,6 +95,49 @@
     [explainabilityEnabled]="explainabilityEnabled"
   />
 
+  <section class="browse-tools">
+    <label class="browse-search">
+      <span>Cerca piatto</span>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="Nome, descrizione, ingrediente o allergene"
+      />
+    </label>
+
+    <div class="browse-categories" *ngIf="availableCategories.length > 0">
+      <button
+        type="button"
+        class="category-pill"
+        [class.active]="selectedCategory === 'ALL'"
+        (click)="selectCategory('ALL')"
+      >
+        Tutti
+      </button>
+      <button
+        type="button"
+        class="category-pill"
+        *ngFor="let category of availableCategories"
+        [class.active]="selectedCategory === category.code"
+        (click)="selectCategory(category.code)"
+      >
+        {{ category.label }}
+      </button>
+    </div>
+
+    <div class="browse-summary">
+      <span>{{ filteredDishCount }} piatti visibili</span>
+      <button
+        *ngIf="searchTerm || selectedCategory !== 'ALL'"
+        type="button"
+        class="text-btn"
+        (click)="clearFilters()"
+      >
+        Pulisci filtri
+      </button>
+    </div>
+  </section>
+
   <div *ngFor="let entry of menuByCategory" class="category-section">
     <div
       class="category-heading"
@@ -116,7 +163,7 @@
             (keydown.enter)="openDish(item)"
             (keydown.space)="$event.preventDefault(); openDish(item)"
           >
-            <div class="card-image-shell">
+            <div class="card-image-shell" *ngIf="dishImagesEnabled">
               <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
               <span class="top-badge" *ngIf="item.consigliato">Top</span>
             </div>
@@ -149,6 +196,13 @@
             </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="import-panel" *ngIf="menuByCategory.length === 0">
+    <div>
+      <h2>Nessun piatto trovato</h2>
+      <p>I filtri correnti non restituiscono risultati. Prova a cambiare ricerca o categoria.</p>
     </div>
   </div>
 </div>

@@ -2,12 +2,30 @@ import { Injectable } from '@angular/core';
 import { Piatto } from '../models/piatto.model';
 import { CustomerDraftItem, CustomerOrder, CustomerOrderItem } from '../models/customer-order.model';
 
+export interface DraftLineItem {
+  lineKey: string;
+  dishId: number;
+  nome: string;
+  imageUrl: string | null;
+  quantity: number;
+  unitPrice: number;
+  portionKey?: string | null;
+  portionLabel?: string | null;
+}
+
+interface DraftLineState {
+  lineKey: string;
+  dishId: number;
+  quantity: number;
+  portionKey?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderService {
-  private draftCounts = new Map<number, number>();
+  private draftLines = new Map<string, DraftLineState>();
   private catalog = new Map<number, Piatto>();
   private confirmedOrder: CustomerOrder | null = null;
-  private draftAttribution = new Map<number, { source: string; sourceDishId?: number }>();
+  private draftAttribution = new Map<string, { source: string; sourceDishId?: number }>();
   private contextKey: string | null = null;
 
   syncContext(contextKey: string) {
@@ -24,51 +42,83 @@ export class OrderService {
   }
 
   setDraft(items: CustomerDraftItem[]) {
-    this.draftCounts.clear();
+    this.draftLines.clear();
     for (const item of items) {
       if (item.quantity > 0) {
-        this.draftCounts.set(item.dishId, item.quantity);
+        const lineKey = item.lineKey || this.buildLineKey(item.dishId, item.portionKey);
+        this.draftLines.set(lineKey, {
+          lineKey,
+          dishId: item.dishId,
+          quantity: item.quantity,
+          portionKey: item.portionKey ?? null
+        });
       }
     }
-    for (const dishId of Array.from(this.draftAttribution.keys())) {
-      if (!this.draftCounts.has(dishId)) {
-        this.draftAttribution.delete(dishId);
+    for (const lineKey of Array.from(this.draftAttribution.keys())) {
+      if (!this.draftLines.has(lineKey)) {
+        this.draftAttribution.delete(lineKey);
       }
     }
   }
 
-  getDraftPayload(): Array<{ dishId: number; quantity: number; source?: string; sourceDishId?: number }> {
-    return Array.from(this.draftCounts.entries())
-      .filter(([, quantity]) => quantity > 0)
-      .map(([dishId, quantity]) => ({ dishId, quantity, ...this.draftAttribution.get(dishId) }));
+  getDraftPayload(): Array<{ dishId: number; quantity: number; portionKey?: string; source?: string; sourceDishId?: number }> {
+    return Array.from(this.draftLines.values())
+      .filter(item => item.quantity > 0)
+      .map(item => ({
+        dishId: item.dishId,
+        quantity: item.quantity,
+        portionKey: item.portionKey ?? undefined,
+        ...this.draftAttribution.get(item.lineKey)
+      }));
   }
 
-  getOrdine(): Piatto[] {
-    const result: Piatto[] = [];
-    for (const [dishId, quantity] of this.draftCounts.entries()) {
-      const piatto = this.catalog.get(dishId);
-      if (!piatto) continue;
-      for (let i = 0; i < quantity; i++) {
-        result.push(piatto);
+  getDraftLineItems(): DraftLineItem[] {
+    const result: DraftLineItem[] = [];
+    for (const line of this.draftLines.values()) {
+      const piatto = this.catalog.get(line.dishId);
+      if (!piatto) {
+        continue;
       }
+
+      const portion = this.resolvePortion(piatto, line.portionKey);
+      result.push({
+        lineKey: line.lineKey,
+        dishId: line.dishId,
+        nome: piatto.nome,
+        imageUrl: piatto.imageUrl,
+        quantity: line.quantity,
+        unitPrice: portion.price,
+        portionKey: portion.key,
+        portionLabel: portion.label
+      });
     }
-    return result;
+    return result.sort((left, right) => left.nome.localeCompare(right.nome) || left.lineKey.localeCompare(right.lineKey));
   }
 
-
-  markDraftAttribution(dishId: number, source: string, sourceDishId?: number) {
-    if (!source.trim()) {
+  markDraftAttribution(dishId: number, portionKey: string | null | undefined, source: string, sourceDishId?: number) {
+    const trimmedSource = source.trim();
+    if (!trimmedSource) {
       return;
     }
-    this.draftAttribution.set(dishId, { source: source.trim(), sourceDishId });
+    this.draftAttribution.set(this.buildLineKey(dishId, portionKey), { source: trimmedSource, sourceDishId });
   }
 
-  quantita(id: number): number {
-    return this.draftCounts.get(id) ?? 0;
+  quantita(dishId: number, portionKey?: string | null): number {
+    return this.draftLines.get(this.buildLineKey(dishId, portionKey))?.quantity ?? 0;
+  }
+
+  totalQuantitaPerDish(dishId: number): number {
+    let total = 0;
+    for (const line of this.draftLines.values()) {
+      if (line.dishId === dishId) {
+        total += line.quantity;
+      }
+    }
+    return total;
   }
 
   clearDraft() {
-    this.draftCounts.clear();
+    this.draftLines.clear();
     this.draftAttribution.clear();
   }
 
@@ -89,9 +139,34 @@ export class OrderService {
   }
 
   resetState() {
-    this.draftCounts.clear();
+    this.draftLines.clear();
     this.draftAttribution.clear();
     this.catalog.clear();
     this.confirmedOrder = null;
+  }
+
+  private buildLineKey(dishId: number, portionKey?: string | null): string {
+    const normalizedPortionKey = portionKey && portionKey.trim().length > 0 ? portionKey.trim() : 'default';
+    return `${dishId}::${normalizedPortionKey}`;
+  }
+
+  private resolvePortion(piatto: Piatto, portionKey?: string | null): { key: string; label: string; price: number } {
+    const configured = piatto.porzioni ?? [];
+    if (configured.length === 0) {
+      return {
+        key: 'default',
+        label: 'Standard',
+        price: piatto.prezzo
+      };
+    }
+
+    if (portionKey) {
+      const matched = configured.find(item => item.key === portionKey);
+      if (matched) {
+        return matched;
+      }
+    }
+
+    return configured[0];
   }
 }

@@ -265,6 +265,10 @@ export class AdminRestaurantsComponent implements OnInit {
     this.authService.logout();
   }
 
+  openBillingConsole(): void {
+    void this.router.navigate(['/admin/billing']);
+  }
+
   trackRestaurant(index: number, restaurant: AdminRestaurantSummary): number {
     return restaurant.id;
   }

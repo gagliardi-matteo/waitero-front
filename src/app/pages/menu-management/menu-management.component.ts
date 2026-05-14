@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../auth/AuthService';
 import { Piatto } from '../../models/piatto.model';
@@ -14,7 +15,7 @@ import { MenuInsightsPanelComponent } from './components/menu-insights-panel/men
 import { MenuAutopilotPanelComponent } from './components/menu-autopilot-panel/menu-autopilot-panel.component';
 import { UiFeaturesService } from '../../services/ui-features.service';
 import { ExplainTooltipDirective } from '../../shared/explain-tooltip/explain-tooltip.directive';
-import { DishCategoryGroup, dishCategoryLabel, groupDishesByCategory } from '../../shared/dish-category';
+import { DishCategoryGroup, dishCategoryCode, dishCategoryLabel, groupDishesByCategory } from '../../shared/dish-category';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -49,18 +50,21 @@ interface DishExportRow {
   allergeni: string;
   consigliato: string;
   disponibile: string;
-  immagine: string;
+  immagine?: string;
 }
 
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent, ExplainTooltipDirective],
+  imports: [CommonModule, FormsModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent, ExplainTooltipDirective],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.scss',
 })
 export class MenuManagementComponent implements OnInit {
+  readonly dishImagesEnabled = (environment as any).features?.dishImagesEnabled ?? false;
   piatti: Piatto[] = [];
+  searchTerm = '';
+  selectedCategory = 'ALL';
   userId: number | null = null;
   deletingDishId: number | null = null;
   togglingRecommendedId: number | null = null;
@@ -148,18 +152,24 @@ export class MenuManagementComponent implements OnInit {
   downloadMenuTemplate(): void {
     const workbook = XLSX.utils.book_new();
     const templateSheet = XLSX.utils.aoa_to_sheet([
-      ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile', 'Immagine']
+      this.dishImagesEnabled
+        ? ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile', 'Immagine']
+        : ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile']
     ]);
-    const instructionsSheet = XLSX.utils.aoa_to_sheet([
+    const instructionRows = [
       ['Compila almeno Nome, Categoria e Prezzo.'],
       ['La categoria deve essere scritta con il nome visibile nel menu del locale.'],
-      ['Consigliato e Disponibile accettano SI/NO, true/false, 1/0.'],
-      ['Immagine deve contenere un URL o il nome del file immagine.']
-    ]);
+      ['Consigliato e Disponibile accettano SI/NO, true/false, 1/0.']
+    ];
+    if (this.dishImagesEnabled) {
+      instructionRows.push(['Immagine deve contenere un URL o il nome del file immagine.']);
+    }
+    const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionRows);
 
     templateSheet['!cols'] = [
       { wch: 24 }, { wch: 22 }, { wch: 12 }, { wch: 28 }, { wch: 28 },
-      { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 24 }
+      { wch: 24 }, { wch: 14 }, { wch: 14 },
+      ...(this.dishImagesEnabled ? [{ wch: 24 }] : [])
     ];
     instructionsSheet['!cols'] = [{ wch: 90 }];
 
@@ -179,7 +189,8 @@ export class MenuManagementComponent implements OnInit {
     const sheet = XLSX.utils.json_to_sheet(rows);
     sheet['!cols'] = [
       { wch: 28 }, { wch: 22 }, { wch: 12 }, { wch: 30 }, { wch: 30 },
-      { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 24 }
+      { wch: 24 }, { wch: 14 }, { wch: 14 },
+      ...(this.dishImagesEnabled ? [{ wch: 24 }] : [])
     ];
     XLSX.utils.book_append_sheet(workbook, sheet, 'Menu');
     this.downloadWorkbook(workbook, `waitero-menu-${this.exportDateStamp()}.xlsx`);
@@ -195,9 +206,20 @@ export class MenuManagementComponent implements OnInit {
 
   get menuByCategory(): DishCategoryGroup[] {
     return groupDishesByCategory(
-      this.piatti,
+      this.filteredDishes,
       (left, right) => (right.numeroOrdini ?? 0) - (left.numeroOrdini ?? 0) || left.id - right.id
     );
+  }
+
+  get availableCategories(): DishCategoryGroup[] {
+    return groupDishesByCategory(
+      this.piatti,
+      (left, right) => left.id - right.id
+    );
+  }
+
+  get filteredDishCount(): number {
+    return this.filteredDishes.length;
   }
 
   get topPerformerCount(): number {
@@ -288,6 +310,15 @@ export class MenuManagementComponent implements OnInit {
 
   trackDish(index: number, item: Piatto): number {
     return item.id;
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory = category;
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedCategory = 'ALL';
   }
 
   openDish(item: Piatto): void {
@@ -430,7 +461,7 @@ export class MenuManagementComponent implements OnInit {
         allergeni: item.allergeni ?? '',
         consigliato: item.consigliato ? 'SI' : 'NO',
         disponibile: item.disponibile ? 'SI' : 'NO',
-        immagine: item.imageUrl ?? ''
+        ...(this.dishImagesEnabled ? { immagine: item.imageUrl ?? '' } : {})
       }))
     );
   }
@@ -547,6 +578,34 @@ export class MenuManagementComponent implements OnInit {
         this.togglingRecommendedId = null;
         alert(err.error?.message ?? 'Impossibile aggiornare il piatto consigliato.');
       }
+    });
+  }
+
+  private get filteredDishes(): Piatto[] {
+    const normalizedSearch = this.searchTerm.trim().toLowerCase();
+
+    return this.piatti.filter(item => {
+      const matchesCategory = this.selectedCategory === 'ALL' || dishCategoryCode(item) === this.selectedCategory;
+      if (!matchesCategory) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const haystack = [
+        item.nome,
+        item.descrizione,
+        item.ingredienti,
+        item.allergeni,
+        dishCategoryLabel(item)
+      ]
+        .filter((value): value is string => !!value)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
     });
   }
 }

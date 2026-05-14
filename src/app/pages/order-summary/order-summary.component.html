@@ -15,7 +15,7 @@
           <li *ngFor="let item of confirmedItems; trackBy: trackConfirmedItem">
             <div class="item-row sent">
               <div class="info">
-                {{ item.nome }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;
+                {{ formatItemLabel(item.nome, item.portionLabel) }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;
               </div>
               <div class="sent-qty">x{{ item.quantita }}</div>
             </div>
@@ -23,17 +23,17 @@
         </ul>
       </div>
 
-      <div class="section" *ngIf="draftGroupedItems.length > 0">
+      <div class="section" *ngIf="draftItems.length > 0">
         <div class="section-title">Da inviare</div>
         <ul>
-          <li *ngFor="let item of draftGroupedItems; trackBy: trackDraftItem">
+          <li *ngFor="let item of draftItems; trackBy: trackDraftItem">
             <div class="item-row">
               <div class="info">
-                {{ item.nome }} &middot; {{ item.prezzo | number: '1.2-2' }} &euro;
+                {{ formatItemLabel(item.nome, item.portionLabel) }} &middot; {{ item.unitPrice | number: '1.2-2' }} &euro;
               </div>
               <div class="actions">
                 <button (click)="rimuovi(item)">-</button>
-                <span>{{ quantita(item.id) }}</span>
+                <span>{{ quantita(item) }}</span>
                 <button (click)="aggiungi(item)">+</button>
               </div>
             </div>
@@ -41,7 +41,7 @@
         </ul>
       </div>
 
-      <div class="section" *ngIf="draftGroupedItems.length > 0">
+      <div class="section" *ngIf="draftItems.length > 0">
         <div class="section-title">Note per la cucina</div>
         <label class="kitchen-note-box" for="kitchenNote">
           <textarea
@@ -54,7 +54,7 @@
         </label>
       </div>
 
-      <div class="empty-state" *ngIf="!hasConfirmedItems && draftGroupedItems.length === 0">
+      <div class="empty-state" *ngIf="!hasConfirmedItems && draftItems.length === 0">
         Il carrello e vuoto.
       </div>
     </div>
@@ -65,7 +65,7 @@
         <div class="cart-upsell-list">
           <div class="cart-upsell-row" *ngFor="let suggestion of cartUpsellSuggestions">
             <span class="cart-upsell-item">{{ suggestion.nome }} &middot; {{ suggestion.prezzo | number: '1.2-2' }} &euro;</span>
-            <button class="cart-upsell-btn" (click)="aggiungiUpsell(suggestion, $event)">+</button>
+            <button class="cart-upsell-btn" (click)="aggiungiUpsell(suggestion, $event)">{{ (suggestion.porzioni?.length ?? 0) > 0 ? 'Apri' : '+' }}</button>
           </div>
         </div>
       </div>

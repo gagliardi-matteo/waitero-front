@@ -1,12 +1,13 @@
-import { Component, DoCheck, Input, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, DoCheck, OnDestroy, OnInit, inject } from '@angular/core';
 import { Piatto } from '../../models/piatto.model';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OrderService } from '../../services/order.service';
+import { OrderService, DraftLineItem } from '../../services/order.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { CustomerOrderItem } from '../../models/customer-order.model';
 import { TrackingService } from '../../services/tracking.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-order-summary',
@@ -16,8 +17,6 @@ import { TrackingService } from '../../services/tracking.service';
   styleUrls: ['./order-summary.component.scss']
 })
 export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
-  @Input() piatti: Piatto[] = [];
-
   isExpanded = false;
   isSubmitting = false;
   noteCucina = '';
@@ -27,6 +26,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   private auth = inject(AuthContextService);
   private customerOrderService = inject(CustomerOrderService);
   private trackingService = inject(TrackingService);
+  private router = inject(Router);
   private lastCartSignature = '';
   private lastUpsellRequestSignature = '';
   private upsellRefreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -62,12 +62,12 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     return this.orderState.getConfirmedTotal();
   }
 
-  get draftItems(): Piatto[] {
-    return this.piatti;
+  get draftItems(): DraftLineItem[] {
+    return this.orderState.getDraftLineItems();
   }
 
   get totalDraft(): number {
-    return this.draftItems.reduce((acc, piatto) => acc + piatto.prezzo, 0);
+    return this.draftItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
   }
 
   get totale(): number {
@@ -76,7 +76,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
   get badgeCount(): number {
     const confirmedCount = this.confirmedItems.reduce((acc, item) => acc + item.quantita, 0);
-    return confirmedCount + this.draftItems.length;
+    return confirmedCount + this.draftItems.reduce((acc, item) => acc + item.quantity, 0);
   }
 
   get cartUpsellMessage(): string {
@@ -138,24 +138,22 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     });
   }
 
-  aggiungi(piatto: Piatto, attribution?: { source: string; sourceDishId?: number }) {
+  aggiungi(item: DraftLineItem) {
     const token = this.auth.tokenValue;
     const restaurantId = this.auth.restaurantIdValue;
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, 1)
+    this.customerOrderService.mutateDraft(token, restaurantId, tableId, item.dishId, 1, item.portionKey ?? undefined)
       .subscribe({
         next: draft => {
           this.orderState.setDraft(draft.items);
-          if (attribution) {
-            this.orderState.markDraftAttribution(piatto.id, attribution.source, attribution.sourceDishId);
-          }
           this.trackingService.trackEvent('add_to_cart', {
-            dishId: piatto.id,
+            dishId: item.dishId,
             metadata: {
               page: 'order-summary',
-              quantity: this.quantita(piatto.id)
+              quantity: this.quantita(item),
+              portionKey: item.portionKey ?? null
             }
           });
         },
@@ -163,21 +161,22 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       });
   }
 
-  rimuovi(piatto: Piatto) {
+  rimuovi(item: DraftLineItem) {
     const token = this.auth.tokenValue;
     const restaurantId = this.auth.restaurantIdValue;
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, -1)
+    this.customerOrderService.mutateDraft(token, restaurantId, tableId, item.dishId, -1, item.portionKey ?? undefined)
       .subscribe({
         next: draft => {
           this.orderState.setDraft(draft.items);
           this.trackingService.trackEvent('remove_from_cart', {
-            dishId: piatto.id,
+            dishId: item.dishId,
             metadata: {
               page: 'order-summary',
-              quantity: this.quantita(piatto.id)
+              quantity: this.quantita(item),
+              portionKey: item.portionKey ?? null
             }
           });
         },
@@ -187,29 +186,43 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
   aggiungiUpsell(piatto: Piatto, event: Event): void {
     event.stopPropagation();
-    this.aggiungi(piatto, { source: 'cart_upsell' });
+    if ((piatto.porzioni?.length ?? 0) > 0) {
+      void this.router.navigate(['/menu/piatto', piatto.id]);
+      return;
+    }
+
+    const token = this.auth.tokenValue;
+    const restaurantId = this.auth.restaurantIdValue;
+    const tableId = this.auth.tableIdValue;
+    if (!token || !restaurantId || !tableId) return;
+
+    this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, 1)
+      .subscribe({
+        next: draft => {
+          this.orderState.setDraft(draft.items);
+          this.orderState.markDraftAttribution(piatto.id, null, 'cart_upsell');
+        },
+        error: err => console.error('Errore aggiornamento bozza', err)
+      });
   }
 
-  quantita(id: number): number {
-    return this.orderState.quantita(id);
+  quantita(item: DraftLineItem): number {
+    return this.orderState.quantita(item.dishId, item.portionKey);
   }
 
   trackConfirmedItem(index: number, item: CustomerOrderItem): number {
     return item.id;
   }
 
-  trackDraftItem(index: number, item: Piatto): number {
-    return item.id;
+  trackDraftItem(index: number, item: DraftLineItem): string {
+    return item.lineKey;
   }
 
-  get draftGroupedItems(): Piatto[] {
-    const mappa = new Map<number, Piatto>();
-    this.draftItems.forEach(p => {
-      if (!mappa.has(p.id)) {
-        mappa.set(p.id, p);
-      }
-    });
-    return Array.from(mappa.values());
+  formatItemLabel(nome: string, portionLabel?: string | null): string {
+    if (!portionLabel || portionLabel === 'Standard') {
+      return nome;
+    }
+    return `${nome} · ${portionLabel}`;
   }
 
   private get normalizedKitchenNote(): string | undefined {
@@ -263,18 +276,18 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
   private getCartDishIds(): number[] {
     return Array.from(new Set<number>([
-      ...this.draftGroupedItems.map(item => item.id),
+      ...this.draftItems.map(item => item.dishId),
       ...this.confirmedItems.map(item => item.dishId)
     ]));
   }
 
   private buildCartSignature(): string {
     const confirmedSignature = this.confirmedItems
-      .map(item => `${item.dishId}:${item.quantita}`)
+      .map(item => `${item.dishId}:${item.portionKey ?? 'default'}:${item.quantita}`)
       .sort()
       .join('|');
-    const draftSignature = this.draftGroupedItems
-      .map(item => `${item.id}:${this.quantita(item.id)}`)
+    const draftSignature = this.draftItems
+      .map(item => `${item.lineKey}:${item.quantity}`)
       .sort()
       .join('|');
     return `${confirmedSignature}#${draftSignature}`;

@@ -1,0 +1,273 @@
+<section class="admin-billing">
+  <header class="admin-billing__hero">
+    <div>
+      <span class="admin-billing__eyebrow">Console master</span>
+      <h1>Billing e pagamenti</h1>
+      <p>Configura i parametri di billing per locale, controlla le review mensili e approva manualmente ogni addebito Stripe.</p>
+    </div>
+
+    <div class="admin-billing__hero-actions">
+      <a routerLink="/admin/restaurants" class="admin-billing__ghost">Torna ai locali</a>
+      <button type="button" class="admin-billing__logout" (click)="logout()">Esci</button>
+    </div>
+  </header>
+
+  <p class="admin-billing__error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="admin-billing__success" *ngIf="successMessage">{{ successMessage }}</p>
+
+  <section class="admin-billing__panel">
+    <div class="admin-billing__panel-head">
+      <div>
+        <span class="admin-billing__eyebrow">Regole globali</span>
+        <h2>Commissione e fee minima standard</h2>
+        <p>Questi parametri valgono per tutti i ristoranti. Le review salvano comunque uno snapshot immutabile dei valori usati.</p>
+      </div>
+    </div>
+
+    <form class="admin-billing__global-form" (ngSubmit)="saveGlobalConfig()">
+      <label>
+        <span>Commissione globale</span>
+        <input type="number" step="0.000001" min="0" max="1" [(ngModel)]="globalForm.commissionPercentage" name="globalCommissionPercentage" />
+      </label>
+
+      <label>
+        <span>Fee minima mensile globale</span>
+        <input type="number" step="0.01" min="0" [(ngModel)]="globalForm.minimumMonthlyFee" name="globalMinimumMonthlyFee" />
+      </label>
+
+      <button type="submit" [disabled]="globalSaving || globalLoading">
+        {{ globalSaving ? 'Salvataggio...' : 'Salva parametri globali' }}
+      </button>
+    </form>
+  </section>
+
+  <div class="admin-billing__grid">
+    <section class="admin-billing__panel">
+      <div class="admin-billing__panel-head">
+        <div>
+          <span class="admin-billing__eyebrow">Tenant</span>
+          <h2>Configurazione locale</h2>
+        </div>
+      </div>
+
+      <div class="admin-billing__search-row">
+        <input
+          type="search"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="loadRestaurants()"
+          placeholder="Nome, email o citta"
+        />
+        <button type="button" (click)="loadRestaurants()" [disabled]="restaurantLoading">
+          {{ restaurantLoading ? 'Caricamento...' : 'Cerca' }}
+        </button>
+      </div>
+
+      <div class="admin-billing__restaurant-list">
+        <button
+          type="button"
+          class="admin-billing__restaurant-item"
+          *ngFor="let restaurant of restaurants; trackBy: trackRestaurant"
+          [class.is-active]="selectedRestaurant?.id === restaurant.id"
+          (click)="selectRestaurant(restaurant)"
+        >
+          <strong>{{ restaurant.nome }}</strong>
+          <span>{{ restaurant.email }}</span>
+          <small>{{ businessLabel(restaurant.businessType) }}</small>
+        </button>
+      </div>
+
+      <div class="admin-billing__account" *ngIf="selectedRestaurant">
+        <div class="admin-billing__account-head">
+          <div>
+            <h3>{{ selectedRestaurant.nome }}</h3>
+            <p>{{ selectedRestaurant.email }}</p>
+          </div>
+          <span class="admin-billing__chip" *ngIf="accountMissing">Nuovo account</span>
+        </div>
+
+        <div *ngIf="accountLoading" class="admin-billing__empty">Carico configurazione billing...</div>
+
+        <form *ngIf="!accountLoading" class="admin-billing__form" (ngSubmit)="saveAccount()">
+          <label class="admin-billing__switch">
+            <input type="checkbox" [(ngModel)]="accountForm.billingEnabled" name="billingEnabled" />
+            <span>{{ accountForm.billingEnabled ? 'Billing attivo' : 'Billing disattivo' }}</span>
+          </label>
+
+          <label>
+            <span>Data contratto</span>
+            <input type="date" [(ngModel)]="accountForm.contractStartDate" name="contractStartDate" />
+          </label>
+
+          <div class="admin-billing__inherited" *ngIf="globalConfig">
+            <div>
+              <strong>Commissione ereditata</strong>
+              <span>{{ globalConfig.commissionPercentage }}</span>
+            </div>
+            <div>
+              <strong>Fee minima ereditata</strong>
+              <span>{{ globalConfig.minimumMonthlyFee | currency:'EUR':'symbol':'1.2-2':'it' }}</span>
+            </div>
+          </div>
+
+          <label>
+            <span>Stripe customer ID</span>
+            <input type="text" [(ngModel)]="accountForm.stripeCustomerId" name="stripeCustomerId" placeholder="cus_..." />
+          </label>
+
+          <label>
+            <span>Default payment method ID</span>
+            <input type="text" [(ngModel)]="accountForm.defaultPaymentMethodId" name="defaultPaymentMethodId" placeholder="pm_..." />
+          </label>
+
+          <button type="submit" [disabled]="accountSaving">
+            {{ accountSaving ? 'Salvataggio...' : 'Salva configurazione billing' }}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <section class="admin-billing__panel">
+      <div class="admin-billing__panel-head">
+        <div>
+          <span class="admin-billing__eyebrow">Review</span>
+          <h2>Revisioni in attesa</h2>
+          <p>Lo scheduler crea solo review interne. Da qui approvi o finalizzi l’addebito.</p>
+        </div>
+        <button type="button" class="admin-billing__ghost" (click)="loadPendingReviews()" [disabled]="pendingLoading">
+          {{ pendingLoading ? 'Aggiorno...' : 'Aggiorna' }}
+        </button>
+      </div>
+
+      <div class="admin-billing__review-list" *ngIf="pendingReviews.length > 0; else emptyPending">
+        <button
+          type="button"
+          class="admin-billing__review-item"
+          *ngFor="let review of pendingReviews; trackBy: trackReview"
+          (click)="openReview(review.id)"
+        >
+          <div>
+            <strong>{{ review.restaurantName }}</strong>
+            <span>{{ review.periodStart }} -> {{ review.periodEnd }}</span>
+          </div>
+          <div class="admin-billing__review-metrics">
+            <span>Revenue {{ review.grossRevenue | currency:'EUR':'symbol':'1.2-2':'it' }}</span>
+            <span>Fee {{ review.calculatedFee | currency:'EUR':'symbol':'1.2-2':'it' }}</span>
+            <span>{{ review.orderCount }} ordini</span>
+          </div>
+        </button>
+      </div>
+
+      <ng-template #emptyPending>
+        <p class="admin-billing__empty">{{ pendingLoading ? 'Carico review...' : 'Nessuna review CREATED in coda.' }}</p>
+      </ng-template>
+
+      <div class="admin-billing__history" *ngIf="selectedRestaurant">
+        <div class="admin-billing__subhead">
+          <div>
+            <span class="admin-billing__eyebrow">Storico locale</span>
+            <h3>Review di {{ selectedRestaurant.nome }}</h3>
+            <p>Qui trovi anche le review già finalizzate o bloccate per errore webhook.</p>
+          </div>
+          <button type="button" class="admin-billing__ghost" (click)="loadRestaurantReviews(selectedRestaurant.id)" [disabled]="restaurantReviewsLoading">
+            {{ restaurantReviewsLoading ? 'Aggiorno...' : 'Aggiorna storico' }}
+          </button>
+        </div>
+
+        <div class="admin-billing__review-list" *ngIf="restaurantReviews.length > 0; else emptyRestaurantReviews">
+          <button
+            type="button"
+            class="admin-billing__review-item"
+            *ngFor="let review of restaurantReviews; trackBy: trackReview"
+            (click)="openReview(review.id)"
+          >
+            <div class="admin-billing__review-header">
+              <div>
+                <strong>{{ review.periodStart }} -> {{ review.periodEnd }}</strong>
+                <span>{{ review.orderCount }} ordini</span>
+              </div>
+              <span class="admin-billing__chip">{{ review.status }}</span>
+            </div>
+            <div class="admin-billing__review-metrics">
+              <span>Revenue {{ review.grossRevenue | currency:'EUR':'symbol':'1.2-2':'it' }}</span>
+              <span>Fee {{ review.calculatedFee | currency:'EUR':'symbol':'1.2-2':'it' }}</span>
+            </div>
+          </button>
+        </div>
+
+        <ng-template #emptyRestaurantReviews>
+          <p class="admin-billing__empty">{{ restaurantReviewsLoading ? 'Carico storico review...' : 'Nessuna review trovata per questo locale.' }}</p>
+        </ng-template>
+      </div>
+    </section>
+  </div>
+
+  <section class="admin-billing__panel admin-billing__detail" *ngIf="selectedReview || detailLoading">
+    <div class="admin-billing__panel-head">
+      <div>
+        <span class="admin-billing__eyebrow">Dettaglio review</span>
+        <h2 *ngIf="selectedReview">{{ selectedReview.restaurantName }} · {{ selectedReview.periodStart }} -> {{ selectedReview.periodEnd }}</h2>
+        <h2 *ngIf="detailLoading">Caricamento dettaglio...</h2>
+      </div>
+    </div>
+
+    <div *ngIf="selectedReview as review" class="admin-billing__detail-grid">
+      <div class="admin-billing__stats">
+        <div><strong>Stato</strong><span>{{ review.status }}</span></div>
+        <div><strong>Revenue</strong><span>{{ review.grossRevenue | currency:'EUR':'symbol':'1.2-2':'it' }}</span></div>
+        <div><strong>Fee</strong><span>{{ review.calculatedFee | currency:'EUR':'symbol':'1.2-2':'it' }}</span></div>
+        <div><strong>Ordini</strong><span>{{ review.orderCount }}</span></div>
+        <div><strong>Commissione snapshot</strong><span>{{ review.commissionPercentage }}</span></div>
+        <div><strong>Minimo</strong><span>{{ review.minimumMonthlyFee | currency:'EUR':'symbol':'1.2-2':'it' }}</span></div>
+      </div>
+
+      <div class="admin-billing__invoice" *ngIf="review.stripeInvoice">
+        <h3>Stripe invoice</h3>
+        <p><strong>ID</strong> {{ review.stripeInvoice.invoiceId }}</p>
+        <p><strong>Status</strong> {{ review.stripeInvoice.status }}</p>
+        <p><strong>Collection</strong> {{ review.stripeInvoice.collectionMethod }}</p>
+        <a *ngIf="review.stripeInvoice.hostedInvoiceUrl" [href]="review.stripeInvoice.hostedInvoiceUrl" target="_blank" rel="noreferrer">Apri invoice Stripe</a>
+      </div>
+    </div>
+
+    <div *ngIf="selectedReview?.anomalies?.length" class="admin-billing__anomalies">
+      <span *ngFor="let anomaly of selectedReview?.anomalies ?? []" class="admin-billing__chip">{{ anomaly }}</span>
+    </div>
+
+    <div class="admin-billing__formula" *ngIf="selectedReview">
+      <strong>Formula applicata</strong>
+      <span>
+        max({{ selectedReview.grossRevenue | currency:'EUR':'symbol':'1.2-2':'it' }} × {{ selectedReview.commissionPercentage }},
+        {{ selectedReview.minimumMonthlyFee | currency:'EUR':'symbol':'1.2-2':'it' }})
+        = {{ selectedReview.calculatedFee | currency:'EUR':'symbol':'1.2-2':'it' }}
+      </span>
+    </div>
+
+    <label class="admin-billing__notes" *ngIf="selectedReview">
+      <span>Note operative</span>
+      <textarea [(ngModel)]="reviewNotes" name="reviewNotes" rows="4"></textarea>
+    </label>
+
+    <div class="admin-billing__actions" *ngIf="selectedReview">
+      <button type="button" (click)="approveSelectedReview()" [disabled]="reviewActionLoading || selectedReview.status !== 'CREATED'">
+        {{ reviewActionLoading && selectedReview.status === 'CREATED' ? 'Operazione...' : 'Approva e crea draft invoice' }}
+      </button>
+      <button type="button" class="admin-billing__ghost" (click)="finalizeSelectedReview()" [disabled]="reviewActionLoading || selectedReview.status !== 'APPROVED'">
+        Finalizza e tenta addebito
+      </button>
+      <button type="button" class="admin-billing__ghost" (click)="syncSelectedReviewFromStripe()" [disabled]="reviewActionLoading || !selectedReview.stripeInvoiceId">
+        Sincronizza da Stripe
+      </button>
+      <button type="button" class="admin-billing__danger" (click)="rejectSelectedReview()" [disabled]="reviewActionLoading || selectedReview.status !== 'CREATED'">
+        Rifiuta review
+      </button>
+    </div>
+
+    <div *ngIf="selectedReview?.orderSnapshots?.length" class="admin-billing__orders">
+      <h3>Snapshot ordini</h3>
+      <div class="admin-billing__order-row" *ngFor="let snapshot of selectedReview?.orderSnapshots ?? []">
+        <span>Ordine #{{ snapshot.orderId }}</span>
+        <strong>{{ snapshot.orderTotal | currency:'EUR':'symbol':'1.2-2':'it' }}</strong>
+      </div>
+    </div>
+  </section>
+</section>

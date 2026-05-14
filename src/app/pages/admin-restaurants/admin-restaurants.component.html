@@ -36,6 +36,20 @@
     </label>
   </section>
 
+  <section class="admin-console__panel admin-console__feature-panel">
+    <div class="admin-console__feature-copy">
+      <span class="admin-console__eyebrow">Pagamenti</span>
+      <h2>Billing ristoranti</h2>
+      <p>
+        Apri la console billing per configurare commissioni, account Stripe e approvare manualmente le review mensili prima dell’addebito.
+      </p>
+    </div>
+
+    <button type="button" class="admin-console__logout" (click)="openBillingConsole()">
+      Apri billing
+    </button>
+  </section>
+
   <section class="admin-console__panel">
     <div class="admin-console__panel-head">
       <span class="admin-console__eyebrow">Nuovo tenant</span>

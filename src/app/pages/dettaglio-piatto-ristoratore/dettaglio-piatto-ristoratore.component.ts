@@ -14,6 +14,7 @@ import { splitStoredAllergens } from '../../shared/allergens';
   styleUrl: './dettaglio-piatto-ristoratore.component.scss'
 })
 export class DettaglioPiattoRistoratoreComponent implements OnInit {
+  readonly dishImagesEnabled = (environment as any).features?.dishImagesEnabled ?? false;
   piatto: Piatto | null = null;
   errorMessage = '';
 
