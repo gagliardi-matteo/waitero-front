@@ -107,16 +107,22 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  openOrder(card: TableDashboardCard): void {
-    if (!card.activeOrder) {
+  openCard(card: TableDashboardCard): void {
+    if (card.state === 'INACTIVE') {
       return;
     }
-    this.router.navigate(['/orders', card.activeOrder.id]);
+
+    if (card.activeOrder) {
+      void this.router.navigate(['/orders', card.activeOrder.id]);
+      return;
+    }
+
+    void this.router.navigate(['/waiter-order'], { queryParams: { tableId: card.table.id } });
   }
 
   openOrderFromKeyboard(event: Event, card: TableDashboardCard): void {
     event.preventDefault();
-    this.openOrder(card);
+    this.openCard(card);
   }
 
   statusLabel(card: TableDashboardCard): string {
@@ -149,6 +155,10 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return card.table.id;
   }
 
+  isCardInteractive(card: TableDashboardCard): boolean {
+    return card.state !== 'INACTIVE';
+  }
+
   private buildCards(tables: RestaurantTable[], activeOrders: CustomerOrder[]): TableDashboardCard[] {
     const activeOrderByTableId = new Map<number, CustomerOrder>();
     for (const order of activeOrders) {
@@ -161,7 +171,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return [...tables]
       .sort((a, b) => a.numero - b.numero)
       .map(table => {
-        const activeOrder = activeOrderByTableId.get(table.numero) ?? null;
+        const activeOrder = activeOrderByTableId.get(table.id) ?? null;
         return {
           table,
           activeOrder,

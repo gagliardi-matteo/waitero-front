@@ -16,6 +16,7 @@ import { MenuAutopilotPanelComponent } from './components/menu-autopilot-panel/m
 import { UiFeaturesService } from '../../services/ui-features.service';
 import { ExplainTooltipDirective } from '../../shared/explain-tooltip/explain-tooltip.directive';
 import { DishCategoryGroup, dishCategoryCode, dishCategoryLabel, groupDishesByCategory } from '../../shared/dish-category';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -56,7 +57,7 @@ interface DishExportRow {
 @Component({
   selector: 'app-menu-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent, ExplainTooltipDirective],
+  imports: [CommonModule, FormsModule, RouterModule, MenuInsightsPanelComponent, MenuAutopilotPanelComponent, ExplainTooltipDirective, BrandLoaderComponent],
   templateUrl: './menu-management.component.html',
   styleUrl: './menu-management.component.scss',
 })
@@ -71,6 +72,8 @@ export class MenuManagementComponent implements OnInit {
   explainabilityEnabled = false;
   menuImportFile: File | null = null;
   importingMenu = false;
+  loadingMenu = false;
+  downloadingTemplate = false;
   menuImportResult: MenuImportResult | null = null;
 
   private uiFeaturesService = inject(UiFeaturesService);
@@ -150,10 +153,19 @@ export class MenuManagementComponent implements OnInit {
   }
 
   downloadMenuTemplate(): void {
+    if (this.downloadingTemplate) {
+      return;
+    }
+
+    this.downloadingTemplate = true;
     this.http.get(`${environment.apiUrl}/menu/export/template`, { responseType: 'blob' }).subscribe({
-      next: blob => this.downloadBlob(blob, 'waitero-menu-template.xlsx'),
+      next: blob => {
+        this.downloadBlob(blob, 'waitero-menu-template.xlsx');
+        this.downloadingTemplate = false;
+      },
       error: err => {
         console.error('Errore download template menu:', err);
+        this.downloadingTemplate = false;
         alert(err.error?.message ?? 'Impossibile scaricare il template Excel del menu.');
       }
     });
@@ -322,14 +334,19 @@ export class MenuManagementComponent implements OnInit {
   }
 
   private loadPiatti(): void {
+    this.loadingMenu = true;
     forkJoin({
       dishes: this.http.get<Piatto[]>(`${environment.apiUrl}/menu/piattiRistoratore/${this.userId}`),
       performance: this.analyticsService.getDishPerformance()
     }).subscribe({
       next: ({ dishes, performance }) => {
         this.piatti = this.mergePerformance(dishes, performance);
+        this.loadingMenu = false;
       },
-      error: err => console.error('Errore caricamento piatti:', err)
+      error: err => {
+        console.error('Errore caricamento piatti:', err);
+        this.loadingMenu = false;
+      }
     });
   }
 

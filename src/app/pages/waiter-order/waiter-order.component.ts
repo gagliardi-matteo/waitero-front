@@ -2,7 +2,7 @@ import { CommonModule, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomerOrder } from '../../models/customer-order.model';
 import { Piatto } from '../../models/piatto.model';
@@ -34,6 +34,7 @@ export class WaiterOrderComponent implements OnInit {
   private tableService = inject(TableService);
   private ordersService = inject(RestaurantOrderService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     forkJoin({
@@ -43,6 +44,13 @@ export class WaiterOrderComponent implements OnInit {
       next: ({ tables, dishes }) => {
         this.tables = tables.filter(table => table.attivo).sort((a, b) => a.numero - b.numero);
         this.dishes = dishes.filter(dish => dish.disponibile !== false);
+        const requestedTableId = Number(this.route.snapshot.queryParamMap.get('tableId'));
+        if (Number.isFinite(requestedTableId) && requestedTableId > 0) {
+          const matchingTable = this.tables.find(table => table.id === requestedTableId);
+          if (matchingTable) {
+            this.selectedTableId = matchingTable.id;
+          }
+        }
         this.loading = false;
       },
       error: err => {

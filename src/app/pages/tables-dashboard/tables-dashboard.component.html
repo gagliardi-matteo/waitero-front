@@ -35,11 +35,11 @@
     <article
       class="table-tile"
       *ngFor="let card of filteredCards; trackBy: trackByTable"
-      [class.is-clickable]="!!card.activeOrder"
-      [attr.role]="card.activeOrder ? 'button' : null"
-      [attr.tabindex]="card.activeOrder ? 0 : null"
-      (click)="openOrder(card)"
-      (keydown.enter)="openOrder(card)"
+      [class.is-clickable]="isCardInteractive(card)"
+      [attr.role]="isCardInteractive(card) ? 'button' : null"
+      [attr.tabindex]="isCardInteractive(card) ? 0 : null"
+      (click)="openCard(card)"
+      (keydown.enter)="openCard(card)"
       (keydown.space)="openOrderFromKeyboard($event, card)"
     >
       <div class="tile-top">
@@ -64,7 +64,7 @@
             <p>Nessun ordine attivo.</p>
           </ng-template>
         </div>
-        <button type="button" class="tile-link" [routerLink]="['/waiter-order']">Apri tavolo ?</button>
+        <p class="tile-link tile-hint" *ngIf="card.state !== 'INACTIVE'">Apri tavolo premendo la card</p>
       </ng-template>
     </article>
   </div>

@@ -12,6 +12,12 @@
   <p class="admin-console__error" *ngIf="errorMessage">{{ errorMessage }}</p>
   <p class="admin-console__success" *ngIf="successMessage">{{ successMessage }}</p>
 
+  <app-brand-loader
+    *ngIf="showingLoader"
+    [label]="loaderLabel"
+    hint="Attendere il completamento dell'operazione"
+  />
+
   <section class="admin-console__panel admin-console__feature-panel">
     <div class="admin-console__feature-copy">
       <span class="admin-console__eyebrow">Esperienza locale</span>

@@ -25,6 +25,12 @@
     </div>
   </div>
 
+  <app-brand-loader
+    *ngIf="loadingMenu || importingMenu || downloadingTemplate"
+    [label]="loadingMenu ? 'Caricamento menu' : (importingMenu ? 'Importazione menu' : 'Download template Excel')"
+    hint="Attendere il completamento dell'operazione"
+  />
+
   <section class="import-panel">
     <div>
       <h2>Importa menù da Excel</h2>
@@ -49,7 +55,7 @@
     </div>
 
     <div class="import-actions">
-      <button class="secondary-button" type="button" (click)="downloadMenuTemplate()">
+      <button class="secondary-button" type="button" (click)="downloadMenuTemplate()" [disabled]="downloadingTemplate">
         Scarica template Excel
       </button>
       <button class="secondary-button" type="button" (click)="downloadCurrentMenuExport()">
@@ -153,17 +159,15 @@
       <div class="menu-card-shell" *ngFor="let item of entry.items; trackBy: trackDish">
         <article
           class="menu-card"
+          role="button"
+          tabindex="0"
+          (click)="openDish(item)"
+          (keydown.enter)="openDish(item)"
+          (keydown.space)="$event.preventDefault(); openDish(item)"
           [appExplainTooltip]="dishCardTooltip(item)"
           [explainTooltipEnabled]="explainabilityEnabled"
         >
-          <div
-            class="menu-card__body"
-            role="button"
-            tabindex="0"
-            (click)="openDish(item)"
-            (keydown.enter)="openDish(item)"
-            (keydown.space)="$event.preventDefault(); openDish(item)"
-          >
+          <div class="menu-card__body">
             <div class="card-image-shell" *ngIf="dishImagesEnabled">
               <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
               <span class="top-badge" *ngIf="item.consigliato">Top</span>

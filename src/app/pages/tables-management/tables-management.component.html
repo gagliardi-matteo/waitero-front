@@ -5,10 +5,16 @@
       <p>Configura tavoli, QR code e link di accesso.</p>
     </div>
     <div class="page-actions" *ngIf="hasTables">
-      <button type="button" class="icon-btn" (click)="printBulkQrs(false)">Stampa tutti i QR</button>
-      <button type="button" class="icon-btn" (click)="printBulkQrs(true)" [disabled]="!hasActiveTables">Stampa solo attivi</button>
+      <button type="button" class="icon-btn" (click)="printBulkQrs(false)" [disabled]="printingBulk || loading">Stampa tutti i QR</button>
+      <button type="button" class="icon-btn" (click)="printBulkQrs(true)" [disabled]="!hasActiveTables || printingBulk || loading">Stampa solo attivi</button>
     </div>
   </div>
+
+  <app-brand-loader
+    *ngIf="saving || printingBulk || !!actionInFlightLabel"
+    [label]="actionInFlightLabel || 'Aggiornamento tavoli'"
+    hint="Attendere il completamento dell'operazione"
+  />
 
   <div class="quick-form-card">
     <h3>{{ editingTableId === null ? 'Aggiungi tavolo' : 'Modifica tavolo' }}</h3>

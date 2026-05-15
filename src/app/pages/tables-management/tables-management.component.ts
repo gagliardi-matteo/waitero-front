@@ -24,6 +24,8 @@ export class TablesManagementComponent {
   loading = true;
   saving = false;
   bulkCreating = false;
+  printingBulk = false;
+  actionInFlightLabel = '';
   errorMessage = '';
   copiedTableId: number | null = null;
   editingTableId: number | null = null;
@@ -110,6 +112,7 @@ export class TablesManagementComponent {
     }
 
     this.saving = true;
+    this.actionInFlightLabel = 'Salvataggio tavolo';
     this.errorMessage = '';
     const payload: RestaurantTablePayload = this.form.getRawValue();
 
@@ -126,9 +129,11 @@ export class TablesManagementComponent {
         console.error('Errore salvataggio tavolo', err);
         this.errorMessage = err.error?.message ?? 'Salvataggio tavolo non riuscito.';
         this.saving = false;
+        this.actionInFlightLabel = '';
       },
       complete: () => {
         this.saving = false;
+        this.actionInFlightLabel = '';
       }
     });
   }
@@ -141,6 +146,7 @@ export class TablesManagementComponent {
     }
 
     this.bulkCreating = true;
+    this.actionInFlightLabel = 'Generazione tavoli';
     this.errorMessage = '';
     const raw = this.bulkForm.getRawValue();
     const payload: BulkRestaurantTablePayload = {
@@ -166,9 +172,11 @@ export class TablesManagementComponent {
         console.error('Errore generazione massiva tavoli', err);
         this.errorMessage = err.error?.message ?? 'Generazione massiva tavoli non riuscita.';
         this.bulkCreating = false;
+        this.actionInFlightLabel = '';
       },
       complete: () => {
         this.bulkCreating = false;
+        this.actionInFlightLabel = '';
       }
     });
   }
@@ -189,6 +197,7 @@ export class TablesManagementComponent {
       return;
     }
 
+    this.actionInFlightLabel = `Eliminazione ${table.nome}`;
     this.tableService.deleteTable(table.id).subscribe({
       next: () => {
         delete this.qrImageByTableId[table.id];
@@ -201,11 +210,16 @@ export class TablesManagementComponent {
       error: err => {
         console.error('Errore eliminazione tavolo', err);
         this.errorMessage = err.error?.message ?? 'Eliminazione tavolo non riuscita.';
+        this.actionInFlightLabel = '';
+      },
+      complete: () => {
+        this.actionInFlightLabel = '';
       }
     });
   }
 
   regenerateToken(table: RestaurantTable): void {
+    this.actionInFlightLabel = `Rigenerazione QR ${table.nome}`;
     this.tableService.regenerateToken(table.id).subscribe({
       next: updated => {
         this.tables = this.tables.map(current => current.id === updated.id ? updated : current);
@@ -217,6 +231,10 @@ export class TablesManagementComponent {
       error: err => {
         console.error('Errore rigenerazione token tavolo', err);
         this.errorMessage = err.error?.message ?? 'Rigenerazione token non riuscita.';
+        this.actionInFlightLabel = '';
+      },
+      complete: () => {
+        this.actionInFlightLabel = '';
       }
     });
   }
@@ -230,6 +248,7 @@ export class TablesManagementComponent {
       attivo: !table.attivo
     };
 
+    this.actionInFlightLabel = `${table.attivo ? 'Disattivazione' : 'Attivazione'} ${table.nome}`;
     this.tableService.updateTable(table.id, payload).subscribe({
       next: updated => {
         this.tables = this.tables.map(current => current.id === updated.id ? updated : current);
@@ -240,6 +259,10 @@ export class TablesManagementComponent {
       error: err => {
         console.error('Errore aggiornamento stato tavolo', err);
         this.errorMessage = err.error?.message ?? 'Aggiornamento stato tavolo non riuscito.';
+        this.actionInFlightLabel = '';
+      },
+      complete: () => {
+        this.actionInFlightLabel = '';
       }
     });
   }
@@ -345,11 +368,15 @@ export class TablesManagementComponent {
     }
 
     this.errorMessage = '';
+    this.printingBulk = true;
+    this.actionInFlightLabel = activeOnly ? 'Preparazione stampa QR attivi' : 'Preparazione stampa QR';
     try {
       await this.ensureQrCodesForTables(selectedTables);
     } catch (err) {
       console.error('Errore preparazione QR massivi', err);
       this.errorMessage = 'Preparazione stampa QR non riuscita.';
+      this.printingBulk = false;
+      this.actionInFlightLabel = '';
       return;
     }
 
@@ -362,18 +389,25 @@ export class TablesManagementComponent {
 
     if (printableTables.length === 0) {
       this.errorMessage = 'QR non ancora disponibili.';
+      this.printingBulk = false;
+      this.actionInFlightLabel = '';
       return;
     }
 
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) {
       this.errorMessage = 'Impossibile aprire la finestra di stampa.';
+      this.printingBulk = false;
+      this.actionInFlightLabel = '';
       return;
     }
 
     const perPage = TablesManagementComponent.BULK_PRINT_COLUMNS * TablesManagementComponent.BULK_PRINT_ROWS;
     const pages = this.chunkTables(printableTables, perPage);
     const title = activeOnly ? 'QR tavoli attivi' : 'QR tutti i tavoli';
+    const pageHeightMm = 297 - 20;
+    const rowGapMm = 6;
+    const rowHeightMm = ((pageHeightMm - (rowGapMm * (TablesManagementComponent.BULK_PRINT_ROWS - 1))) / TablesManagementComponent.BULK_PRINT_ROWS).toFixed(2);
 
     printWindow.document.write(`
       <html>
@@ -393,10 +427,12 @@ export class TablesManagementComponent {
               min-height: calc(297mm - 20mm);
               display: grid;
               grid-template-columns: repeat(${TablesManagementComponent.BULK_PRINT_COLUMNS}, 1fr);
-              grid-template-rows: repeat(${TablesManagementComponent.BULK_PRINT_ROWS}, 1fr);
+              grid-template-rows: repeat(${TablesManagementComponent.BULK_PRINT_ROWS}, ${rowHeightMm}mm);
+              align-content: start;
               gap: 6mm;
               page-break-after: always;
               break-after: page;
+              overflow: hidden;
             }
             .page:last-child {
               page-break-after: auto;
@@ -412,6 +448,9 @@ export class TablesManagementComponent {
               justify-content: space-between;
               text-align: center;
               min-height: 0;
+              height: 100%;
+              break-inside: avoid;
+              page-break-inside: avoid;
             }
             .brand {
               font-size: 11px;
@@ -445,6 +484,29 @@ export class TablesManagementComponent {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
           </style>
+          <script>
+            window.addEventListener('load', () => {
+              const images = Array.from(document.images);
+              const whenReady = images.map(image => {
+                if (image.complete) {
+                  return Promise.resolve();
+                }
+                return new Promise(resolve => {
+                  image.onload = () => resolve();
+                  image.onerror = () => resolve();
+                });
+              });
+
+              Promise.all(whenReady).then(() => {
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    window.focus();
+                    window.print();
+                  });
+                });
+              });
+            });
+          </script>
         </head>
         <body>
           ${pages.map(page => `
@@ -464,8 +526,8 @@ export class TablesManagementComponent {
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    this.printingBulk = false;
+    this.actionInFlightLabel = '';
   }
 
   cancelEdit(): void {
@@ -588,6 +650,7 @@ export class TablesManagementComponent {
     });
     this.errorMessage = '';
     this.saving = false;
+    this.actionInFlightLabel = '';
   }
 
   private isBrowser(): boolean {

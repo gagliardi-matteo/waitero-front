@@ -7,6 +7,7 @@ import { AuthService } from '../../auth/AuthService';
 import { environment } from '../../../environments/environment';
 import { BusinessType, businessTypeLabel } from '../../models/business-type.model';
 import { UiFeaturesService } from '../../services/ui-features.service';
+import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 interface AdminRestaurantSummary {
   id: number;
@@ -46,7 +47,7 @@ interface CreateRestaurantForm {
 @Component({
   selector: 'app-admin-restaurants',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BrandLoaderComponent],
   templateUrl: './admin-restaurants.component.html',
   styleUrl: './admin-restaurants.component.scss'
 })
@@ -70,6 +71,29 @@ export class AdminRestaurantsComponent implements OnInit {
   auditLogs: AdminAuditLog[] = [];
   createForm: CreateRestaurantForm = this.emptyCreateForm();
   resetPasswords: Record<number, string> = {};
+
+  get showingLoader(): boolean {
+    return this.loading || this.loadingAudit || this.creating || this.tooltipFeatureSaving || this.enteringRestaurantId !== null || this.resettingRestaurantId !== null;
+  }
+
+  get loaderLabel(): string {
+    if (this.creating) {
+      return 'Creazione locale';
+    }
+    if (this.enteringRestaurantId !== null) {
+      return 'Apertura backoffice';
+    }
+    if (this.resettingRestaurantId !== null) {
+      return 'Aggiornamento password';
+    }
+    if (this.tooltipFeatureSaving) {
+      return 'Aggiornamento impostazioni';
+    }
+    if (this.loadingAudit) {
+      return 'Caricamento audit';
+    }
+    return 'Caricamento locali';
+  }
 
   ngOnInit(): void {
     this.loadUiFeatures();
