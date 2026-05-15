@@ -12,6 +12,9 @@ const fileContent = `export const environment = {
   googleMapsApiKey: '${escapeForTs(googleMapsApiKey)}',
   googleAuth: {
     serverClientId: '${escapeForTs(googleAuthServerClientId)}'
+  },
+  privacy: {
+    customerBrowserFingerprintEnabled: false
   }
 };
 `;

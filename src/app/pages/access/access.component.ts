@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 import { AuthContextService } from '../../services/auth-context.service';
 import { DeviceIdService } from '../../services/device-id.service';
 import { FingerprintService } from '../../services/fingerprint.service';
@@ -41,14 +42,14 @@ export class AccessComponent implements OnInit {
     this.auth.setPendingAccess(token, tablePublicId, restaurantId, tableIdParam);
 
     const deviceId = this.deviceIdService.getOrCreate();
+    const shouldCollectFingerprint = environment.privacy?.customerBrowserFingerprintEnabled === true;
     const [fingerprint, gps] = await Promise.all([
-      this.fingerprintService.getVisitorId().catch(() => null),
+      shouldCollectFingerprint ? this.fingerprintService.getVisitorId().catch(() => null) : Promise.resolve(null),
       this.gpsService.getCurrentPositionSafe()
     ]);
 
     this.gpsSnapshot = gps;
     this.accessStatus = 'Verifica accesso tavolo in corso...';
-    console.info('GPS letto dal browser', gps);
 
     this.tableAccessService.validateAccess({
       tablePublicId,
