@@ -441,44 +441,56 @@ export class TablesManagementComponent {
             .card {
               border: 1px dashed #98a2b3;
               border-radius: 4mm;
-              padding: 4mm;
+              padding: 3mm;
               display: flex;
               flex-direction: column;
               align-items: center;
-              justify-content: space-between;
+              justify-content: flex-start;
+              gap: 1.2mm;
               text-align: center;
               min-height: 0;
               height: 100%;
               break-inside: avoid;
               page-break-inside: avoid;
+              overflow: hidden;
             }
             .brand {
-              font-size: 11px;
+              font-size: 9px;
               font-weight: 700;
               letter-spacing: 0.12em;
               text-transform: uppercase;
+              line-height: 1.1;
             }
             .table-number {
-              margin-top: 2mm;
-              font-size: 20px;
+              margin-top: 0.4mm;
+              font-size: 16px;
               font-weight: 700;
+              line-height: 1.05;
             }
             .table-name {
-              margin-top: 1mm;
-              font-size: 11px;
+              min-height: 7mm;
+              font-size: 9px;
               color: #475467;
+              line-height: 1.15;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              overflow: hidden;
             }
             .qr {
               width: 100%;
-              max-width: 48mm;
+              max-width: 34mm;
+              max-height: 34mm;
               aspect-ratio: 1 / 1;
               object-fit: contain;
-              margin: 3mm 0;
+              margin: 0.8mm 0;
+              flex: 0 0 auto;
             }
             .hint {
-              font-size: 9px;
+              font-size: 8px;
               color: #667085;
-              line-height: 1.25;
+              line-height: 1.15;
+              margin-top: auto;
             }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
