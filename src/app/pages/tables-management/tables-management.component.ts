@@ -23,6 +23,7 @@ export class TablesManagementComponent {
   tables: RestaurantTable[] = [];
   loading = true;
   saving = false;
+  bulkCreating = false;
   errorMessage = '';
   copiedTableId: number | null = null;
   editingTableId: number | null = null;
@@ -139,7 +140,7 @@ export class TablesManagementComponent {
       return;
     }
 
-    this.saving = true;
+    this.bulkCreating = true;
     this.errorMessage = '';
     const raw = this.bulkForm.getRawValue();
     const payload: BulkRestaurantTablePayload = {
@@ -164,10 +165,10 @@ export class TablesManagementComponent {
       error: err => {
         console.error('Errore generazione massiva tavoli', err);
         this.errorMessage = err.error?.message ?? 'Generazione massiva tavoli non riuscita.';
-        this.saving = false;
+        this.bulkCreating = false;
       },
       complete: () => {
-        this.saving = false;
+        this.bulkCreating = false;
       }
     });
   }

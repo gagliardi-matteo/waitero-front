@@ -1,7 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AddressSuggestion, RestaurantServiceHour, RestaurantSettings, RestaurantSettingsService } from '../../services/restaurant-settings.service';
@@ -78,6 +78,7 @@ export class RestaurantSettingsComponent {
   duplicateSourceIndex: number | null = null;
   duplicateMode: DuplicateMode = 'slot';
   duplicateTargets = new Set<string>();
+  private newSlotControl: AbstractControl | null = null;
 
   private fb = inject(FormBuilder);
   private settingsService = inject(RestaurantSettingsService);
@@ -191,8 +192,9 @@ export class RestaurantSettingsComponent {
         this.serviceHoursArray.clear();
         settings.serviceHours.forEach(slot => this.serviceHoursArray.push(this.createSlot(slot)));
         if (settings.serviceHours.length === 0) {
-          this.addSlot();
+          this.serviceHoursArray.push(this.createSlot());
         }
+        this.newSlotControl = null;
         this.cancelDuplicate();
         this.loading = false;
       },
@@ -415,10 +417,16 @@ export class RestaurantSettingsComponent {
   }
 
   addSlot(): void {
-    this.serviceHoursArray.push(this.createSlot());
+    const control = this.createSlot();
+    this.serviceHoursArray.insert(0, control);
+    this.newSlotControl = control;
+    this.cancelDuplicate();
   }
 
   removeSlot(index: number): void {
+    if (this.serviceHoursArray.at(index) === this.newSlotControl) {
+      this.newSlotControl = null;
+    }
     this.serviceHoursArray.removeAt(index);
     if (this.duplicateSourceIndex === index) {
       this.cancelDuplicate();
@@ -550,7 +558,8 @@ export class RestaurantSettingsComponent {
     this.addressSuggestions = [];
 
     const serviceHours = (raw.serviceHours as RestaurantServiceHour[])
-      .filter(slot => slot.dayOfWeek && slot.startTime && slot.endTime);
+      .filter(slot => slot.dayOfWeek && slot.startTime && slot.endTime)
+      .sort((left, right) => this.compareSlots(left, right));
 
     const invalidSlot = serviceHours.find(slot => slot.startTime === slot.endTime);
     if (invalidSlot) {
@@ -611,6 +620,10 @@ export class RestaurantSettingsComponent {
 
   dayLabel(dayOfWeek: string): string {
     return this.weekdays.find(day => day.value === dayOfWeek)?.label ?? dayOfWeek;
+  }
+
+  isNewSlot(index: number): boolean {
+    return this.serviceHoursArray.at(index) === this.newSlotControl;
   }
 
   logout(): void {
@@ -681,6 +694,7 @@ export class RestaurantSettingsComponent {
       .sort((left, right) => this.compareSlots(left, right));
     this.serviceHoursArray.clear();
     sorted.forEach(slot => this.serviceHoursArray.push(this.createSlot(slot)));
+    this.newSlotControl = null;
   }
 
   private getServiceHours(): RestaurantServiceHour[] {

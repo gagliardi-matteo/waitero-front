@@ -60,7 +60,7 @@
           <input type="text" formControlName="namePrefix" placeholder="Es. T" />
         </label>
         <div class="actions-field">
-          <button type="submit" class="primary-btn" [disabled]="saving">Genera tavoli</button>
+          <button type="submit" class="primary-btn" [disabled]="bulkCreating">Genera tavoli</button>
         </div>
       </div>
       <label class="checkbox-row">
@@ -69,6 +69,11 @@
       </label>
       <p class="helper-copy">Se non imposti il numero iniziale, WaiterO continua automaticamente dal numero tavolo piu alto gia presente. Ogni tavolo viene creato con QR dedicato.</p>
     </form>
+    <app-brand-loader
+      *ngIf="bulkCreating"
+      label="Generazione tavoli"
+      hint="Creazione massiva tavoli con QR dedicato"
+    />
   </div>
 
   <app-brand-loader

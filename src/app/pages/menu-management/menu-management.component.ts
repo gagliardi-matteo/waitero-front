@@ -150,32 +150,13 @@ export class MenuManagementComponent implements OnInit {
   }
 
   downloadMenuTemplate(): void {
-    const workbook = XLSX.utils.book_new();
-    const templateSheet = XLSX.utils.aoa_to_sheet([
-      this.dishImagesEnabled
-        ? ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile', 'Immagine']
-        : ['Nome', 'Categoria', 'Prezzo', 'Descrizione', 'Ingredienti', 'Allergeni', 'Consigliato', 'Disponibile']
-    ]);
-    const instructionRows = [
-      ['Compila almeno Nome, Categoria e Prezzo.'],
-      ['La categoria deve essere scritta con il nome visibile nel menu del locale.'],
-      ['Consigliato e Disponibile accettano SI/NO, true/false, 1/0.']
-    ];
-    if (this.dishImagesEnabled) {
-      instructionRows.push(['Immagine deve contenere un URL o il nome del file immagine.']);
-    }
-    const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionRows);
-
-    templateSheet['!cols'] = [
-      { wch: 24 }, { wch: 22 }, { wch: 12 }, { wch: 28 }, { wch: 28 },
-      { wch: 24 }, { wch: 14 }, { wch: 14 },
-      ...(this.dishImagesEnabled ? [{ wch: 24 }] : [])
-    ];
-    instructionsSheet['!cols'] = [{ wch: 90 }];
-
-    XLSX.utils.book_append_sheet(workbook, templateSheet, 'Template');
-    XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Istruzioni');
-    this.downloadWorkbook(workbook, 'waitero-menu-template.xlsx');
+    this.http.get(`${environment.apiUrl}/menu/export/template`, { responseType: 'blob' }).subscribe({
+      next: blob => this.downloadBlob(blob, 'waitero-menu-template.xlsx'),
+      error: err => {
+        console.error('Errore download template menu:', err);
+        alert(err.error?.message ?? 'Impossibile scaricare il template Excel del menu.');
+      }
+    });
   }
 
   downloadCurrentMenuExport(): void {
