@@ -17,3 +17,11 @@ export interface RestaurantTablePayload {
   coperti: number;
   attivo: boolean;
 }
+
+export interface BulkRestaurantTablePayload {
+  count: number;
+  coperti: number;
+  startingNumber?: number | null;
+  namePrefix?: string | null;
+  attivo: boolean;
+}

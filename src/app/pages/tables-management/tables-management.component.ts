@@ -2,7 +2,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import QRCode from 'qrcode';
-import { RestaurantTable, RestaurantTablePayload } from '../../models/table.model';
+import { BulkRestaurantTablePayload, RestaurantTable, RestaurantTablePayload } from '../../models/table.model';
 import { TableService } from '../../services/table.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
@@ -37,6 +37,14 @@ export class TablesManagementComponent {
     numero: [1, [Validators.required, Validators.min(1)]],
     nome: ['', [Validators.required, Validators.maxLength(120)]],
     coperti: [2, [Validators.required, Validators.min(1)]],
+    attivo: true
+  });
+
+  readonly bulkForm = this.fb.nonNullable.group({
+    count: [10, [Validators.required, Validators.min(1), Validators.max(200)]],
+    coperti: [2, [Validators.required, Validators.min(1)]],
+    startingNumber: [null as number | null, [Validators.min(1)]],
+    namePrefix: ['T', [Validators.maxLength(24)]],
     attivo: true
   });
 
@@ -116,6 +124,46 @@ export class TablesManagementComponent {
       error: err => {
         console.error('Errore salvataggio tavolo', err);
         this.errorMessage = err.error?.message ?? 'Salvataggio tavolo non riuscito.';
+        this.saving = false;
+      },
+      complete: () => {
+        this.saving = false;
+      }
+    });
+  }
+
+  submitBulkCreate(): void {
+    if (this.bulkForm.invalid) {
+      this.bulkForm.markAllAsTouched();
+      this.errorMessage = 'Compila correttamente i dati per la generazione massiva.';
+      return;
+    }
+
+    this.saving = true;
+    this.errorMessage = '';
+    const raw = this.bulkForm.getRawValue();
+    const payload: BulkRestaurantTablePayload = {
+      count: raw.count,
+      coperti: raw.coperti,
+      startingNumber: raw.startingNumber,
+      namePrefix: raw.namePrefix,
+      attivo: raw.attivo
+    };
+
+    this.tableService.bulkCreateTables(payload).subscribe({
+      next: () => {
+        this.bulkForm.patchValue({
+          count: raw.count,
+          coperti: raw.coperti,
+          startingNumber: null,
+          namePrefix: raw.namePrefix,
+          attivo: raw.attivo
+        });
+        this.loadTables();
+      },
+      error: err => {
+        console.error('Errore generazione massiva tavoli', err);
+        this.errorMessage = err.error?.message ?? 'Generazione massiva tavoli non riuscita.';
         this.saving = false;
       },
       complete: () => {

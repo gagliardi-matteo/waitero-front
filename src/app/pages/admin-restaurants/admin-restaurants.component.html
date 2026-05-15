@@ -107,33 +107,6 @@
     </div>
   </section>
 
-
-  <section class="admin-console__audit admin-console__panel">
-    <div class="admin-console__audit-head">
-      <div>
-        <span class="admin-console__eyebrow">Audit supporto</span>
-        <h2>Ultime azioni master</h2>
-        <p>Traccia operativa degli accessi e delle modifiche fatte in impersonazione.</p>
-      </div>
-      <button type="button" class="admin-console__refresh" (click)="loadAuditLogs()" [disabled]="loadingAudit">
-        {{ loadingAudit ? 'Aggiorno...' : 'Aggiorna' }}
-      </button>
-    </div>
-
-    <div class="audit-list" *ngIf="auditLogs.length > 0; else emptyAudit">
-      <div class="audit-row" *ngFor="let log of auditLogs; trackBy: trackAuditLog">
-        <div>
-          <strong>{{ auditActionLabel(log.action) }}</strong>
-          <span>{{ auditMetadata(log) }}</span>
-        </div>
-        <time>{{ log.createdAt | date:'dd/MM HH:mm' }}</time>
-      </div>
-    </div>
-
-    <ng-template #emptyAudit>
-      <p class="admin-console__empty">Nessuna azione master registrata.</p>
-    </ng-template>
-  </section>
   <section class="admin-console__results">
     <article class="restaurant-card" *ngFor="let restaurant of restaurants; trackBy: trackRestaurant">
       <div class="restaurant-card__meta">
@@ -173,6 +146,33 @@
     </article>
 
     <p class="admin-console__empty" *ngIf="!loading && restaurants.length === 0">Nessun locale trovato.</p>
+  </section>
+
+  <section class="admin-console__audit admin-console__panel">
+    <div class="admin-console__audit-head">
+      <div>
+        <span class="admin-console__eyebrow">Audit supporto</span>
+        <h2>Ultime azioni master</h2>
+        <p>Traccia operativa degli accessi e delle modifiche fatte in impersonazione.</p>
+      </div>
+      <button type="button" class="admin-console__refresh" (click)="loadAuditLogs()" [disabled]="loadingAudit">
+        {{ loadingAudit ? 'Aggiorno...' : 'Aggiorna' }}
+      </button>
+    </div>
+
+    <div class="audit-list" *ngIf="auditLogs.length > 0; else emptyAudit">
+      <div class="audit-row" *ngFor="let log of auditLogs; trackBy: trackAuditLog">
+        <div>
+          <strong>{{ auditActionLabel(log.action) }}</strong>
+          <span>{{ auditMetadata(log) }}</span>
+        </div>
+        <time>{{ log.createdAt | date:'dd/MM HH:mm' }}</time>
+      </div>
+    </div>
+
+    <ng-template #emptyAudit>
+      <p class="admin-console__empty">Nessuna azione master registrata.</p>
+    </ng-template>
   </section>
 </section>
 

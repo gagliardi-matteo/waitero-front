@@ -552,6 +552,18 @@ export class RestaurantSettingsComponent {
     const serviceHours = (raw.serviceHours as RestaurantServiceHour[])
       .filter(slot => slot.dayOfWeek && slot.startTime && slot.endTime);
 
+    const invalidSlot = serviceHours.find(slot => slot.startTime === slot.endTime);
+    if (invalidSlot) {
+      this.errorMessage = `La fascia ${this.dayLabel(invalidSlot.dayOfWeek)} ${invalidSlot.startTime}-${invalidSlot.endTime} non e valida.`;
+      return;
+    }
+
+    const overlapMessage = this.findOverlapMessage(serviceHours);
+    if (overlapMessage) {
+      this.errorMessage = overlapMessage;
+      return;
+    }
+
     const payload = {
       nome: raw.nome,
       address: raw.address,
@@ -685,22 +697,56 @@ export class RestaurantSettingsComponent {
   }
 
   private hasOverlap(candidate: RestaurantServiceHour, slots: RestaurantServiceHour[]): boolean {
-    const candidateStart = this.toMinutes(candidate.startTime);
-    const candidateEnd = this.toMinutes(candidate.endTime);
+    const candidateIntervals = this.toWeekIntervals(candidate);
 
-    return slots.some(slot => {
-      if (slot.dayOfWeek !== candidate.dayOfWeek) {
-        return false;
-      }
-      const slotStart = this.toMinutes(slot.startTime);
-      const slotEnd = this.toMinutes(slot.endTime);
-      return candidateStart < slotEnd && candidateEnd > slotStart;
-    });
+    return slots.some(slot => this.toWeekIntervals(slot).some(slotInterval =>
+      candidateIntervals.some(candidateInterval =>
+        candidateInterval.start < slotInterval.end && candidateInterval.end > slotInterval.start
+      )
+    ));
   }
 
   private toMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(value => Number(value));
     return (hours * 60) + minutes;
+  }
+
+  private toWeekIntervals(slot: RestaurantServiceHour): Array<{ start: number; end: number }> {
+    const dayIndex = this.weekdays.findIndex(day => day.value === slot.dayOfWeek);
+    const startMinutes = this.toMinutes(slot.startTime);
+    const endMinutes = this.toMinutes(slot.endTime);
+    const dayOffset = dayIndex * 1440;
+
+    if (endMinutes > startMinutes) {
+      return [{ start: dayOffset + startMinutes, end: dayOffset + endMinutes }];
+    }
+
+    const nextDayOffset = ((dayIndex + 1) % this.weekdays.length) * 1440;
+    return [
+      { start: dayOffset + startMinutes, end: dayOffset + 1440 },
+      { start: nextDayOffset, end: nextDayOffset + endMinutes }
+    ];
+  }
+
+  private findOverlapMessage(slots: RestaurantServiceHour[]): string | null {
+    const intervals = slots.flatMap(slot => this.toWeekIntervals(slot).map(interval => ({ slot, interval })))
+      .sort((left, right) => left.interval.start - right.interval.start);
+
+    for (let index = 1; index < intervals.length; index++) {
+      const previous = intervals[index - 1];
+      const current = intervals[index];
+      if (current.interval.start < previous.interval.end) {
+        return `Le fasce ${this.formatSlotLabel(previous.slot)} e ${this.formatSlotLabel(current.slot)} si sovrappongono.`;
+      }
+    }
+    return null;
+  }
+
+  private formatSlotLabel(slot: RestaurantServiceHour): string {
+    const overnightSuffix = this.toMinutes(slot.endTime) <= this.toMinutes(slot.startTime)
+      ? ' (+1 giorno)'
+      : '';
+    return `${this.dayLabel(slot.dayOfWeek)} ${slot.startTime}-${slot.endTime}${overnightSuffix}`;
   }
 
   private createSlot(slot?: Partial<RestaurantServiceHour>) {

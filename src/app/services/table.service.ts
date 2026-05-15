@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { RestaurantTable, RestaurantTablePayload } from '../models/table.model';
+import { BulkRestaurantTablePayload, RestaurantTable, RestaurantTablePayload } from '../models/table.model';
 
 @Injectable({ providedIn: 'root' })
 export class TableService {
@@ -14,6 +14,10 @@ export class TableService {
 
   createTable(payload: RestaurantTablePayload): Observable<RestaurantTable> {
     return this.http.post<RestaurantTable>(`${environment.apiUrl}/tables`, payload);
+  }
+
+  bulkCreateTables(payload: BulkRestaurantTablePayload): Observable<RestaurantTable[]> {
+    return this.http.post<RestaurantTable[]>(`${environment.apiUrl}/tables/bulk`, payload);
   }
 
   updateTable(tableId: number, payload: RestaurantTablePayload): Observable<RestaurantTable> {

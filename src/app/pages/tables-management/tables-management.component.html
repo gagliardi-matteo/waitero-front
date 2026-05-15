@@ -39,6 +39,38 @@
     </form>
   </div>
 
+  <div class="quick-form-card">
+    <h3>Generazione massiva tavoli</h3>
+    <form [formGroup]="bulkForm" (ngSubmit)="submitBulkCreate()" novalidate>
+      <div class="quick-form-row bulk-form-row">
+        <label class="small-field">
+          <span>Numero tavoli</span>
+          <input type="number" min="1" max="200" formControlName="count" />
+        </label>
+        <label class="small-field">
+          <span>Coperti default</span>
+          <input type="number" min="1" formControlName="coperti" />
+        </label>
+        <label class="small-field">
+          <span>Numero iniziale</span>
+          <input type="number" min="1" formControlName="startingNumber" placeholder="Automatico" />
+        </label>
+        <label>
+          <span>Prefisso nome</span>
+          <input type="text" formControlName="namePrefix" placeholder="Es. T" />
+        </label>
+        <div class="actions-field">
+          <button type="submit" class="primary-btn" [disabled]="saving">Genera tavoli</button>
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" formControlName="attivo" />
+        <span>Genera tavoli attivi</span>
+      </label>
+      <p class="helper-copy">Se non imposti il numero iniziale, WaiterO continua automaticamente dal numero tavolo piu alto gia presente. Ogni tavolo viene creato con QR dedicato.</p>
+    </form>
+  </div>
+
   <app-brand-loader
     *ngIf="loading"
     label="Caricamento tavoli"
