@@ -107,6 +107,35 @@ export class OrderService {
     return this.draftLines.get(this.buildLineKey(dishId, portionKey))?.quantity ?? 0;
   }
 
+  applyDraftDelta(dishId: number, delta: number, portionKey?: string | null): boolean {
+    if (!Number.isFinite(delta) || delta === 0) {
+      return false;
+    }
+
+    const lineKey = this.buildLineKey(dishId, portionKey);
+    const existing = this.draftLines.get(lineKey);
+    const currentQuantity = existing?.quantity ?? 0;
+    const nextQuantity = Math.max(0, currentQuantity + delta);
+
+    if (nextQuantity === currentQuantity) {
+      return false;
+    }
+
+    if (nextQuantity <= 0) {
+      this.draftLines.delete(lineKey);
+      this.draftAttribution.delete(lineKey);
+      return true;
+    }
+
+    this.draftLines.set(lineKey, {
+      lineKey,
+      dishId,
+      quantity: nextQuantity,
+      portionKey: portionKey ?? null
+    });
+    return true;
+  }
+
   totalQuantitaPerDish(dishId: number): number {
     let total = 0;
     for (const line of this.draftLines.values()) {

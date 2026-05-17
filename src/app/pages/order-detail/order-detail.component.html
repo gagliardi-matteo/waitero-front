@@ -96,6 +96,26 @@
         </button>
 
         <div class="split-box" *ngIf="!isPaid">
+          <div class="people-split-box">
+            <label for="splitPeopleCount">Split rapido per X persone</label>
+            <div class="people-split-controls">
+              <input id="splitPeopleCount" type="number" min="2" step="1" [(ngModel)]="splitPeopleCount" />
+              <button
+                class="secondary-button compact-button"
+                [disabled]="isPaying || !splitPeopleCount || splitPeopleCount < 2 || currentOrder.remainingAmount <= 0"
+                (click)="applySplitByPeopleAmount()"
+              >
+                Usa quota
+              </button>
+            </div>
+            <div class="people-split-hint" *ngIf="splitPeopleCount && splitPeopleCount >= 2 && currentOrder.remainingAmount > 0">
+              <span>Quota da registrare ora: <strong>{{ splitByPeopleAmount | number: '1.2-2' }} &euro;</strong></span>
+              <span *ngIf="splitByPeopleAmount !== splitByPeopleRemainderAmount">
+                Le altre quote saranno da {{ splitByPeopleRemainderAmount | number: '1.2-2' }} &euro; per l'arrotondamento.
+              </span>
+            </div>
+          </div>
+
           <label for="partialAmount">Quota libera da inserire su POS</label>
           <input id="partialAmount" type="number" min="0.01" step="0.01" [(ngModel)]="partialAmount" />
           <div class="split-actions">
@@ -112,13 +132,33 @@
               <div class="name">{{ item.nome }}</div>
               <div class="meta">Residui {{ item.remainingQuantity }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;</div>
             </div>
-            <input
-              type="number"
-              min="0"
-              [max]="item.remainingQuantity"
-              [ngModel]="getSelectedQuantity(item)"
-              (ngModelChange)="setSelectedQuantity(item, $event)"
-            />
+            <div class="quantity-stepper">
+              <button
+                type="button"
+                class="stepper-button"
+                [disabled]="isPaying || getSelectedQuantity(item) <= 0"
+                (click)="decrementSelectedQuantity(item)"
+                aria-label="Riduci quantità selezionata"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="0"
+                [max]="item.remainingQuantity"
+                [ngModel]="getSelectedQuantity(item)"
+                (ngModelChange)="setSelectedQuantity(item, $event)"
+              />
+              <button
+                type="button"
+                class="stepper-button"
+                [disabled]="isPaying || getSelectedQuantity(item) >= item.remainingQuantity"
+                (click)="incrementSelectedQuantity(item)"
+                aria-label="Aumenta quantità selezionata"
+              >
+                +
+              </button>
+            </div>
           </div>
           <div class="summary-row split-total">
             <span>Totale da inserire su POS</span>

@@ -69,6 +69,24 @@ $peekHeight: 4.5rem;
 
   &.expanded .order-content { display: flex; }
 
+  .submit-confirmation {
+    padding: .85rem .95rem;
+    border: 1px solid rgba(38, 141, 92, 0.22);
+    border-radius: 16px;
+    background: #edf9f2;
+    color: #1f6b47;
+    font-size: .92rem;
+    font-weight: 600;
+    line-height: 1.4;
+    flex-shrink: 0;
+
+    &.info {
+      border-color: rgba(36, 99, 235, 0.2);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+  }
+
   .order-details {
     flex: 1;
     min-height: 0;
@@ -178,6 +196,17 @@ $peekHeight: 4.5rem;
     box-shadow: 0 14px 28px rgba(216,122,44,.24);
 
     &:disabled { opacity: .55; box-shadow: none; }
+  }
+
+  .call-waiter-btn {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: .95rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text);
+    font-weight: 700;
+
+    &:disabled { opacity: .55; }
   }
 }
 

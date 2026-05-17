@@ -36,6 +36,7 @@
       class="table-tile"
       *ngFor="let card of filteredCards; trackBy: trackByTable"
       [class.is-clickable]="isCardInteractive(card)"
+      [class.has-waiter-call]="card.hasWaiterCall"
       [attr.role]="isCardInteractive(card) ? 'button' : null"
       [attr.tabindex]="isCardInteractive(card) ? 0 : null"
       (click)="openCard(card)"
@@ -44,7 +45,10 @@
     >
       <div class="tile-top">
         <span class="tile-id">T{{ card.table.numero }}</span>
-        <span class="status-pill" [ngClass]="statusClass(card)">{{ statusLabel(card) }}</span>
+        <div class="tile-top-right">
+          <span class="waiter-call-badge" *ngIf="card.hasWaiterCall">Chiama cameriere</span>
+          <span class="status-pill" [ngClass]="statusClass(card)">{{ statusLabel(card) }}</span>
+        </div>
       </div>
 
       <p class="tile-seats">{{ card.table.coperti }} coperti</p>

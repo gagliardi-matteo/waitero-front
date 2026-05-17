@@ -27,6 +27,10 @@
   border: 1px solid var(--border); border-radius: 20px; background: rgba(255,255,255,.92); box-shadow: var(--shadow-sm);
 }
 .table-tile { padding: 1rem; }
+.table-tile.has-waiter-call {
+  border-color: rgba(215, 38, 61, 0.35);
+  box-shadow: 0 0 0 2px rgba(215, 38, 61, 0.1), var(--shadow-sm);
+}
 .table-tile.is-clickable {
   cursor: pointer;
   transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
@@ -40,8 +44,21 @@
   outline: 2px solid rgba(216,122,44,.45);
   outline-offset: 2px;
 }
-.tile-top { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.8rem; }
+.tile-top { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; margin-bottom:.8rem; }
+.tile-top-right { display:flex; flex-direction:column; align-items:flex-end; gap:.45rem; }
 .tile-id { font-size: 1.1rem; font-weight: 700; }
+.waiter-call-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .34rem .58rem;
+  border-radius: 999px;
+  background: rgba(215, 38, 61, 0.12);
+  color: #b42318;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
 .tile-seats, .tile-body, .tile-time { color: var(--text-muted); }
 .tile-seats { font-size:.85rem; }
 .tile-body { margin-top:.7rem; font-size:.92rem; }

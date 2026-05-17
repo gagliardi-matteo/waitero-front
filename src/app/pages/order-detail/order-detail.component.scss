@@ -244,6 +244,36 @@
   border-top: 1px solid var(--border);
 }
 
+.people-split-box {
+  margin-bottom: 1rem;
+}
+
+.people-split-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.compact-button {
+  width: auto;
+  min-width: 132px;
+  padding-inline: 1rem;
+}
+
+.people-split-hint {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+
+  strong {
+    color: var(--accent-strong);
+  }
+}
+
 .item-split-box h3,
 .payment-history h3 {
   margin: 0 0 0.8rem;
@@ -252,10 +282,32 @@
 
 .item-split-row {
   display: grid;
-  grid-template-columns: 1fr 76px;
+  grid-template-columns: 1fr auto;
   gap: 0.75rem;
   align-items: center;
   padding: 0.62rem 0;
+}
+
+.quantity-stepper {
+  display: inline-grid;
+  grid-template-columns: 42px 72px 42px;
+  align-items: stretch;
+  gap: 0.35rem;
+
+  input {
+    text-align: center;
+  }
+}
+
+.stepper-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .history-row {

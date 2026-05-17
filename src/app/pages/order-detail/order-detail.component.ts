@@ -18,6 +18,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   isLoading = true;
   isPaying = false;
   partialAmount: number | null = null;
+  splitPeopleCount: number | null = null;
   participantName = '';
   selectedQuantities: Record<number, number> = {};
 
@@ -85,6 +86,28 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     return this.order.items.some(item => this.getSelectedQuantity(item) > 0);
   }
 
+  get splitByPeopleAmount(): number {
+    if (!this.order || !this.splitPeopleCount || this.splitPeopleCount <= 0) {
+      return 0;
+    }
+
+    const totalCents = Math.round(this.order.remainingAmount * 100);
+    const people = Math.max(1, Math.floor(this.splitPeopleCount));
+    const shareCents = Math.ceil(totalCents / people);
+    return shareCents / 100;
+  }
+
+  get splitByPeopleRemainderAmount(): number {
+    if (!this.order || !this.splitPeopleCount || this.splitPeopleCount <= 0) {
+      return 0;
+    }
+
+    const totalCents = Math.round(this.order.remainingAmount * 100);
+    const people = Math.max(1, Math.floor(this.splitPeopleCount));
+    const baseCents = Math.floor(totalCents / people);
+    return baseCents / 100;
+  }
+
   payFull(): void {
     if (!this.order) return;
     this.pay('FULL', { amount: Number(this.order.remainingAmount), participantName: this.normalizedParticipantName });
@@ -95,6 +118,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.pay(mode, { amount: this.partialAmount, participantName: this.normalizedParticipantName });
+  }
+
+  applySplitByPeopleAmount(): void {
+    const amount = this.splitByPeopleAmount;
+    this.partialAmount = amount > 0 ? amount : null;
   }
 
   paySplitByItems(): void {
@@ -146,6 +174,22 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
     const normalized = Math.min(Math.floor(parsed), item.remainingQuantity);
     this.selectedQuantities[item.id] = normalized;
+  }
+
+  incrementSelectedQuantity(item: CustomerOrderItem): void {
+    const current = this.getSelectedQuantity(item);
+    if (current >= item.remainingQuantity) {
+      return;
+    }
+    this.selectedQuantities[item.id] = current + 1;
+  }
+
+  decrementSelectedQuantity(item: CustomerOrderItem): void {
+    const current = this.getSelectedQuantity(item);
+    if (current <= 0) {
+      return;
+    }
+    this.selectedQuantities[item.id] = current - 1;
   }
 
   goBack() {

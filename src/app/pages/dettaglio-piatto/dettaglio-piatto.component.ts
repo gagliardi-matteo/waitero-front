@@ -110,10 +110,9 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId || !this.piatto) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, 1, this.selectedPortionKey ?? undefined)
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, this.piatto.id, 1, this.selectedPortionKey ?? undefined)
       .subscribe({
-        next: draft => {
-          this.orderService.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('add_to_cart', {
             dishId: this.piatto.id,
             metadata: {
@@ -133,10 +132,9 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId || !this.piatto) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, this.piatto.id, -1, this.selectedPortionKey ?? undefined)
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, this.piatto.id, -1, this.selectedPortionKey ?? undefined)
       .subscribe({
-        next: draft => {
-          this.orderService.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('remove_from_cart', {
             dishId: this.piatto.id,
             metadata: {
@@ -161,11 +159,10 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, suggestion.id, 1)
+    this.orderService.markDraftAttribution(suggestion.id, null, 'dish_detail_upsell', this.piatto?.id);
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, suggestion.id, 1)
       .subscribe({
-        next: draft => {
-          this.orderService.setDraft(draft.items);
-          this.orderService.markDraftAttribution(suggestion.id, null, 'dish_detail_upsell', this.piatto?.id);
+        next: () => {
           this.trackingService.trackEvent('add_to_cart', {
             dishId: suggestion.id,
             metadata: {

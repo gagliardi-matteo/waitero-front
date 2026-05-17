@@ -19,8 +19,11 @@ import { Router } from '@angular/router';
 export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   isExpanded = false;
   isSubmitting = false;
+  isCallingWaiter = false;
   noteCucina = '';
   cartUpsellSuggestions: Piatto[] = [];
+  submitConfirmationMessage = '';
+  waiterCallConfirmationMessage = '';
 
   private orderState = inject(OrderService);
   private auth = inject(AuthContextService);
@@ -30,6 +33,8 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   private lastCartSignature = '';
   private lastUpsellRequestSignature = '';
   private upsellRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private submitConfirmationTimer: ReturnType<typeof setTimeout> | null = null;
+  private waiterCallConfirmationTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
     this.refreshCartUpsellSuggestions();
@@ -47,6 +52,14 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     if (this.upsellRefreshTimer) {
       clearTimeout(this.upsellRefreshTimer);
       this.upsellRefreshTimer = null;
+    }
+    if (this.submitConfirmationTimer) {
+      clearTimeout(this.submitConfirmationTimer);
+      this.submitConfirmationTimer = null;
+    }
+    if (this.waiterCallConfirmationTimer) {
+      clearTimeout(this.waiterCallConfirmationTimer);
+      this.waiterCallConfirmationTimer = null;
     }
   }
 
@@ -100,6 +113,30 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     this.isExpanded = !this.isExpanded;
   }
 
+  callWaiter(event: Event): void {
+    event.stopPropagation();
+
+    const token = this.auth.tokenValue;
+    const restaurantId = this.auth.restaurantIdValue;
+    const tableId = this.auth.tableIdValue;
+    if (!token || !restaurantId || !tableId || this.isCallingWaiter) {
+      return;
+    }
+
+    this.isCallingWaiter = true;
+    this.waiterCallConfirmationMessage = '';
+    this.customerOrderService.callWaiter({ token, restaurantId, tableId }).subscribe({
+      next: () => {
+        this.isCallingWaiter = false;
+        this.showWaiterCallConfirmation();
+      },
+      error: err => {
+        console.error('Errore chiamata cameriere', err);
+        this.isCallingWaiter = false;
+      }
+    });
+  }
+
   confermaOrdine(event: Event) {
     event.stopPropagation();
 
@@ -117,6 +154,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     }
 
     this.isSubmitting = true;
+    this.submitConfirmationMessage = '';
     this.customerOrderService.submitOrder({
       token,
       restaurantId,
@@ -130,6 +168,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
         this.orderState.clearDraft();
         this.noteCucina = '';
         this.isSubmitting = false;
+        this.showSubmitConfirmation();
       },
       error: err => {
         console.error('Errore conferma ordine', err);
@@ -144,10 +183,9 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, item.dishId, 1, item.portionKey ?? undefined)
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, item.dishId, 1, item.portionKey ?? undefined)
       .subscribe({
-        next: draft => {
-          this.orderState.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('add_to_cart', {
             dishId: item.dishId,
             metadata: {
@@ -167,10 +205,9 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, item.dishId, -1, item.portionKey ?? undefined)
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, item.dishId, -1, item.portionKey ?? undefined)
       .subscribe({
-        next: draft => {
-          this.orderState.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('remove_from_cart', {
             dishId: item.dishId,
             metadata: {
@@ -196,12 +233,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     const tableId = this.auth.tableIdValue;
     if (!token || !restaurantId || !tableId) return;
 
-    this.customerOrderService.mutateDraft(token, restaurantId, tableId, piatto.id, 1)
+    this.orderState.markDraftAttribution(piatto.id, null, 'cart_upsell');
+    this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, piatto.id, 1)
       .subscribe({
-        next: draft => {
-          this.orderState.setDraft(draft.items);
-          this.orderState.markDraftAttribution(piatto.id, null, 'cart_upsell');
-        },
+        next: () => {},
         error: err => console.error('Errore aggiornamento bozza', err)
       });
   }
@@ -291,5 +326,27 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       .sort()
       .join('|');
     return `${confirmedSignature}#${draftSignature}`;
+  }
+
+  private showSubmitConfirmation(): void {
+    this.submitConfirmationMessage = 'Ordine inviato con successo alla cucina.';
+    if (this.submitConfirmationTimer) {
+      clearTimeout(this.submitConfirmationTimer);
+    }
+    this.submitConfirmationTimer = setTimeout(() => {
+      this.submitConfirmationMessage = '';
+      this.submitConfirmationTimer = null;
+    }, 5000);
+  }
+
+  private showWaiterCallConfirmation(): void {
+    this.waiterCallConfirmationMessage = 'Cameriere avvisato.';
+    if (this.waiterCallConfirmationTimer) {
+      clearTimeout(this.waiterCallConfirmationTimer);
+    }
+    this.waiterCallConfirmationTimer = setTimeout(() => {
+      this.waiterCallConfirmationMessage = '';
+      this.waiterCallConfirmationTimer = null;
+    }, 5000);
   }
 }

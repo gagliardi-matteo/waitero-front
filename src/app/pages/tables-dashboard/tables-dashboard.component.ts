@@ -6,6 +6,7 @@ import { CustomerOrder } from '../../models/customer-order.model';
 import { RestaurantTable } from '../../models/table.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { TableService } from '../../services/table.service';
+import { WaiterCallNotificationService } from '../../services/waiter-call-notification.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 
 interface TableDashboardCard {
@@ -15,6 +16,7 @@ interface TableDashboardCard {
   total: number;
   itemCount: number;
   updatedAt: string;
+  hasWaiterCall: boolean;
 }
 
 type TableDashboardFilter = 'ALL' | 'OPEN' | 'PARTIAL' | 'FREE' | 'INACTIVE';
@@ -42,6 +44,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
 
   private ordersService = inject(RestaurantOrderService);
   private tableService = inject(TableService);
+  private waiterCallNotificationService = inject(WaiterCallNotificationService);
   private router = inject(Router);
   private eventSource: EventSource | null = null;
 
@@ -112,6 +115,8 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.waiterCallNotificationService.clearWaiterCall(card.table.restaurantId, card.table.numero);
+
     if (card.activeOrder) {
       void this.router.navigate(['/orders', card.activeOrder.id]);
       return;
@@ -171,14 +176,17 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return [...tables]
       .sort((a, b) => a.numero - b.numero)
       .map(table => {
-        const activeOrder = activeOrderByTableId.get(table.id) ?? null;
+        const activeOrder = activeOrderByTableId.get(table.numero)
+          ?? activeOrderByTableId.get(table.id)
+          ?? null;
         return {
           table,
           activeOrder,
           state: this.resolveState(table, activeOrder),
           total: activeOrder?.totale ?? 0,
           itemCount: activeOrder?.items.reduce((sum, item) => sum + item.quantita, 0) ?? 0,
-          updatedAt: activeOrder?.updatedAt ?? table.updatedAt
+          updatedAt: activeOrder?.updatedAt ?? table.updatedAt,
+          hasWaiterCall: this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.numero)
         } satisfies TableDashboardCard;
       });
   }

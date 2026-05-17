@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const channel = process.env.WAITERO_MOBILE_CHANNEL === 'dev' ? 'dev' : 'prod';
 const appId = channel === 'dev' ? 'com.waitero.app.dev' : 'com.waitero.app';
-const appName = channel === 'dev' ? 'waitero - dev' : 'waitero Kitchen';
+const appName = channel === 'dev' ? 'waitero - dev' : 'Waitero Kitchen';
 
 const androidBuildGradlePath = resolve('android/app/build.gradle');
 const androidStringsPath = resolve('android/app/src/main/res/values/strings.xml');

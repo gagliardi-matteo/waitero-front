@@ -8,7 +8,10 @@ const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim() || '';
 const fileContent = `export const environment = {
   production: true,
   apiUrl: '${escapeForTs(apiUrl)}',
-  googleMapsApiKey: '${escapeForTs(googleMapsApiKey)}'
+  googleMapsApiKey: '${escapeForTs(googleMapsApiKey)}',
+  privacy: {
+    customerBrowserFingerprintEnabled: false
+  }
 };
 `;
 

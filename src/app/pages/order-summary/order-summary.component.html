@@ -6,6 +6,14 @@
   </div>
 
   <div class="order-content">
+    <div class="submit-confirmation" *ngIf="submitConfirmationMessage">
+      {{ submitConfirmationMessage }}
+    </div>
+
+    <div class="submit-confirmation info" *ngIf="waiterCallConfirmationMessage">
+      {{ waiterCallConfirmationMessage }}
+    </div>
+
     <div class="order-details">
       <h3>Il tuo ordine</h3>
 
@@ -73,6 +81,10 @@
 
     <button class="confirm-btn" [disabled]="draftItems.length === 0 || isSubmitting" (click)="confermaOrdine($event)">
       {{ isSubmitting ? 'Invio...' : 'Conferma Ordine' }}
+    </button>
+
+    <button class="call-waiter-btn" [disabled]="isCallingWaiter" (click)="callWaiter($event)">
+      {{ isCallingWaiter ? 'Avviso in corso...' : 'Chiama cameriere' }}
     </button>
   </div>
 </div>

@@ -428,10 +428,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   addToOrder(piatto: Piatto, portionKey?: string) {
-    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, 1, portionKey)
+    this.customerOrderService.mutateDraftOptimistically(this.token, this.restaurantId, this.tableId, piatto.id, 1, portionKey)
       .subscribe({
-        next: draft => {
-          this.orderService.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('add_to_cart', {
             dishId: piatto.id,
             metadata: {
@@ -446,10 +445,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   removeFromOrder(piatto: Piatto, portionKey?: string) {
-    this.customerOrderService.mutateDraft(this.token, this.restaurantId, this.tableId, piatto.id, -1, portionKey)
+    this.customerOrderService.mutateDraftOptimistically(this.token, this.restaurantId, this.tableId, piatto.id, -1, portionKey)
       .subscribe({
-        next: draft => {
-          this.orderService.setDraft(draft.items);
+        next: () => {
           this.trackingService.trackEvent('remove_from_cart', {
             dishId: piatto.id,
             metadata: {

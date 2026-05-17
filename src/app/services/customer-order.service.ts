@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, Observable, of, throwError } from 'rxjs';
+import { catchError, Observable, of, ReplaySubject, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { CustomerDraft, CustomerOrder } from '../models/customer-order.model';
 import { AuthContextService } from './auth-context.service';
 import { Piatto } from '../models/piatto.model';
+import { OrderService } from './order.service';
 
 interface SubmitOrderPayload {
   token: string;
@@ -22,6 +23,12 @@ interface SubmitOrderPayload {
   }>;
 }
 
+interface CallWaiterPayload {
+  token: string;
+  restaurantId: string;
+  tableId: string;
+}
+
 export interface CustomerOrderState {
   currentOrder: CustomerOrder | null;
   draft: CustomerDraft;
@@ -32,6 +39,11 @@ export class CustomerOrderService {
   private http = inject(HttpClient);
   private auth = inject(AuthContextService);
   private router = inject(Router);
+  private orderState = inject(OrderService);
+  private draftMutationQueue: Promise<void> = Promise.resolve();
+  private pendingOptimisticMutations: Array<{ id: number; dishId: number; delta: number; portionKey?: string | null }> = [];
+  private optimisticMutationSequence = 0;
+  private optimisticContextKey: string | null = null;
 
   getCurrentOrder(token: string, restaurantId: string, tableId: string): Observable<CustomerOrder> {
     const params = this.withAccessMetadata(new HttpParams()
@@ -74,6 +86,49 @@ export class CustomerOrderService {
       deviceId: this.auth.deviceIdValue,
       fingerprint: this.auth.fingerprintValue
     }).pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
+  }
+
+  mutateDraftOptimistically(token: string, restaurantId: string, tableId: string, dishId: number, delta: number, portionKey?: string): Observable<CustomerDraft> {
+    const contextKey = `${restaurantId}:${tableId}`;
+    if (this.optimisticContextKey !== contextKey) {
+      this.optimisticContextKey = contextKey;
+      this.pendingOptimisticMutations = [];
+    }
+
+    const applied = this.orderState.applyDraftDelta(dishId, delta, portionKey ?? null);
+    if (!applied) {
+      return of({
+        restaurantId: Number(restaurantId),
+        tableId: Number(tableId),
+        items: []
+      });
+    }
+
+    const mutation = {
+      id: ++this.optimisticMutationSequence,
+      dishId,
+      delta,
+      portionKey: portionKey ?? null
+    };
+    this.pendingOptimisticMutations.push(mutation);
+
+    const result$ = new ReplaySubject<CustomerDraft>(1);
+    const runMutation = async () => {
+      try {
+        const draft = await this.performDraftMutationRequest(token, restaurantId, tableId, dishId, delta, portionKey);
+        this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
+        this.reconcileDraftWithPendingMutations(draft);
+        result$.next(draft);
+        result$.complete();
+      } catch (err) {
+        this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
+        this.orderState.applyDraftDelta(dishId, -delta, portionKey ?? null);
+        result$.error(err);
+      }
+    };
+
+    this.draftMutationQueue = this.draftMutationQueue.then(runMutation, runMutation);
+    return result$.asObservable();
   }
 
   getUpsellSuggestions(dishId: number, restaurantId: string, sessionId?: string): Observable<Piatto[]> {
@@ -121,6 +176,37 @@ export class CustomerOrderService {
 
   submitOrder(payload: SubmitOrderPayload): Observable<CustomerOrder> {
     return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/orders`, {
+      ...payload,
+      deviceId: this.auth.deviceIdValue,
+      fingerprint: this.auth.fingerprintValue
+    }).pipe(catchError(err => this.handleTableAccessError(err, payload.token, payload.restaurantId, payload.tableId)));
+  }
+
+  private async performDraftMutationRequest(
+    token: string,
+    restaurantId: string,
+    tableId: string,
+    dishId: number,
+    delta: number,
+    portionKey?: string
+  ): Promise<CustomerDraft> {
+    return new Promise<CustomerDraft>((resolve, reject) => {
+      this.mutateDraft(token, restaurantId, tableId, dishId, delta, portionKey).subscribe({
+        next: draft => resolve(draft),
+        error: err => reject(err)
+      });
+    });
+  }
+
+  private reconcileDraftWithPendingMutations(serverDraft: CustomerDraft): void {
+    this.orderState.setDraft(serverDraft.items);
+    for (const mutation of this.pendingOptimisticMutations) {
+      this.orderState.applyDraftDelta(mutation.dishId, mutation.delta, mutation.portionKey ?? null);
+    }
+  }
+
+  callWaiter(payload: CallWaiterPayload): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/customer/orders/call-waiter`, {
       ...payload,
       deviceId: this.auth.deviceIdValue,
       fingerprint: this.auth.fingerprintValue
