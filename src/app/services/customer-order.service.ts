@@ -117,7 +117,7 @@ export class CustomerOrderService {
       try {
         const draft = await this.performDraftMutationRequest(token, restaurantId, tableId, dishId, delta, portionKey);
         this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
-        this.reconcileDraftWithPendingMutations(draft);
+        this.applyServerDraftIfSettled(draft);
         result$.next(draft);
         result$.complete();
       } catch (err) {
@@ -198,11 +198,12 @@ export class CustomerOrderService {
     });
   }
 
-  private reconcileDraftWithPendingMutations(serverDraft: CustomerDraft): void {
-    this.orderState.setDraft(serverDraft.items);
-    for (const mutation of this.pendingOptimisticMutations) {
-      this.orderState.applyDraftDelta(mutation.dishId, mutation.delta, mutation.portionKey ?? null);
+  private applyServerDraftIfSettled(serverDraft: CustomerDraft): void {
+    if (this.pendingOptimisticMutations.length > 0) {
+      return;
     }
+
+    this.orderState.setDraft(serverDraft.items);
   }
 
   callWaiter(payload: CallWaiterPayload): Observable<{ message: string }> {

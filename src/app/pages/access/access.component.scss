@@ -46,6 +46,42 @@ p {
   font-weight: 600;
 }
 
+.location-banner {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 122, 44, 0.24);
+  border-radius: 20px;
+  background: rgba(216, 122, 44, 0.09);
+  text-align: left;
+
+  h2 {
+    margin-bottom: 0.55rem;
+    color: var(--text);
+  }
+
+  p {
+    margin-bottom: 0.9rem;
+    color: var(--text);
+  }
+}
+
+.retry-btn {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  background: #d87a2c;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: 0 16px 30px rgba(216, 122, 44, 0.18);
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
 .gps-debug {
   margin-top: 1.4rem;
   padding: 1rem;

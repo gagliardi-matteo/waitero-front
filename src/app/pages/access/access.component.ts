@@ -19,6 +19,7 @@ export class AccessComponent implements OnInit {
   errorMessage = '';
   accessStatus = 'Rilevazione posizione in corso...';
   gpsSnapshot: GpsSnapshot | null = null;
+  locationPermissionDenied = false;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -29,6 +30,17 @@ export class AccessComponent implements OnInit {
   private tableAccessService = inject(TableAccessService);
 
   async ngOnInit(): Promise<void> {
+    await this.runAccessFlow();
+  }
+
+  async retryWithLocation(): Promise<void> {
+    this.locationPermissionDenied = false;
+    this.errorMessage = '';
+    this.accessStatus = 'Nuovo tentativo di rilevazione posizione in corso...';
+    await this.runAccessFlow();
+  }
+
+  private async runAccessFlow(): Promise<void> {
     const token = this.route.snapshot.paramMap.get('token');
     const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId');
     const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
@@ -49,6 +61,13 @@ export class AccessComponent implements OnInit {
     ]);
 
     this.gpsSnapshot = gps;
+    this.locationPermissionDenied = gps.denied === true;
+
+    if (this.locationPermissionDenied) {
+      this.accessStatus = 'Per entrare nel tavolo serve autorizzare la posizione.';
+      return;
+    }
+
     this.accessStatus = 'Verifica accesso tavolo in corso...';
 
     this.tableAccessService.validateAccess({

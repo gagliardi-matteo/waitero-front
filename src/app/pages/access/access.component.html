@@ -4,6 +4,17 @@
     <p class="status">{{ accessStatus }}</p>
     <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
+    <div class="location-banner" *ngIf="locationPermissionDenied">
+      <h2>Posizione necessaria per l'accesso</h2>
+      <p>
+        La posizione non viene salvata e non viene usata per marketing o profilazione.
+        Serve solo per controlli di sicurezza sull'accesso al tavolo tramite QR.
+      </p>
+      <button type="button" class="retry-btn" (click)="retryWithLocation()">
+        Riprova con la posizione
+      </button>
+    </div>
+
     <div class="gps-debug" *ngIf="gpsSnapshot as gps">
       <h2>Coordinate lette</h2>
       <p><strong>Latitudine:</strong> {{ formatCoordinate(gps.latitude) }}</p>

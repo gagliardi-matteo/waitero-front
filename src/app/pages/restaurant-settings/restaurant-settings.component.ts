@@ -564,12 +564,14 @@ export class RestaurantSettingsComponent {
     const invalidSlot = serviceHours.find(slot => slot.startTime === slot.endTime);
     if (invalidSlot) {
       this.errorMessage = `La fascia ${this.dayLabel(invalidSlot.dayOfWeek)} ${invalidSlot.startTime}-${invalidSlot.endTime} non e valida.`;
+      this.saving = false;
       return;
     }
 
     const overlapMessage = this.findOverlapMessage(serviceHours);
     if (overlapMessage) {
       this.errorMessage = overlapMessage;
+      this.saving = false;
       return;
     }
 
