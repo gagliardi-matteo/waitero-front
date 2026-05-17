@@ -20,6 +20,9 @@ export class AccessComponent implements OnInit {
   accessStatus = 'Rilevazione posizione in corso...';
   gpsSnapshot: GpsSnapshot | null = null;
   locationPermissionDenied = false;
+  locationRetryMessage = '';
+  locationBlockedPermanently = false;
+  retryingLocation = false;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -34,10 +37,14 @@ export class AccessComponent implements OnInit {
   }
 
   async retryWithLocation(): Promise<void> {
+    this.retryingLocation = true;
     this.locationPermissionDenied = false;
+    this.locationBlockedPermanently = false;
+    this.locationRetryMessage = '';
     this.errorMessage = '';
     this.accessStatus = 'Nuovo tentativo di rilevazione posizione in corso...';
     await this.runAccessFlow();
+    this.retryingLocation = false;
   }
 
   private async runAccessFlow(): Promise<void> {
@@ -64,6 +71,10 @@ export class AccessComponent implements OnInit {
     this.locationPermissionDenied = gps.denied === true;
 
     if (this.locationPermissionDenied) {
+      this.locationBlockedPermanently = gps.permissionState === 'denied';
+      this.locationRetryMessage = this.locationBlockedPermanently
+        ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
+        : 'Serve autorizzare la posizione per continuare.';
       this.accessStatus = 'Per entrare nel tavolo serve autorizzare la posizione.';
       return;
     }

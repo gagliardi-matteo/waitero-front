@@ -105,15 +105,15 @@ export class MenuComponent implements OnInit, OnDestroy {
       tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId),
       menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
     }).subscribe({
-      next: ({ restaurant, tableState, menu }) => {
-        this.errorMessage = '';
-        this.ristoranteObj = restaurant;
-        this.orderService.setConfirmedOrder(tableState.currentOrder);
-        this.orderService.setDraft(tableState.draft.items);
-        this.applyMenuData(menu);
-        this.loading = false;
-        this.syncActiveVisibleCategory();
-        this.connectTableStream();
+        next: ({ restaurant, tableState, menu }) => {
+          this.errorMessage = '';
+          this.ristoranteObj = restaurant;
+          this.orderService.setConfirmedOrder(tableState.currentOrder);
+          this.customerOrderService.applyExternalDraftSnapshot(tableState.draft);
+          this.applyMenuData(menu);
+          this.loading = false;
+          this.syncActiveVisibleCategory();
+          this.connectTableStream();
       },
       error: err => {
         console.error('Errore caricamento stato menu', err);
@@ -209,15 +209,15 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   loadCurrentState() {
-    this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
-      .subscribe({
-        next: state => {
-          this.orderService.setConfirmedOrder(state.currentOrder);
-          this.orderService.setDraft(state.draft.items);
-        },
-        error: err => console.error('Errore caricamento stato tavolo', err)
-      });
-  }
+      this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
+        .subscribe({
+          next: state => {
+            this.orderService.setConfirmedOrder(state.currentOrder);
+            this.customerOrderService.applyExternalDraftSnapshot(state.draft);
+          },
+          error: err => console.error('Errore caricamento stato tavolo', err)
+        });
+    }
 
   connectTableStream() {
     this.eventSource = this.customerOrderService.connectToTableStream(this.token, this.restaurantId, this.tableId);

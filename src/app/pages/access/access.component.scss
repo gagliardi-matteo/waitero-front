@@ -80,6 +80,18 @@ p {
   &:hover {
     transform: translateY(-1px);
   }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: wait;
+    transform: none;
+  }
+}
+
+.location-hint {
+  margin-top: 0.8rem;
+  font-size: 0.94rem;
+  color: var(--text-muted);
 }
 
 .gps-debug {

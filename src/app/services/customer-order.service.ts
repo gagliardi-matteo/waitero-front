@@ -131,6 +131,14 @@ export class CustomerOrderService {
     return result$.asObservable();
   }
 
+  applyExternalDraftSnapshot(serverDraft: CustomerDraft): void {
+    if (this.pendingOptimisticMutations.length > 0) {
+      return;
+    }
+
+    this.orderState.setDraft(serverDraft.items);
+  }
+
   getUpsellSuggestions(dishId: number, restaurantId: string, sessionId?: string): Observable<Piatto[]> {
     let params = new HttpParams().set('restaurantId', restaurantId);
     if (sessionId) {

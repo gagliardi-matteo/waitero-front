@@ -10,9 +10,13 @@
         La posizione non viene salvata e non viene usata per marketing o profilazione.
         Serve solo per controlli di sicurezza sull'accesso al tavolo tramite QR.
       </p>
-      <button type="button" class="retry-btn" (click)="retryWithLocation()">
-        Riprova con la posizione
+      <p class="location-hint" *ngIf="locationRetryMessage">{{ locationRetryMessage }}</p>
+      <button type="button" class="retry-btn" (click)="retryWithLocation()" [disabled]="retryingLocation">
+        {{ retryingLocation ? 'Controllo permessi in corso...' : 'Riprova con la posizione' }}
       </button>
+      <p class="location-hint" *ngIf="locationBlockedPermanently">
+        Se hai scelto "Non consentire mai", il browser non puo riaprire il popup automaticamente.
+      </p>
     </div>
 
     <div class="gps-debug" *ngIf="gpsSnapshot as gps">
