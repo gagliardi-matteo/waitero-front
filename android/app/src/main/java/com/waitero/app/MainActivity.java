@@ -9,6 +9,7 @@ import android.util.Log;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
+import com.waitero.app.printer.WaiteroPrinterPlugin;
 
 import ee.forgr.capacitor.social.login.GoogleProvider;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
@@ -18,6 +19,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(WaiteroPrinterPlugin.class);
         super.onCreate(savedInstanceState);
 
         if (shouldForcePortrait()) {
