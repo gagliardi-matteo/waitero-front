@@ -33,10 +33,12 @@ if (!explicitApiUrl && !detectedIp) {
 }
 
 const apiUrl = explicitApiUrl || `http://${detectedIp}:8080/api`;
+const publicFrontendUrl = process.env.WAITERO_PUBLIC_FRONTEND_URL?.trim() || 'http://localhost:4200';
 
 const content = `export const environment = {
   production: false,
   apiUrl: '${apiUrl}',
+  publicFrontendUrl: '${publicFrontendUrl}',
   googleMapsApiKey: ''
 };
 `;

@@ -1,7 +1,12 @@
 <div class="layout">
   <app-sidebar *ngIf="showSidebar()"></app-sidebar>
 
-  <div class="content" [class.with-sidebar]="showSidebar()" [class.content--customer-menu]="isCustomerMenuRoute()">
+  <div
+    class="content"
+    [class.with-sidebar]="showSidebar()"
+    [class.content--customer-menu]="isCustomerMenuRoute()"
+    [class.content--backoffice]="isBackofficeRoute()"
+  >
     <div class="portrait-guard">
       <div class="portrait-guard__card">
         <strong>Ruota il telefono</strong>

@@ -5,6 +5,7 @@ import QRCode from 'qrcode';
 import { BulkRestaurantTablePayload, RestaurantTable, RestaurantTablePayload } from '../../models/table.model';
 import { TableService } from '../../services/table.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-tables-management',
@@ -547,6 +548,11 @@ export class TablesManagementComponent {
   }
 
   buildAccessUrl(table: RestaurantTable): string {
+    const publicFrontendUrl = (environment as { publicFrontendUrl?: string }).publicFrontendUrl?.replace(/\/+$/, '');
+    if (publicFrontendUrl) {
+      return `${publicFrontendUrl}/menu/${table.tablePublicId}/${table.qrToken}`;
+    }
+
     if (!this.isBrowser()) {
       return `/menu/${table.tablePublicId}/${table.qrToken}`;
     }

@@ -159,6 +159,7 @@
       <div class="menu-card-shell" *ngFor="let item of entry.items; trackBy: trackDish">
         <article
           class="menu-card"
+          [class.has-image]="dishImagesEnabled"
           role="button"
           tabindex="0"
           (click)="openDish(item)"

@@ -85,7 +85,7 @@ export class AppComponent implements OnDestroy {
     }
   }
 
-  private isBackofficeRoute(): boolean {
+  isBackofficeRoute(): boolean {
     const url = this.router.url.toLowerCase();
     return this.backofficeRoutes.some(route => url === route || url.startsWith(route));
   }

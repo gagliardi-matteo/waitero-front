@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:8080/api',
+  publicFrontendUrl: 'http://localhost:4200',
   googleMapsApiKey: '',
   features: {
     dishImagesEnabled: false

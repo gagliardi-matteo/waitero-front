@@ -314,3 +314,349 @@ h1.page-title {
   }
 }
 
+@media (max-width: 640px) {
+  .content--backoffice {
+    --backoffice-mobile-pad: 0.75rem;
+    --backoffice-mobile-gap: 0.7rem;
+    --backoffice-mobile-radius: 12px;
+    font-size: 14px;
+  }
+
+  .content--backoffice input,
+  .content--backoffice select,
+  .content--backoffice textarea {
+    min-height: 40px;
+    padding: 0.62rem 0.72rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+
+  .content--backoffice textarea {
+    min-height: 88px;
+  }
+
+  .content--backoffice .primary-btn,
+  .content--backoffice .ghost-btn,
+  .content--backoffice .secondary-btn,
+  .content--backoffice .danger-btn,
+  .content--backoffice .add-button,
+  .content--backoffice .secondary-button,
+  .content--backoffice .chip,
+  .content--backoffice .filter-chip,
+  .content--backoffice .category-pill,
+  .content--backoffice .text-btn,
+  .content--backoffice button.reset-inline {
+    min-height: 38px;
+    padding: 0.55rem 0.72rem;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    line-height: 1.15;
+    box-shadow: none;
+  }
+
+  .content--backoffice h1,
+  .content--backoffice h2,
+  .content--backoffice h3 {
+    letter-spacing: 0;
+    text-wrap: auto;
+  }
+
+  .content--backoffice h1,
+  .content--backoffice .page-header h1,
+  .content--backoffice h1.page-title {
+    font-size: 1.32rem;
+    line-height: 1.12;
+  }
+
+  .content--backoffice h2 {
+    font-size: 1.05rem;
+    line-height: 1.18;
+  }
+
+  .content--backoffice h3 {
+    font-size: 0.96rem;
+    line-height: 1.2;
+  }
+
+  .content--backoffice p,
+  .content--backoffice small,
+  .content--backoffice span {
+    line-height: 1.35;
+  }
+
+  .content--backoffice app-orders-active .content,
+  .content--backoffice app-orders-history .content,
+  .content--backoffice app-tables-dashboard .content,
+  .content--backoffice app-menu-management .content,
+  .content--backoffice app-tables-management .content,
+  .content--backoffice app-restaurant-settings .settings-page,
+  .content--backoffice app-add-dish .form-page,
+  .content--backoffice app-modifica-piatto .form-page,
+  .content--backoffice app-dettaglio-piatto-ristoratore .dish-detail-page,
+  .content--backoffice app-order-detail .order-detail-page,
+  .content--backoffice app-admin-restaurants .admin-page,
+  .content--backoffice app-admin-billing .admin-billing,
+  .content--backoffice app-analytics-dashboard .analytics-dashboard-page,
+  .content--backoffice app-waiter-order .waiter-order-page {
+    padding: var(--backoffice-mobile-pad) !important;
+  }
+
+  .content--backoffice .page-header,
+  .content--backoffice .section-headline,
+  .content--backoffice .panel-head,
+  .content--backoffice .admin-billing__hero,
+  .content--backoffice .admin-billing__panel-head,
+  .content--backoffice .category-heading {
+    gap: 0.45rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .content--backoffice .page-header p,
+  .content--backoffice .page-subtitle,
+  .content--backoffice .section-headline p,
+  .content--backoffice .helper,
+  .content--backoffice .empty-state,
+  .content--backoffice .row-subtitle,
+  .content--backoffice .tile-seats,
+  .content--backoffice .tile-body,
+  .content--backoffice .tile-time,
+  .content--backoffice .description,
+  .content--backoffice .metric {
+    font-size: 0.8rem;
+  }
+
+  .content--backoffice .orders-toolbar,
+  .content--backoffice .filters-row,
+  .content--backoffice .filter-chips,
+  .content--backoffice .header-actions,
+  .content--backoffice .page-actions,
+  .content--backoffice .browse-categories,
+  .content--backoffice .import-actions,
+  .content--backoffice .import-controls {
+    gap: 0.45rem;
+  }
+
+  .content--backoffice .orders-toolbar,
+  .content--backoffice .filters-row,
+  .content--backoffice .browse-tools,
+  .content--backoffice .import-panel {
+    margin: 0.65rem 0;
+  }
+
+  .content--backoffice .filter-chips,
+  .content--backoffice .filters-row,
+  .content--backoffice .browse-categories {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+  }
+
+  .content--backoffice .filter-chips::-webkit-scrollbar,
+  .content--backoffice .filters-row::-webkit-scrollbar,
+  .content--backoffice .browse-categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .content--backoffice .filter-chips > *,
+  .content--backoffice .filters-row > *,
+  .content--backoffice .browse-categories > * {
+    flex: 0 0 auto;
+  }
+
+  .content--backoffice .order-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.42rem 0.6rem;
+    padding: 0.72rem 0.78rem;
+    border-radius: var(--backoffice-mobile-radius);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .content--backoffice .order-row .row-main {
+    grid-column: 1 / -1;
+  }
+
+  .content--backoffice .row-title {
+    font-size: 0.92rem;
+  }
+
+  .content--backoffice .row-status,
+  .content--backoffice .row-total,
+  .content--backoffice .row-time {
+    font-size: 0.78rem;
+  }
+
+  .content--backoffice .row-time {
+    justify-self: end;
+  }
+
+  .content--backoffice .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem;
+  }
+
+  .content--backoffice .table-tile {
+    min-width: 0;
+    padding: 0.66rem;
+    border-radius: var(--backoffice-mobile-radius);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .content--backoffice .tile-top {
+    display: grid;
+    gap: 0.38rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .content--backoffice .tile-top-right {
+    align-items: flex-start;
+    gap: 0.32rem;
+  }
+
+  .content--backoffice .tile-id {
+    font-size: 0.96rem;
+  }
+
+  .content--backoffice .status-pill,
+  .content--backoffice .waiter-call-badge {
+    padding: 0.24rem 0.42rem;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+  }
+
+  .content--backoffice .tile-link {
+    margin-top: 0.42rem;
+    font-size: 0.74rem;
+  }
+
+  .content--backoffice .menu-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.72rem;
+  }
+
+  .content--backoffice .menu-card {
+    display: block;
+    border-radius: var(--backoffice-mobile-radius);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .content--backoffice .menu-card.has-image .menu-card__body {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .content--backoffice .card-image-shell img {
+    width: 84px;
+    height: 100%;
+    min-height: 92px;
+    object-fit: cover;
+  }
+
+  .content--backoffice .top-badge {
+    top: 0.35rem;
+    right: 0.35rem;
+    padding: 0.16rem 0.34rem;
+    border-radius: 7px;
+    font-size: 0.66rem;
+  }
+
+  .content--backoffice .info {
+    min-width: 0;
+    padding: 0.68rem;
+  }
+
+  .content--backoffice .name {
+    margin-bottom: 0.18rem;
+    font-size: 0.92rem;
+  }
+
+  .content--backoffice .description {
+    display: -webkit-box;
+    margin-bottom: 0.42rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .content--backoffice .card-footer {
+    gap: 0.45rem;
+    margin-bottom: 0;
+  }
+
+  .content--backoffice .actions {
+    gap: 0.4rem;
+    padding: 0;
+  }
+
+  .content--backoffice .actions .text-btn {
+    flex: 1 1 0;
+  }
+
+  .content--backoffice .import-panel,
+  .content--backoffice .browse-tools,
+  .content--backoffice .kpi-card,
+  .content--backoffice .simple-panel,
+  .content--backoffice .loading-card,
+  .content--backoffice .empty-state,
+  .content--backoffice .billing-status-card,
+  .content--backoffice .settings-section,
+  .content--backoffice .form-card,
+  .content--backoffice .admin-billing__panel,
+  .content--backoffice .admin-billing__review-item,
+  .content--backoffice .admin-billing__restaurant-item {
+    padding: 0.75rem !important;
+    border-radius: var(--backoffice-mobile-radius) !important;
+    box-shadow: var(--shadow-xs) !important;
+  }
+
+  .content--backoffice .kpi-row,
+  .content--backoffice .kpi-row.secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem;
+  }
+
+  .content--backoffice .kpi-card strong,
+  .content--backoffice .kpi-card.small strong {
+    margin-top: 0.22rem;
+    font-size: 1.08rem;
+    letter-spacing: 0;
+  }
+
+  .content--backoffice .kpi-card span {
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+  }
+
+  .content--backoffice .simple-panel {
+    min-width: 0;
+  }
+
+  .content--backoffice .simple-panel h3 {
+    margin-bottom: 0.55rem;
+  }
+
+  .content--backoffice .dish-table tbody {
+    gap: 0.55rem;
+  }
+
+  .content--backoffice .dish-table tr {
+    border-radius: var(--backoffice-mobile-radius);
+  }
+
+  .content--backoffice .dish-table td {
+    padding: 0.58rem 0.68rem;
+    gap: 0.65rem;
+  }
+
+  .content--backoffice .admin-billing__grid,
+  .content--backoffice .admin-billing__detail-grid,
+  .content--backoffice .admin-billing__stats,
+  .content--backoffice .admin-billing__global-form,
+  .content--backoffice .admin-billing__inherited {
+    gap: 0.6rem !important;
+  }
+}
+

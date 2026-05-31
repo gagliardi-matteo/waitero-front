@@ -7,11 +7,10 @@ import { environment } from '../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class PiattoService {
   private http = inject(HttpClient);
-  private baseUrl = '/api/menu';
 
   getById(id: number): Observable<Piatto> {
     return this.http.get<Piatto>(`${environment.apiUrl}/menu/piatto/${id}`);
-    }
+  }
 
   update(id: number, dto: Piatto): Observable<void> {
     return this.http.put<void>(`${environment.apiUrl}/menu/piatti/${id}`, dto);
