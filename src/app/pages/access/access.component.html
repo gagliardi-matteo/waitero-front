@@ -4,15 +4,15 @@
     <p class="status">{{ accessStatus }}</p>
     <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-    <div class="location-banner" *ngIf="locationPermissionDenied">
-      <h2>Posizione necessaria per l'accesso</h2>
+    <div class="location-banner" *ngIf="locationNoticeVisible || locationPermissionDenied">
+      <h2>{{ locationPermissionDenied ? 'Posizione necessaria per l'accesso' : 'Usiamo la posizione solo per sicurezza' }}</h2>
       <p>
         La posizione non viene salvata e non viene usata per marketing o profilazione.
         Serve solo per controlli di sicurezza sull'accesso al tavolo tramite QR.
       </p>
       <p class="location-hint" *ngIf="locationRetryMessage">{{ locationRetryMessage }}</p>
-      <button type="button" class="retry-btn" (click)="retryWithLocation()" [disabled]="retryingLocation">
-        {{ retryingLocation ? 'Controllo permessi in corso...' : 'Riprova con la posizione' }}
+      <button type="button" class="retry-btn" (click)="locationPermissionDenied ? retryWithLocation() : enterWithLocation()" [disabled]="retryingLocation">
+        {{ retryingLocation ? 'Controllo posizione in corso...' : (locationPermissionDenied ? 'Riprova con la posizione' : 'Entra con la posizione') }}
       </button>
       <p class="location-hint" *ngIf="locationBlockedPermanently">
         Se hai scelto "Non consentire mai", il browser non puo riaprire il popup automaticamente.

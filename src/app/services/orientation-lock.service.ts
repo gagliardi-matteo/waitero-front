@@ -15,8 +15,13 @@ export class OrientationLockService {
     const applyState = () => {
       const isCompactPortraitTarget = window.matchMedia('(max-width: 960px)').matches;
       const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      const path = window.location.pathname.toLowerCase();
+      const isCustomerMenuRoute = path === '/menu' || path.startsWith('/menu/');
 
-      document.body.classList.toggle('compact-landscape-blocked', isCompactPortraitTarget && isLandscape);
+      document.body.classList.toggle(
+        'compact-landscape-blocked',
+        isCompactPortraitTarget && isLandscape && isCustomerMenuRoute
+      );
     };
 
     applyState();

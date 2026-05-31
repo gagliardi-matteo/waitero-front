@@ -74,10 +74,131 @@
 .error { color: var(--danger); }
 .empty-state { padding:1.2rem; }
 
+.waiter-calls-panel {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 8;
+  margin: 0 0 1rem;
+  border: 1px solid rgba(215, 38, 61, 0.24);
+  border-radius: 18px;
+  background: rgba(255, 249, 249, 0.98);
+  box-shadow: 0 16px 40px rgba(127, 29, 29, 0.12);
+  overflow: hidden;
+}
+
+.waiter-calls-summary {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  padding: .85rem 1rem;
+  border: 0;
+  background: transparent;
+  color: #7f1d1d;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.waiter-calls-summary:focus-visible {
+  outline: 2px solid rgba(215, 38, 61, 0.35);
+  outline-offset: -4px;
+}
+
+.waiter-calls-summary__badge {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #d7263d;
+  color: #fff;
+  font-weight: 800;
+}
+
+.waiter-calls-summary__text {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+
+.waiter-calls-summary__text strong,
+.waiter-calls-summary__text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.waiter-calls-summary__text strong {
+  color: #7f1d1d;
+  font-size: .95rem;
+}
+
+.waiter-calls-summary__text small {
+  color: #9f1239;
+  font-weight: 650;
+}
+
+.waiter-calls-summary__action {
+  color: #b42318;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.waiter-calls-detail {
+  display: grid;
+  gap: .5rem;
+  padding: 0 .75rem .75rem;
+}
+
+.waiter-call-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem .85rem;
+  border: 1px solid rgba(215, 38, 61, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.waiter-call-row span:first-child {
+  display: grid;
+  gap: .15rem;
+}
+
+.waiter-call-row strong {
+  color: #7f1d1d;
+}
+
+.waiter-call-row small {
+  color: var(--text-muted);
+}
+
+.waiter-call-row span:last-child {
+  color: #b42318;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
 @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
 @media (max-width: 800px) { .dashboard-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media (max-width: 640px) {
   .content { padding:1rem; }
   .page-header, .page-actions { flex-direction:column; align-items:stretch; }
   .dashboard-grid { grid-template-columns: 1fr; }
+  .waiter-calls-panel { top: .5rem; border-radius: 16px; }
+  .waiter-calls-summary {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: .8rem;
+  }
+  .waiter-calls-summary__action {
+    grid-column: 2;
+  }
 }

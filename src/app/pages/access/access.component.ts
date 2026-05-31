@@ -17,12 +17,13 @@ import { TableAccessService } from '../../services/table-access.service';
 })
 export class AccessComponent implements OnInit {
   errorMessage = '';
-  accessStatus = 'Rilevazione posizione in corso...';
+  accessStatus = 'Conferma la posizione per entrare nel menu.';
   gpsSnapshot: GpsSnapshot | null = null;
   locationPermissionDenied = false;
   locationRetryMessage = '';
   locationBlockedPermanently = false;
   retryingLocation = false;
+  locationNoticeVisible = true;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -33,18 +34,39 @@ export class AccessComponent implements OnInit {
   private tableAccessService = inject(TableAccessService);
 
   async ngOnInit(): Promise<void> {
-    await this.runAccessFlow();
+    this.prepareAccess();
   }
 
-  async retryWithLocation(): Promise<void> {
+  async enterWithLocation(): Promise<void> {
     this.retryingLocation = true;
+    this.locationNoticeVisible = false;
     this.locationPermissionDenied = false;
     this.locationBlockedPermanently = false;
     this.locationRetryMessage = '';
     this.errorMessage = '';
-    this.accessStatus = 'Nuovo tentativo di rilevazione posizione in corso...';
+    this.accessStatus = 'Rilevazione posizione in corso...';
     await this.runAccessFlow();
     this.retryingLocation = false;
+  }
+
+  async retryWithLocation(): Promise<void> {
+    await this.enterWithLocation();
+  }
+
+  private prepareAccess(): void {
+    const token = this.route.snapshot.paramMap.get('token');
+    const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId');
+    const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
+    const tableIdParam = this.route.snapshot.paramMap.get('tableId');
+
+    if (!token) {
+      this.errorMessage = 'Link tavolo non valido.';
+      this.accessStatus = 'Accesso non disponibile.';
+      this.locationNoticeVisible = false;
+      return;
+    }
+
+    this.auth.setPendingAccess(token, tablePublicId, restaurantId, tableIdParam);
   }
 
   private async runAccessFlow(): Promise<void> {
@@ -55,10 +77,9 @@ export class AccessComponent implements OnInit {
 
     if (!token) {
       this.errorMessage = 'Link tavolo non valido.';
+      this.accessStatus = 'Accesso non disponibile.';
       return;
     }
-
-    this.auth.setPendingAccess(token, tablePublicId, restaurantId, tableIdParam);
 
     const deviceId = this.deviceIdService.getOrCreate();
     const shouldCollectFingerprint = environment.privacy?.customerBrowserFingerprintEnabled === true;

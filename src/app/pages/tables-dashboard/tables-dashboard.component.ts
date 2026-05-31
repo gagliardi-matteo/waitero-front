@@ -33,6 +33,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   errorMessage = '';
   selectedFilter: TableDashboardFilter = 'ALL';
+  waiterCallsExpanded = false;
 
   readonly filters: { value: TableDashboardFilter; label: string }[] = [
     { value: 'ALL', label: 'Tutti' },
@@ -81,6 +82,37 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return this.activeOrdersCount === 0 ? 0 : this.totalRevenue / this.activeOrdersCount;
   }
 
+  get waiterCallCards(): TableDashboardCard[] {
+    const callKeys = new Set(
+      this.waiterCallNotificationService.pendingWaiterCalls()
+        .map(call => this.buildWaiterCallKey(call.restaurantId, call.tableId))
+    );
+
+    return this.cards.filter(card =>
+      callKeys.has(this.buildWaiterCallKey(card.table.restaurantId, card.table.numero))
+      || callKeys.has(this.buildWaiterCallKey(card.table.restaurantId, card.table.id))
+    );
+  }
+
+  get waiterCallsCount(): number {
+    return this.waiterCallCards.length;
+  }
+
+  get waiterCallsSummary(): string {
+    const tableLabels = this.waiterCallCards
+      .map(card => this.tableLabel(card))
+      .slice(0, 3);
+
+    if (tableLabels.length === 0) {
+      return '';
+    }
+
+    const remainingCount = this.waiterCallsCount - tableLabels.length;
+    return remainingCount > 0
+      ? `${tableLabels.join(', ')} +${remainingCount}`
+      : tableLabels.join(', ');
+  }
+
   countBy(filter: TableDashboardFilter): number {
     if (filter === 'ALL') {
       return this.cards.length;
@@ -115,7 +147,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.waiterCallNotificationService.clearWaiterCall(card.table.restaurantId, card.table.numero);
+    this.waiterCallNotificationService.clearWaiterCallCandidates(card.table.restaurantId, [card.table.numero, card.table.id]);
 
     if (card.activeOrder) {
       void this.router.navigate(['/orders', card.activeOrder.id]);
@@ -164,6 +196,19 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     return card.state !== 'INACTIVE';
   }
 
+  hasWaiterCall(card: TableDashboardCard): boolean {
+    return this.waiterCallNotificationService.hasWaiterCall(card.table.restaurantId, card.table.numero)
+      || this.waiterCallNotificationService.hasWaiterCall(card.table.restaurantId, card.table.id);
+  }
+
+  toggleWaiterCalls(): void {
+    this.waiterCallsExpanded = !this.waiterCallsExpanded;
+  }
+
+  tableLabel(card: TableDashboardCard): string {
+    return card.table.nome?.trim() || `Tavolo ${card.table.numero}`;
+  }
+
   private buildCards(tables: RestaurantTable[], activeOrders: CustomerOrder[]): TableDashboardCard[] {
     const activeOrderByTableId = new Map<number, CustomerOrder>();
     for (const order of activeOrders) {
@@ -187,8 +232,13 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
           itemCount: activeOrder?.items.reduce((sum, item) => sum + item.quantita, 0) ?? 0,
           updatedAt: activeOrder?.updatedAt ?? table.updatedAt,
           hasWaiterCall: this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.numero)
+            || this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.id)
         } satisfies TableDashboardCard;
       });
+  }
+
+  private buildWaiterCallKey(restaurantId: number, tableId: number): string {
+    return `${restaurantId}:${tableId}`;
   }
 
   private resolveState(table: RestaurantTable, activeOrder: CustomerOrder | null): TableDashboardCard['state'] {
