@@ -5,8 +5,8 @@
       <p>Configura tavoli, QR code e link di accesso.</p>
     </div>
     <div class="page-actions" *ngIf="hasTables">
-      <button type="button" class="icon-btn" (click)="printBulkQrs(false)" [disabled]="printingBulk || loading">Stampa tutti i QR</button>
-      <button type="button" class="icon-btn" (click)="printBulkQrs(true)" [disabled]="!hasActiveTables || printingBulk || loading">Stampa solo attivi</button>
+      <button type="button" class="icon-btn" (click)="openBulkPrintDialog(false)" [disabled]="printingBulk || loading">Stampa tutti i QR</button>
+      <button type="button" class="icon-btn" (click)="openBulkPrintDialog(true)" [disabled]="!hasActiveTables || printingBulk || loading">Stampa solo attivi</button>
     </div>
   </div>
 
@@ -109,7 +109,7 @@
             <div class="row-actions right">
               <button type="button" class="icon-btn" (click)="copyAccessLink(table)">{{ copiedTableId === table.id ? 'Copiato' : 'Copia' }}</button>
               <button type="button" class="icon-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">QR</button>
-              <button type="button" class="icon-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
+              <button type="button" class="icon-btn" (click)="openSinglePrintDialog(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
               <button type="button" class="icon-btn" (click)="toggleTableActive(table)">{{ table.attivo ? 'Disattiva' : 'Attiva' }}</button>
               <button type="button" class="icon-btn" (click)="regenerateToken(table)">Rigenera</button>
               <button type="button" class="icon-btn" (click)="editTable(table)">Modifica</button>
@@ -145,7 +145,7 @@
       <div class="row-actions">
         <button type="button" class="icon-btn" (click)="copyAccessLink(table)">{{ copiedTableId === table.id ? 'Copiato' : 'Copia' }}</button>
         <button type="button" class="icon-btn" (click)="downloadQr(table)" [disabled]="!qrImageByTableId[table.id]">QR</button>
-        <button type="button" class="icon-btn" (click)="printQr(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
+        <button type="button" class="icon-btn" (click)="openSinglePrintDialog(table)" [disabled]="!qrImageByTableId[table.id]">Stampa</button>
         <button type="button" class="icon-btn" (click)="toggleTableActive(table)">{{ table.attivo ? 'Disattiva' : 'Attiva' }}</button>
         <button type="button" class="icon-btn" (click)="regenerateToken(table)">Rigenera</button>
         <button type="button" class="icon-btn" (click)="editTable(table)">Modifica</button>
@@ -159,4 +159,55 @@
   </ng-template>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="print-dialog-backdrop" *ngIf="printDialogOpen" (click)="closePrintDialog()">
+    <section class="print-dialog" (click)="$event.stopPropagation()">
+      <div class="print-dialog__header">
+        <div>
+          <h3>Formato stampa QR</h3>
+          <p>{{ printTarget === 'single' ? 'Scegli dimensioni e orientamento per questo tavolo.' : 'Scegli dimensioni e orientamento per la stampa massiva.' }}</p>
+        </div>
+        <button type="button" class="icon-btn" (click)="closePrintDialog()">Chiudi</button>
+      </div>
+
+      <form [formGroup]="printForm" (ngSubmit)="confirmPrint()" novalidate>
+        <div class="print-options-grid">
+          <label>
+            <span>Dimensione</span>
+            <select formControlName="sizePreset" (change)="onPrintSizePresetChange()">
+              <option *ngFor="let option of printSizeOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Orientamento</span>
+            <select formControlName="orientation">
+              <option value="vertical">Verticale</option>
+              <option value="horizontal">Orizzontale</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Larghezza cm</span>
+            <input type="number" min="3" max="21" step="0.1" formControlName="customWidthCm" [readonly]="printForm.controls.sizePreset.value !== 'custom'" />
+          </label>
+
+          <label>
+            <span>Altezza cm</span>
+            <input type="number" min="3" max="29.7" step="0.1" formControlName="customHeightCm" [readonly]="printForm.controls.sizePreset.value !== 'custom'" />
+          </label>
+        </div>
+
+        <div class="print-dialog__summary">
+          <span>Formato finale</span>
+          <strong>{{ selectedPrintLayoutLabel }}</strong>
+        </div>
+
+        <div class="print-dialog__actions">
+          <button type="button" class="icon-btn" (click)="closePrintDialog()">Annulla</button>
+          <button type="submit" class="primary-btn" [disabled]="printingBulk">Stampa</button>
+        </div>
+      </form>
+    </section>
+  </div>
 </div>

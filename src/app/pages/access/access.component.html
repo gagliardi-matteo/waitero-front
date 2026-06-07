@@ -26,4 +26,21 @@
       <p><strong>Accuratezza:</strong> {{ formatAccuracy(gps.accuracy) }}</p>
     </div>
   </div>
+
+  <div class="legal-modal-backdrop" *ngIf="legalModalVisible">
+    <section class="legal-modal">
+      <h2>Documenti WaiterO</h2>
+      <p>
+        Continuando accetti i
+        <a [href]="termsClientUrl()" target="_blank" rel="noopener">Termini d'Uso</a>
+        e dichiari di aver preso visione della
+        <a [href]="privacyClientUrl()" target="_blank" rel="noopener">Privacy Policy</a>.
+      </p>
+      <p class="allergen-disclaimer">⚠️ In caso di allergie o intolleranze verificare sempre con il personale del locale.</p>
+      <p class="legal-error" *ngIf="legalErrorMessage">{{ legalErrorMessage }}</p>
+      <button type="button" class="retry-btn" (click)="continueAfterLegalAcceptance()" [disabled]="legalAccepting">
+        {{ legalAccepting ? 'Registrazione in corso...' : 'Continua' }}
+      </button>
+    </section>
+  </div>
 </div>

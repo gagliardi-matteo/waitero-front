@@ -91,6 +91,93 @@
   font-weight: 700;
 }
 
+.legal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.52);
+}
+
+.legal-modal {
+  width: min(520px, 100%);
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+}
+
+.legal-modal h2 {
+  margin: 0 0 0.5rem;
+}
+
+.legal-modal p {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.legal-documents {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.legal-documents a {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: #b95f19;
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--surface-soft);
+}
+
+.legal-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  line-height: 1.35;
+}
+
+.legal-checkbox input {
+  margin-top: 0.15rem;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  flex: 0 0 16px;
+}
+
+.legal-primary-btn {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: #d87a2c;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.legal-primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.legal-error {
+  margin-top: 0.85rem;
+  color: var(--danger);
+  font-weight: 700;
+}
+
 @media (max-width: 960px) {
   .layout {
     grid-template-columns: 1fr;

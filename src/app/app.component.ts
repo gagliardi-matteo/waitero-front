@@ -1,12 +1,14 @@
 import { Component, OnDestroy, effect, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
-import { Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { AuthService } from './auth/AuthService';
 import { RestaurantOrderService } from './services/restaurant-order.service';
 import { MobileNativeService } from './services/mobile-native.service';
 import { OrientationLockService } from './services/orientation-lock.service';
 import { WaiterAlertAudioService } from './services/waiter-alert-audio.service';
 import { WaiterCallNotificationService } from './services/waiter-call-notification.service';
+import { LegalAcceptanceService, LegalConfig } from './services/legal-acceptance.service';
 import { SidebarComponent } from './util/sidebar/sidebar.component';
 
 @Component({
@@ -24,7 +26,16 @@ export class AppComponent implements OnDestroy {
   private restaurantOrderService = inject(RestaurantOrderService);
   private waiterAlertAudioService = inject(WaiterAlertAudioService);
   private waiterCallNotificationService = inject(WaiterCallNotificationService);
+  private legalAcceptanceService = inject(LegalAcceptanceService);
   private eventSource: EventSource | null = null;
+  private routeEventsSubscription: Subscription | null = null;
+  legalModalVisible = false;
+  legalConfig: LegalConfig | null = null;
+  legalCheckedRestaurantId: number | null = null;
+  legalAccepting = false;
+  legalAccepted = false;
+  legalChecking = false;
+  legalErrorMessage = '';
 
   private readonly backofficeRoutes = [
     '/admin',
@@ -35,6 +46,7 @@ export class AppComponent implements OnDestroy {
     '/waiter-order',
     '/menu-management',
     '/tables',
+    '/printer-settings',
     '/restaurant-settings',
     '/add-dish',
     '/ristoratore/'
@@ -45,15 +57,30 @@ export class AppComponent implements OnDestroy {
     this.orientationLockService.initialize();
 
     effect(() => {
-      if (this.authService.authenticated() && this.canSubscribeToBackofficeStream()) {
-        this.connectBackofficeStream();
+      if (this.authService.authenticated()) {
+        if (this.canSubscribeToBackofficeStream()) {
+          this.connectBackofficeStream();
+        } else {
+          this.disconnectBackofficeStream();
+        }
+        this.checkBackofficeLegalAcceptance();
       } else {
         this.disconnectBackofficeStream();
+        this.resetLegalState();
       }
     });
+
+    this.routeEventsSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        if (this.authService.authenticated()) {
+          this.checkBackofficeLegalAcceptance();
+        }
+      });
   }
 
   ngOnDestroy(): void {
+    this.routeEventsSubscription?.unsubscribe();
     this.disconnectBackofficeStream();
   }
 
@@ -78,11 +105,36 @@ export class AppComponent implements OnDestroy {
     return this.authService.getImpersonatedRestaurantName() ?? 'locale selezionato';
   }
 
+  legalDocumentUrl(url: string | null | undefined): string {
+    return this.legalAcceptanceService.documentUrl(url);
+  }
+
   async exitImpersonation(): Promise<void> {
     await this.authService.stopImpersonation();
     if (this.authService.isMaster()) {
       await this.router.navigate(['/admin/restaurants']);
     }
+  }
+
+  acceptBackofficeLegalDocuments(): void {
+    if (!this.legalAccepted) {
+      return;
+    }
+
+    this.legalAccepting = true;
+    this.legalErrorMessage = '';
+    this.legalAcceptanceService.acceptBackoffice().subscribe({
+      next: status => {
+        this.legalAccepting = false;
+        this.legalConfig = status.config;
+        this.legalModalVisible = !status.accepted;
+      },
+      error: err => {
+        console.error('Errore accettazione documenti backoffice', err);
+        this.legalAccepting = false;
+        this.legalErrorMessage = err.error?.message ?? `Impossibile salvare l'accettazione (HTTP ${err.status ?? 'errore'}).`;
+      }
+    });
   }
 
   isBackofficeRoute(): boolean {
@@ -93,6 +145,62 @@ export class AppComponent implements OnDestroy {
   private canSubscribeToBackofficeStream(): boolean {
     return !!this.authService.getToken()
       && (this.authService.getActingRestaurantId() !== null || this.authService.getOwnedRestaurantId() !== null);
+  }
+
+  private checkBackofficeLegalAcceptance(): void {
+    if (!this.isBackofficeRoute() || (this.authService.isMaster() && !this.authService.isImpersonating())) {
+      this.legalModalVisible = false;
+      return;
+    }
+
+    const restaurantId = this.authService.getActingRestaurantId() ?? this.authService.getOwnedRestaurantId();
+    if (!restaurantId || this.legalChecking || (restaurantId === this.legalCheckedRestaurantId && this.legalConfig !== null)) {
+      return;
+    }
+
+    this.legalChecking = true;
+    this.legalAcceptanceService.getBackofficeStatus().subscribe({
+      next: status => {
+        this.legalChecking = false;
+        this.legalCheckedRestaurantId = restaurantId;
+        this.legalConfig = status.config;
+        this.legalModalVisible = !status.accepted;
+        this.legalAccepted = false;
+        this.legalErrorMessage = '';
+      },
+      error: err => {
+        console.error('Errore verifica documenti legali backoffice', err);
+        this.legalChecking = false;
+        this.legalCheckedRestaurantId = restaurantId;
+        this.legalConfig = this.fallbackLegalConfig();
+        this.legalAccepted = false;
+        this.legalModalVisible = true;
+        this.legalErrorMessage = `Impossibile verificare lo stato legale (HTTP ${err.status ?? 'errore'}). Accetta per riprovare il salvataggio.`;
+      }
+    });
+  }
+
+  private resetLegalState(): void {
+    this.legalModalVisible = false;
+    this.legalConfig = null;
+    this.legalCheckedRestaurantId = null;
+    this.legalAccepting = false;
+    this.legalAccepted = false;
+    this.legalChecking = false;
+    this.legalErrorMessage = '';
+  }
+
+  private fallbackLegalConfig(): LegalConfig {
+    return {
+      contractVersion: '1.0',
+      privacyVersion: '1.0',
+      termsVersion: '1.0',
+      allergenDisclaimerVersion: '1.0',
+      contractUrl: '/legal/terms-client-v1.0.html',
+      privacyUrl: '/legal/privacy-client-v1.0.html',
+      termsUrl: '/legal/terms-client-v1.0.html',
+      allergenDisclaimerUrl: '/legal/disclaimer-allergeni-v1.0.html'
+    };
   }
 
   private connectBackofficeStream(): void {

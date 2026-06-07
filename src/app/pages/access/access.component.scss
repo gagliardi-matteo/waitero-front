@@ -108,3 +108,52 @@ p {
     color: var(--text);
   }
 }
+
+.legal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.48);
+}
+
+.legal-modal {
+  width: min(420px, 100%);
+  padding: 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: var(--shadow-md);
+  text-align: left;
+
+  h2 {
+    margin-bottom: 0.65rem;
+    color: var(--text);
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--text);
+    line-height: 1.45;
+  }
+
+  a {
+    color: #b95f19;
+    font-weight: 700;
+  }
+
+  .allergen-disclaimer {
+    padding: 0.8rem;
+    border: 1px solid rgba(216, 122, 44, 0.28);
+    border-radius: 14px;
+    background: rgba(216, 122, 44, 0.09);
+    font-weight: 700;
+  }
+
+  .legal-error {
+    color: var(--danger);
+    font-weight: 700;
+  }
+}

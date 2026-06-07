@@ -238,6 +238,76 @@ label span {
   letter-spacing: 0.06em;
 }
 
+.print-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.print-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: var(--shadow-lg);
+  padding: 1.15rem;
+}
+
+.print-dialog__header,
+.print-dialog__actions,
+.print-dialog__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.print-dialog__header {
+  margin-bottom: 1rem;
+}
+
+.print-dialog__header h3 {
+  margin: 0 0 0.25rem;
+}
+
+.print-dialog__header p,
+.print-dialog__summary span {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.print-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.print-options-grid input[readonly] {
+  color: var(--text-muted);
+  background: var(--surface-soft);
+}
+
+.print-dialog__summary {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.print-dialog__actions {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
 @media (max-width: 820px) {
   .page-header {
     flex-direction: column;
@@ -289,6 +359,21 @@ label span {
   .row-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .print-dialog {
+    border-radius: 16px;
+  }
+
+  .print-dialog__header,
+  .print-dialog__actions,
+  .print-dialog__summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .print-options-grid {
+    grid-template-columns: 1fr;
   }
 
   .icon-btn {

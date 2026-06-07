@@ -1,0 +1,128 @@
+<div class="content printer-settings-page">
+  <div class="page-header">
+    <div>
+      <h1>Stampanti</h1>
+      <p>Configura le stampanti esterne del locale. Il POS Sunmi locale resta sempre attivo.</p>
+    </div>
+    <button type="button" class="primary-btn" (click)="showCreateForm()">Aggiungi stampante</button>
+  </div>
+
+  <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  <p class="success" *ngIf="successMessage">{{ successMessage }}</p>
+
+  <section class="sunmi-panel">
+    <div>
+      <span class="section-kicker">Stampante standard</span>
+      <h2>POS Sunmi locale</h2>
+      <p>Questa stampante resta sempre attiva sull'app Waitero Kitchen installata sul POS.</p>
+    </div>
+    <button type="button" class="primary-btn" (click)="testSunmiPrint()" [disabled]="isTestingSunmi()">
+      {{ isTestingSunmi() ? 'Invio prova...' : 'Stampa prova Sunmi' }}
+    </button>
+  </section>
+
+  <section class="printer-form" *ngIf="formVisible">
+    <div class="form-title">
+      <h2>{{ editingId ? 'Modifica stampante' : 'Nuova stampante' }}</h2>
+      <p>La stampa reale TCP/IP, ESC/POS, Bluetooth e la stampa di prova verranno abilitate nella fase successiva.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <label>
+        <span>Nome</span>
+        <input type="text" formControlName="nome" placeholder="Cucina" />
+      </label>
+
+      <label>
+        <span>Modello</span>
+        <select formControlName="modello">
+          <option *ngFor="let option of modelloOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Tipo connessione</span>
+        <select formControlName="tipoConnessione">
+          <option *ngFor="let option of connectionOptions" [value]="option.value">{{ option.label }}</option>
+        </select>
+      </label>
+
+      <label>
+        <span>IP</span>
+        <input type="text" formControlName="ipAddress" placeholder="192.168.1.50" [disabled]="!isTcpIp" />
+      </label>
+
+      <label>
+        <span>Porta</span>
+        <input type="number" formControlName="porta" min="1" max="65535" [disabled]="!isTcpIp" />
+      </label>
+
+      <label class="toggle-row">
+        <input type="checkbox" formControlName="abilitata" />
+        <span>Abilitata</span>
+      </label>
+
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" (click)="cancelForm()" [disabled]="saving">Annulla</button>
+        <button type="submit" class="primary-btn" [disabled]="saving">
+          {{ saving ? 'Salvataggio...' : 'Salva stampante' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="printers-panel">
+    <div class="panel-header">
+      <h2>Stampanti esterne</h2>
+      <button type="button" class="ghost-btn" (click)="loadData()" [disabled]="loading">Aggiorna</button>
+    </div>
+
+    <div class="table-wrap" *ngIf="!loading && stampanti.length > 0; else emptyTpl">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Modello</th>
+            <th>IP</th>
+            <th>Porta</th>
+            <th>Abilitata</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let stampante of stampanti; trackBy: trackPrinter">
+            <td>
+              <strong>{{ stampante.nome }}</strong>
+              <small>{{ connectionLabel(stampante.tipoConnessione) }}</small>
+            </td>
+            <td>{{ modelLabel(stampante.modello) }}</td>
+            <td>{{ stampante.ipAddress ?? '-' }}</td>
+            <td>{{ stampante.porta ?? '-' }}</td>
+            <td>
+              <span class="status-pill" [class.enabled]="stampante.abilitata">
+                {{ stampante.abilitata ? 'Abilitata' : 'Disabilitata' }}
+              </span>
+            </td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="ghost-btn" (click)="edit(stampante)">Modifica</button>
+                <button type="button" class="ghost-btn" (click)="testExternalPrint(stampante)" [disabled]="isTestingExternal(stampante)">
+                  {{ isTestingExternal(stampante) ? 'Prova...' : 'Stampa prova' }}
+                </button>
+                <button type="button" class="ghost-btn" *ngIf="!stampante.abilitata" (click)="enable(stampante)">Abilita</button>
+                <button type="button" class="ghost-btn" *ngIf="stampante.abilitata" (click)="disable(stampante)">Disabilita</button>
+                <button type="button" class="danger-btn" (click)="delete(stampante)">Elimina</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #emptyTpl>
+      <div class="empty-state">
+        {{ loading ? 'Caricamento stampanti...' : 'Nessuna stampante esterna configurata.' }}
+      </div>
+    </ng-template>
+  </section>
+</div>

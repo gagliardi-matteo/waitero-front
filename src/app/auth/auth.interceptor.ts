@@ -10,6 +10,8 @@ const PUBLIC_API_PATTERNS = [
   '/api/auth/login',
   '/api/auth/local-login',
   '/api/auth/refresh-token',
+  '/api/legal/config',
+  '/api/legal/customer/',
   '/api/customer/',
   '/api/table/access',
   '/api/image/'

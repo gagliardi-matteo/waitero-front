@@ -4,8 +4,27 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import QRCode from 'qrcode';
 import { BulkRestaurantTablePayload, RestaurantTable, RestaurantTablePayload } from '../../models/table.model';
 import { TableService } from '../../services/table.service';
+import { RestaurantSettingsService } from '../../services/restaurant-settings.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import { environment } from '../../../environments/environment';
+
+type PrintOrientation = 'vertical' | 'horizontal';
+type PrintTarget = 'single' | 'bulk-all' | 'bulk-active';
+type PrintSizePreset = '6x7' | '7x10' | '10x15' | 'custom';
+
+interface PrintSizeOption {
+  value: PrintSizePreset;
+  label: string;
+  widthCm: number;
+  heightCm: number;
+}
+
+interface PrintLayout {
+  widthMm: number;
+  heightMm: number;
+  qrSizeMm: number;
+  orientation: PrintOrientation;
+}
 
 @Component({
   selector: 'app-tables-management',
@@ -18,8 +37,8 @@ export class TablesManagementComponent {
   private static readonly QR_LOGO_SRC = 'assets/brand/logo_b.png';
   private static readonly QR_SIZE = 280;
   private static readonly QR_LOGO_RATIO = 0.22;
-  private static readonly BULK_PRINT_COLUMNS = 3;
-  private static readonly BULK_PRINT_ROWS = 4;
+  private static readonly PRINT_PAGE_MARGIN_MM = 10;
+  private static readonly PRINT_CARD_GAP_MM = 6;
 
   tables: RestaurantTable[] = [];
   loading = true;
@@ -32,9 +51,21 @@ export class TablesManagementComponent {
   editingTableId: number | null = null;
   qrImageByTableId: Record<number, string> = {};
   qrLoadingByTableId: Record<number, boolean> = {};
+  restaurantName = '';
+  printDialogOpen = false;
+  printTarget: PrintTarget = 'single';
+  printTable: RestaurantTable | null = null;
+
+  readonly printSizeOptions: PrintSizeOption[] = [
+    { value: '6x7', label: '6 x 7 cm', widthCm: 6, heightCm: 7 },
+    { value: '7x10', label: '7 x 10 cm', widthCm: 7, heightCm: 10 },
+    { value: '10x15', label: '10 x 15 cm', widthCm: 10, heightCm: 15 },
+    { value: 'custom', label: 'Personalizzato', widthCm: 7, heightCm: 10 }
+  ];
 
   private fb = inject(FormBuilder);
   private tableService = inject(TableService);
+  private restaurantSettingsService = inject(RestaurantSettingsService);
   private platformId = inject(PLATFORM_ID);
 
   readonly form = this.fb.nonNullable.group({
@@ -52,7 +83,15 @@ export class TablesManagementComponent {
     attivo: true
   });
 
+  readonly printForm = this.fb.nonNullable.group({
+    sizePreset: ['7x10' as PrintSizePreset],
+    orientation: ['vertical' as PrintOrientation],
+    customWidthCm: [7, [Validators.required, Validators.min(3), Validators.max(21)]],
+    customHeightCm: [10, [Validators.required, Validators.min(3), Validators.max(29.7)]]
+  });
+
   constructor() {
+    this.loadRestaurantSettings();
     this.loadTables();
   }
 
@@ -88,6 +127,11 @@ export class TablesManagementComponent {
     return this.tables.some(table => table.attivo);
   }
 
+  get selectedPrintLayoutLabel(): string {
+    const layout = this.getPrintLayout();
+    return `${this.formatCm(layout.widthMm)} x ${this.formatCm(layout.heightMm)} cm`;
+  }
+
   loadTables(): void {
     this.loading = true;
     this.errorMessage = '';
@@ -101,6 +145,18 @@ export class TablesManagementComponent {
         console.error('Errore caricamento tavoli', err);
         this.errorMessage = 'Impossibile caricare i tavoli.';
         this.loading = false;
+      }
+    });
+  }
+
+  private loadRestaurantSettings(): void {
+    this.restaurantSettingsService.getSettings().subscribe({
+      next: settings => {
+        this.restaurantName = settings.nome?.trim() ?? '';
+      },
+      error: err => {
+        console.error('Errore caricamento impostazioni ristorante', err);
+        this.restaurantName = '';
       }
     });
   }
@@ -303,7 +359,57 @@ export class TablesManagementComponent {
     link.click();
   }
 
-  printQr(table: RestaurantTable): void {
+  openSinglePrintDialog(table: RestaurantTable): void {
+    this.printTarget = 'single';
+    this.printTable = table;
+    this.errorMessage = '';
+    this.printDialogOpen = true;
+  }
+
+  openBulkPrintDialog(activeOnly: boolean): void {
+    this.printTarget = activeOnly ? 'bulk-active' : 'bulk-all';
+    this.printTable = null;
+    this.errorMessage = '';
+    this.printDialogOpen = true;
+  }
+
+  closePrintDialog(): void {
+    if (this.printingBulk) {
+      return;
+    }
+    this.printDialogOpen = false;
+    this.printTable = null;
+  }
+
+  onPrintSizePresetChange(): void {
+    const selected = this.printSizeOptions.find(option => option.value === this.printForm.controls.sizePreset.value);
+    if (selected && selected.value !== 'custom') {
+      this.printForm.patchValue({
+        customWidthCm: selected.widthCm,
+        customHeightCm: selected.heightCm
+      });
+    }
+  }
+
+  async confirmPrint(): Promise<void> {
+    if (this.printForm.invalid) {
+      this.printForm.markAllAsTouched();
+      this.errorMessage = 'Imposta dimensioni di stampa valide.';
+      return;
+    }
+
+    const layout = this.getPrintLayout();
+    if (this.printTarget === 'single') {
+      if (this.printTable) {
+        this.printQr(this.printTable, layout);
+      }
+      return;
+    }
+
+    await this.printBulkQrs(this.printTarget === 'bulk-active', layout);
+  }
+
+  private printQr(table: RestaurantTable, layout: PrintLayout): void {
     if (!this.isBrowser()) {
       return;
     }
@@ -314,35 +420,95 @@ export class TablesManagementComponent {
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'width=720,height=900');
+    const printWindow = window.open('', '_blank', 'width=900,height=900');
     if (!printWindow) {
       this.errorMessage = 'Impossibile aprire la finestra di stampa.';
       return;
     }
 
-    const accessUrl = this.buildAccessUrl(table);
+    const escapedRestaurantName = this.escapeHtml(this.restaurantName);
+    const qrSizeMm = layout.qrSizeMm.toFixed(1);
+    const horizontalClass = layout.orientation === 'horizontal' ? ' sheet--horizontal' : '';
     printWindow.document.write(`
       <html>
         <head>
           <title>QR Tavolo ${table.numero}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 32px; text-align: center; }
-            .sheet { border: 2px solid #111827; border-radius: 24px; padding: 32px; max-width: 420px; margin: 0 auto; }
-            h1 { margin: 0 0 8px; font-size: 34px; }
-            h2 { margin: 0 0 16px; font-size: 24px; color: #475467; }
-            img { width: 280px; height: 280px; margin: 20px auto; display: block; }
-            p { margin: 8px 0; }
-            .url { font-size: 12px; word-break: break-all; color: #667085; }
+            @page { size: A4 portrait; margin: ${TablesManagementComponent.PRINT_PAGE_MARGIN_MM}mm; }
+            * { box-sizing: border-box; }
+            body {
+              min-height: calc(297mm - ${TablesManagementComponent.PRINT_PAGE_MARGIN_MM * 2}mm);
+              margin: 0;
+              display: flex;
+              align-items: flex-start;
+              justify-content: center;
+              font-family: Arial, sans-serif;
+              color: #111827;
+              background: #ffffff;
+              text-align: center;
+            }
+            .sheet {
+              width: ${layout.widthMm.toFixed(1)}mm;
+              height: ${layout.heightMm.toFixed(1)}mm;
+              border: 1px dashed #98a2b3;
+              border-radius: 4mm;
+              padding: 4mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 1.5mm;
+              overflow: hidden;
+            }
+            .sheet--horizontal {
+              display: grid;
+              grid-template-columns: minmax(0, 1fr) ${qrSizeMm}mm;
+              grid-template-rows: 1fr;
+              align-items: center;
+              justify-items: center;
+              column-gap: 4mm;
+              text-align: left;
+            }
+            .sheet__copy {
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 1.5mm;
+              text-align: center;
+            }
+            .sheet--horizontal .sheet__copy {
+              align-items: flex-start;
+              text-align: left;
+            }
+            h1 { margin: 0; font-size: 15px; line-height: 1.12; }
+            h2 { margin: 0; font-size: 18px; line-height: 1.05; color: #111827; }
+            img {
+              width: ${qrSizeMm}mm;
+              height: ${qrSizeMm}mm;
+              margin: 1mm auto;
+              display: block;
+              object-fit: contain;
+              flex: 0 0 auto;
+            }
+            p { margin: 0; }
+            .restaurant { font-size: 10px; font-weight: 700; color: #111827; }
+            .hint { margin-top: auto; font-size: 9px; line-height: 1.15; color: #667085; }
+            .sheet--horizontal .hint { margin-top: 2mm; }
+            @media print {
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
           </style>
         </head>
         <body>
-          <div class="sheet">
-            <h1>WaiterO</h1>
-            <h2>Tavolo ${table.numero}</h2>
-            <p>${table.nome}</p>
+          <div class="sheet${horizontalClass}">
+            <div class="sheet__copy">
+              <h1>${escapedRestaurantName}</h1>
+              <p class="restaurant">Waitero</p>
+              <h2>Tavolo ${table.numero}</h2>
+              <p class="hint">Scansiona per aprire il menu ed ordinare</p>
+            </div>
             <img src="${qrImage}" alt="QR Tavolo ${table.numero}" />
-            <p>Inquadra il QR per aprire il menu e ordinare.</p>
-            <p class="url">${accessUrl}</p>
           </div>
         </body>
       </html>
@@ -350,9 +516,10 @@ export class TablesManagementComponent {
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
+    this.closePrintDialog();
   }
 
-  async printBulkQrs(activeOnly: boolean): Promise<void> {
+  private async printBulkQrs(activeOnly: boolean, layout: PrintLayout): Promise<void> {
     if (!this.isBrowser()) {
       return;
     }
@@ -403,19 +570,16 @@ export class TablesManagementComponent {
       return;
     }
 
-    const perPage = TablesManagementComponent.BULK_PRINT_COLUMNS * TablesManagementComponent.BULK_PRINT_ROWS;
-    const pages = this.chunkTables(printableTables, perPage);
     const title = activeOnly ? 'QR tavoli attivi' : 'QR tutti i tavoli';
-    const pageHeightMm = 297 - 20;
-    const rowGapMm = 6;
-    const rowHeightMm = ((pageHeightMm - (rowGapMm * (TablesManagementComponent.BULK_PRINT_ROWS - 1))) / TablesManagementComponent.BULK_PRINT_ROWS).toFixed(2);
+    const qrSizeMm = layout.qrSizeMm.toFixed(1);
+    const horizontalClass = layout.orientation === 'horizontal' ? ' card--horizontal' : '';
 
     printWindow.document.write(`
       <html>
         <head>
           <title>${title}</title>
           <style>
-            @page { size: A4 portrait; margin: 10mm; }
+            @page { size: A4 portrait; margin: ${TablesManagementComponent.PRINT_PAGE_MARGIN_MM}mm; }
             * { box-sizing: border-box; }
             body {
               margin: 0;
@@ -425,21 +589,15 @@ export class TablesManagementComponent {
             }
             .page {
               width: 100%;
-              min-height: calc(297mm - 20mm);
-              display: grid;
-              grid-template-columns: repeat(${TablesManagementComponent.BULK_PRINT_COLUMNS}, 1fr);
-              grid-template-rows: repeat(${TablesManagementComponent.BULK_PRINT_ROWS}, ${rowHeightMm}mm);
-              align-content: start;
-              gap: 6mm;
-              page-break-after: always;
-              break-after: page;
-              overflow: hidden;
-            }
-            .page:last-child {
-              page-break-after: auto;
-              break-after: auto;
+              display: flex;
+              flex-wrap: wrap;
+              align-content: flex-start;
+              align-items: flex-start;
+              gap: ${TablesManagementComponent.PRINT_CARD_GAP_MM}mm;
             }
             .card {
+              width: ${layout.widthMm.toFixed(1)}mm;
+              height: ${layout.heightMm.toFixed(1)}mm;
               border: 1px dashed #98a2b3;
               border-radius: 4mm;
               padding: 3mm;
@@ -455,33 +613,49 @@ export class TablesManagementComponent {
               page-break-inside: avoid;
               overflow: hidden;
             }
+            .card--horizontal {
+              display: grid;
+              grid-template-columns: minmax(0, 1fr) ${qrSizeMm}mm;
+              grid-template-rows: 1fr;
+              align-items: center;
+              justify-items: center;
+              column-gap: 3mm;
+              text-align: left;
+            }
+            .card__copy {
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 1.2mm;
+              text-align: center;
+            }
+            .card--horizontal .card__copy {
+              align-items: flex-start;
+              text-align: left;
+            }
             .brand {
+              font-size: 8px;
+              font-weight: 700;
+              line-height: 1.1;
+            }
+            .restaurant-name {
               font-size: 9px;
               font-weight: 700;
-              letter-spacing: 0.12em;
-              text-transform: uppercase;
-              line-height: 1.1;
+              color: #111827;
+              line-height: 1.15;
+              overflow: hidden;
             }
             .table-number {
               margin-top: 0.4mm;
-              font-size: 16px;
+              font-size: 15px;
               font-weight: 700;
               line-height: 1.05;
             }
-            .table-name {
-              min-height: 7mm;
-              font-size: 9px;
-              color: #475467;
-              line-height: 1.15;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              overflow: hidden;
-            }
             .qr {
-              width: 100%;
-              max-width: 34mm;
-              max-height: 34mm;
+              width: ${qrSizeMm}mm;
+              height: ${qrSizeMm}mm;
               aspect-ratio: 1 / 1;
               object-fit: contain;
               margin: 0.8mm 0;
@@ -492,6 +666,9 @@ export class TablesManagementComponent {
               color: #667085;
               line-height: 1.15;
               margin-top: auto;
+            }
+            .card--horizontal .hint {
+              margin-top: 1.5mm;
             }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -522,25 +699,26 @@ export class TablesManagementComponent {
           </script>
         </head>
         <body>
-          ${pages.map(page => `
-            <section class="page">
-              ${page.map(item => `
-                <article class="card">
-                  <div class="brand">WaiterO</div>
-                  <div class="table-number">Tavolo ${item.table.numero}</div>
-                  <div class="table-name">${this.escapeHtml(item.table.nome)}</div>
+          <section class="page">
+              ${printableTables.map(item => `
+                <article class="card${horizontalClass}">
+                  <div class="card__copy">
+                    <div class="restaurant-name">${this.escapeHtml(this.restaurantName)}</div>
+                    <div class="brand">Waitero</div>
+                    <div class="table-number">Tavolo ${item.table.numero}</div>
+                    <div class="hint">Scansiona per aprire il menu ed ordinare</div>
+                  </div>
                   <img class="qr" src="${item.qrImage}" alt="QR tavolo ${item.table.numero}" />
-                  <div class="hint">Scansiona per aprire il menu e ordinare</div>
                 </article>
               `).join('')}
-            </section>
-          `).join('')}
+          </section>
         </body>
       </html>
     `);
     printWindow.document.close();
     this.printingBulk = false;
     this.actionInFlightLabel = '';
+    this.closePrintDialog();
   }
 
   cancelEdit(): void {
@@ -611,19 +789,22 @@ export class TablesManagementComponent {
     canvas.height = qrImage.height;
     context.drawImage(qrImage, 0, 0);
 
-    const logoSize = Math.round(canvas.width * TablesManagementComponent.QR_LOGO_RATIO);
-    const padding = Math.round(logoSize * 0.22);
-    const frameSize = logoSize + (padding * 2);
+    const logoMaxSize = Math.round(canvas.width * TablesManagementComponent.QR_LOGO_RATIO);
+    const logoRatio = logoImage.width / logoImage.height;
+    const logoWidth = logoRatio >= 1 ? logoMaxSize : Math.round(logoMaxSize * logoRatio);
+    const logoHeight = logoRatio >= 1 ? Math.round(logoMaxSize / logoRatio) : logoMaxSize;
+    const padding = Math.round(logoMaxSize * 0.22);
+    const frameSize = logoMaxSize + (padding * 2);
     const frameX = Math.round((canvas.width - frameSize) / 2);
     const frameY = Math.round((canvas.height - frameSize) / 2);
-    const logoX = Math.round((canvas.width - logoSize) / 2);
-    const logoY = Math.round((canvas.height - logoSize) / 2);
+    const logoX = Math.round((canvas.width - logoWidth) / 2);
+    const logoY = Math.round((canvas.height - logoHeight) / 2);
     const radius = Math.round(frameSize * 0.22);
 
     context.fillStyle = '#FFFFFF';
     this.roundRect(context, frameX, frameY, frameSize, frameSize, radius);
     context.fill();
-    context.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+    context.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
 
     return canvas.toDataURL('image/png');
   }
@@ -675,12 +856,26 @@ export class TablesManagementComponent {
     return isPlatformBrowser(this.platformId);
   }
 
-  private chunkTables<T>(items: T[], size: number): T[][] {
-    const chunks: T[][] = [];
-    for (let index = 0; index < items.length; index += size) {
-      chunks.push(items.slice(index, index + size));
+  private getPrintLayout(): PrintLayout {
+    const raw = this.printForm.getRawValue();
+    const preset = this.printSizeOptions.find(option => option.value === raw.sizePreset);
+    let widthCm = preset && preset.value !== 'custom' ? preset.widthCm : raw.customWidthCm;
+    let heightCm = preset && preset.value !== 'custom' ? preset.heightCm : raw.customHeightCm;
+
+    if (raw.orientation === 'horizontal') {
+      [widthCm, heightCm] = [heightCm, widthCm];
     }
-    return chunks;
+
+    const widthMm = widthCm * 10;
+    const heightMm = heightCm * 10;
+    const qrSizeMm = Math.max(26, Math.min(widthMm - 10, heightMm - 28, 58));
+    return { widthMm, heightMm, qrSizeMm, orientation: raw.orientation };
+  }
+
+  private formatCm(mm: number): string {
+    return (mm / 10).toLocaleString('it-IT', {
+      maximumFractionDigits: 1
+    });
   }
 
   private escapeHtml(value: string | null | undefined): string {

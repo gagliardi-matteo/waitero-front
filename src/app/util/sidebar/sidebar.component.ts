@@ -31,6 +31,7 @@ export class SidebarComponent implements OnInit {
   readonly ownerSecondaryItems: NavItem[] = [
     { label: 'Storico ordini', icon: 'history', route: '/orders-history' },
     { label: 'Tavoli', icon: 'table_restaurant', route: '/tables' },
+    { label: 'Stampanti', icon: 'print', route: '/printer-settings' },
     { label: 'Locale', icon: 'storefront', route: '/restaurant-settings' }
   ];
 

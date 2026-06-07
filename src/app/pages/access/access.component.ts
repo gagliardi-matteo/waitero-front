@@ -7,6 +7,7 @@ import { DeviceIdService } from '../../services/device-id.service';
 import { FingerprintService } from '../../services/fingerprint.service';
 import { GpsService, GpsSnapshot } from '../../services/gps.service';
 import { TableAccessService } from '../../services/table-access.service';
+import { LegalAcceptanceService, LegalConfig } from '../../services/legal-acceptance.service';
 
 @Component({
   selector: 'app-access',
@@ -17,13 +18,17 @@ import { TableAccessService } from '../../services/table-access.service';
 })
 export class AccessComponent implements OnInit {
   errorMessage = '';
-  accessStatus = 'Conferma la posizione per entrare nel menu.';
+  accessStatus = 'Preparazione accesso al menu...';
   gpsSnapshot: GpsSnapshot | null = null;
   locationPermissionDenied = false;
   locationRetryMessage = '';
   locationBlockedPermanently = false;
   retryingLocation = false;
-  locationNoticeVisible = true;
+  locationNoticeVisible = false;
+  legalModalVisible = false;
+  legalAccepting = false;
+  legalConfig: LegalConfig | null = null;
+  legalErrorMessage = '';
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -32,6 +37,7 @@ export class AccessComponent implements OnInit {
   private fingerprintService = inject(FingerprintService);
   private gpsService = inject(GpsService);
   private tableAccessService = inject(TableAccessService);
+  private legalAcceptanceService = inject(LegalAcceptanceService);
 
   async ngOnInit(): Promise<void> {
     this.prepareAccess();
@@ -67,9 +73,74 @@ export class AccessComponent implements OnInit {
     }
 
     this.auth.setPendingAccess(token, tablePublicId, restaurantId, tableIdParam);
+    this.showLegalModalOrContinue(this.fallbackLegalConfig());
+    this.loadLegalConfig();
+  }
+
+  private loadLegalConfig(): void {
+    this.legalAcceptanceService.getConfig().subscribe({
+      next: config => {
+        this.showLegalModalOrContinue(config);
+      },
+      error: err => {
+        console.error('Errore caricamento configurazione legale', err);
+        this.showLegalModalOrContinue(this.fallbackLegalConfig());
+      }
+    });
+  }
+
+  private showLegalModalOrContinue(config: LegalConfig): void {
+    this.legalConfig = config;
+    if (this.hasCustomerLegalAcceptanceForCurrentVersion()) {
+      void this.runAccessFlow();
+      return;
+    }
+    this.legalModalVisible = true;
+    this.accessStatus = 'Accetta i documenti per continuare.';
+  }
+
+  continueAfterLegalAcceptance(): void {
+    const token = this.route.snapshot.paramMap.get('token');
+    const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId');
+    const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
+    const tableIdParam = this.route.snapshot.paramMap.get('tableId');
+    const sessionId = this.ensureLegalSessionId();
+
+    if (!token) {
+      this.legalErrorMessage = 'Link tavolo non valido.';
+      return;
+    }
+
+    this.legalAccepting = true;
+    this.legalErrorMessage = '';
+    this.legalAcceptanceService.acceptCustomer({
+      sessionId,
+      tablePublicId,
+      restaurantId,
+      tableId: tableIdParam ? Number(tableIdParam) : null,
+      qrToken: token
+    }).subscribe({
+      next: response => {
+        this.legalModalVisible = false;
+        this.legalAccepting = false;
+        this.rememberCustomerLegalAcceptance(response.config);
+        void this.runAccessFlow();
+      },
+      error: err => {
+        console.error('Errore accettazione documenti cliente', err);
+        this.legalAccepting = false;
+        this.legalErrorMessage = err.error?.message ?? `Impossibile registrare l'accettazione dei documenti (HTTP ${err.status ?? 'errore'}).`;
+      }
+    });
   }
 
   private async runAccessFlow(): Promise<void> {
+    if (!this.hasCustomerLegalAcceptanceForCurrentVersion()) {
+      this.legalModalVisible = true;
+      this.accessStatus = 'Accetta i documenti per continuare.';
+      return;
+    }
+
     const token = this.route.snapshot.paramMap.get('token');
     const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId');
     const restaurantId = this.route.snapshot.paramMap.get('restaurantId');
@@ -153,5 +224,65 @@ export class AccessComponent implements OnInit {
 
   formatAccuracy(value: number | null): string {
     return value == null ? 'non disponibile' : `${Math.round(value)} m`;
+  }
+
+  legalDocumentUrl(url: string | null | undefined): string {
+    return this.legalAcceptanceService.documentUrl(url);
+  }
+
+  termsClientUrl(): string {
+    return this.legalAcceptanceService.termsClientUrl();
+  }
+
+  privacyClientUrl(): string {
+    return this.legalAcceptanceService.privacyClientUrl();
+  }
+
+  private hasCustomerLegalAcceptanceForCurrentVersion(): boolean {
+    if (!this.legalConfig) {
+      this.legalModalVisible = true;
+      return false;
+    }
+
+    const acceptedKey = sessionStorage.getItem(this.customerLegalStorageKey());
+    return acceptedKey === this.customerLegalVersionKey(this.legalConfig);
+  }
+
+  private rememberCustomerLegalAcceptance(config: LegalConfig): void {
+    sessionStorage.setItem(this.customerLegalStorageKey(), this.customerLegalVersionKey(config));
+  }
+
+  private ensureLegalSessionId(): string {
+    const storageKey = `${this.customerLegalStorageKey()}:sessionId`;
+    const existing = sessionStorage.getItem(storageKey);
+    if (existing) {
+      return existing;
+    }
+
+    const value = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(storageKey, value);
+    return value;
+  }
+
+  private customerLegalStorageKey(): string {
+    const tablePublicId = this.route.snapshot.paramMap.get('tablePublicId') ?? this.route.snapshot.paramMap.get('tableId') ?? 'unknown';
+    return `waiteroCustomerLegalAcceptance:${tablePublicId}`;
+  }
+
+  private customerLegalVersionKey(config: LegalConfig): string {
+    return `${config.termsVersion}:${config.privacyVersion}:${config.allergenDisclaimerVersion}`;
+  }
+
+  private fallbackLegalConfig(): LegalConfig {
+    return {
+      contractVersion: '1.0',
+      privacyVersion: '1.0',
+      termsVersion: '1.0',
+      allergenDisclaimerVersion: '1.0',
+      contractUrl: '/legal/contratto-saas',
+      privacyUrl: '/legal/privacy-client-v1.0.html',
+      termsUrl: '/legal/terms-client-v1.0.html',
+      allergenDisclaimerUrl: '/legal/disclaimer-allergeni-v1.0.html'
+    };
   }
 }

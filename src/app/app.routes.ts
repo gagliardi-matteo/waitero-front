@@ -4,6 +4,7 @@ import { authGuard, loginGuard, masterGuard } from './auth/AuthGuard';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent), canActivate: [loginGuard] },
+  { path: 'legal/:document', loadComponent: () => import('./pages/legal-document/legal-document.component').then(m => m.LegalDocumentComponent) },
   {
     path: 'admin/restaurants',
     loadComponent: () => import('./pages/admin-restaurants/admin-restaurants.component').then(m => m.AdminRestaurantsComponent),
@@ -57,6 +58,11 @@ export const routes: Routes = [
   {
     path: 'restaurant-settings',
     loadComponent: () => import('./pages/restaurant-settings/restaurant-settings.component').then(m => m.RestaurantSettingsComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'printer-settings',
+    loadComponent: () => import('./pages/printer-settings/printer-settings.component').then(m => m.PrinterSettingsComponent),
     canActivate: [authGuard]
   },
   {
