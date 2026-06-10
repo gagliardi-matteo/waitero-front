@@ -65,14 +65,14 @@ export class CustomerOrderService {
       .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
   }
 
-  getCurrentState(token: string, restaurantId: string, tableId: string): Observable<CustomerOrderState> {
+  getCurrentState(token: string, restaurantId: string, tableId: string, redirectOnUnauthorized = true): Observable<CustomerOrderState> {
     const params = this.withAccessMetadata(new HttpParams()
       .set('token', token)
       .set('restaurantId', restaurantId)
       .set('tableId', tableId));
 
     return this.http.get<CustomerOrderState>(`${environment.apiUrl}/customer/orders/state`, { params })
-      .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId)));
+      .pipe(catchError(err => this.handleTableAccessError(err, token, restaurantId, tableId, redirectOnUnauthorized)));
   }
 
   mutateDraft(token: string, restaurantId: string, tableId: string, dishId: number, delta: number, portionKey?: string): Observable<CustomerDraft> {
@@ -236,9 +236,9 @@ export class CustomerOrderService {
     return params;
   }
 
-  private handleTableAccessError(err: any, token: string, restaurantId: string, tableId: string) {
+  private handleTableAccessError(err: any, token: string, restaurantId: string, tableId: string, redirectOnUnauthorized = true) {
     const message = err?.error?.message ?? '';
-    if (typeof message === 'string' && message.includes('Accesso tavolo non autorizzato')) {
+    if (redirectOnUnauthorized && typeof message === 'string' && message.includes('Accesso tavolo non autorizzato')) {
       this.auth.clear();
       void this.router.navigate(['/menu', restaurantId, tableId, token], { replaceUrl: true });
     }

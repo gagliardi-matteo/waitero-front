@@ -4,14 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { Piatto } from '../../models/piatto.model';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { Ristorante } from '../../models/ristorante.mode';
 import { environment } from '../../../environments/environment';
 import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
-import { CustomerOrderService } from '../../services/customer-order.service';
+import { CustomerOrderService, CustomerOrderState } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
@@ -102,7 +102,11 @@ export class MenuComponent implements OnInit, OnDestroy {
 
     forkJoin({
       restaurant: this.http.get<Ristorante>(`${environment.apiUrl}/customer/ristorante/${this.restaurantId}`),
-      tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId),
+      tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId, false)
+        .pipe(catchError(err => {
+          console.error('Errore caricamento stato tavolo iniziale', err);
+          return of(this.emptyTableState());
+        })),
       menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
     }).subscribe({
         next: ({ restaurant, tableState, menu }) => {
@@ -209,7 +213,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   loadCurrentState() {
-      this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId)
+      this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId, false)
         .subscribe({
           next: state => {
             this.orderService.setConfirmedOrder(state.currentOrder);
@@ -342,6 +346,17 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.orderService.setCatalog(this.piatti);
     this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
     this.applyFilters();
+  }
+
+  private emptyTableState(): CustomerOrderState {
+    return {
+      currentOrder: null,
+      draft: {
+        restaurantId: Number(this.restaurantId),
+        tableId: Number(this.tableId),
+        items: []
+      }
+    };
   }
 
   private syncActiveVisibleCategory(): void {
