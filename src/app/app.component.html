@@ -22,6 +22,14 @@
       <button type="button" (click)="exitImpersonation()">Esci impersonazione</button>
     </div>
 
+    <button type="button" class="waiter-call-global-banner" *ngIf="showWaiterCallBanner()" (click)="openWaiterCallsDashboard()">
+      <span>
+        <strong>Chiamata cameriere</strong>
+        <small>{{ waiterCallBannerText() }}</small>
+      </span>
+      <span>Apri</span>
+    </button>
+
     <router-outlet></router-outlet>
   </div>
 

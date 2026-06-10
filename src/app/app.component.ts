@@ -105,6 +105,27 @@ export class AppComponent implements OnDestroy {
     return this.authService.getImpersonatedRestaurantName() ?? 'locale selezionato';
   }
 
+  showWaiterCallBanner(): boolean {
+    return this.showSidebar()
+      && !this.router.url.toLowerCase().startsWith('/tables-dashboard')
+      && this.waiterCallNotificationService.pendingWaiterCalls().length > 0;
+  }
+
+  waiterCallBannerText(): string {
+    const calls = this.waiterCallNotificationService.pendingWaiterCalls();
+    if (calls.length === 0) {
+      return '';
+    }
+
+    const labels = calls.slice(0, 3).map(call => `Tavolo ${call.tableId}`);
+    const remaining = calls.length - labels.length;
+    return remaining > 0 ? `${labels.join(', ')} +${remaining}` : labels.join(', ');
+  }
+
+  openWaiterCallsDashboard(): void {
+    void this.router.navigate(['/tables-dashboard']);
+  }
+
   legalDocumentUrl(url: string | null | undefined): string {
     return this.legalAcceptanceService.documentUrl(url);
   }

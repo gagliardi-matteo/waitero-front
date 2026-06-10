@@ -91,6 +91,53 @@
   font-weight: 700;
 }
 
+.waiter-call-global-banner {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  border-bottom: 1px solid rgba(216, 122, 44, 0.28);
+  padding: 0.72rem 1.1rem;
+  background: #fff6ec;
+  color: #7d3c0d;
+  text-align: left;
+  box-shadow: 0 12px 24px rgba(36, 39, 47, 0.08);
+}
+
+.waiter-call-global-banner span:first-child {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.waiter-call-global-banner strong {
+  font-size: 0.9rem;
+}
+
+.waiter-call-global-banner small {
+  color: #9a551a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.waiter-call-global-banner span:last-child {
+  flex: 0 0 auto;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 0.85rem;
+  background: #d87a2c;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .legal-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -195,6 +242,11 @@
     flex-direction: column;
     align-items: stretch;
     padding: 0.9rem 1rem;
+  }
+
+  .waiter-call-global-banner {
+    top: 0;
+    padding: 0.72rem 1rem;
   }
 }
 

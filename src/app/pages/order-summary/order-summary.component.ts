@@ -109,6 +109,16 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     return 'Potrebbe piacerti anche';
   }
 
+  get waiterButtonLabel(): string {
+    if (this.isCallingWaiter) {
+      return 'Avviso...';
+    }
+    if (this.waiterCallConfirmationMessage) {
+      return 'Avvisato';
+    }
+    return 'Chiama cameriere';
+  }
+
   toggleExpanded() {
     this.isExpanded = !this.isExpanded;
   }

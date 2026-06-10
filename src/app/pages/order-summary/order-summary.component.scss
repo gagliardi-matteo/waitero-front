@@ -28,9 +28,9 @@ $peekHeight: 4.5rem;
     position: relative;
     height: $peekHeight;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
-    gap: .8rem;
+    gap: .65rem;
     padding: 0 1rem;
     cursor: pointer;
     border-bottom: 1px solid var(--border);
@@ -75,6 +75,25 @@ $peekHeight: 4.5rem;
 
   .vedi-carrello-text { text-align: center; font-size: 1rem; }
   .prezzo { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .header-call-waiter-btn {
+    min-height: 2.35rem;
+    border: 1px solid rgba(216, 122, 44, 0.38);
+    border-radius: 999px;
+    padding: 0 .8rem;
+    background: rgba(255, 248, 241, 0.96);
+    color: var(--accent);
+    font-size: .82rem;
+    font-weight: 800;
+    line-height: 1.1;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+      opacity: .68;
+    }
+  }
 
   .order-content {
     flex: 1;
@@ -225,6 +244,30 @@ $peekHeight: 4.5rem;
     font-weight: 700;
 
     &:disabled { opacity: .55; }
+  }
+}
+
+@media (max-width: 380px) {
+  .order-summary-wrapper {
+    .summary-header {
+      gap: .45rem;
+      padding: 0 .75rem;
+    }
+
+    .vedi-carrello-text {
+      font-size: .92rem;
+    }
+
+    .prezzo {
+      font-size: .9rem;
+    }
+
+    .header-call-waiter-btn {
+      max-width: 6.4rem;
+      padding: 0 .65rem;
+      font-size: .76rem;
+      white-space: normal;
+    }
   }
 }
 
