@@ -111,7 +111,8 @@ export class WaiterOrderComponent implements OnInit {
   }
 
   submit(): void {
-    if (!this.selectedTableId) {
+    const selectedTable = this.selectedTable;
+    if (!selectedTable) {
       this.errorMessage = 'Seleziona un tavolo.';
       return;
     }
@@ -124,7 +125,7 @@ export class WaiterOrderComponent implements OnInit {
     this.errorMessage = '';
 
     this.ordersService.createManualOrder({
-      tableId: this.selectedTableId,
+      tableId: selectedTable.numero,
       items: this.selectedItems.map(item => ({ dishId: item.dish.id, quantity: item.quantity }))
     }).subscribe({
       next: (order: CustomerOrder) => {

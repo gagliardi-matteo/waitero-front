@@ -172,8 +172,10 @@
             <div class="card-image-shell" *ngIf="dishImagesEnabled">
               <img [src]="getImageUrl(item.imageUrl)" alt="{{ item.nome }}" />
               <span class="top-badge" *ngIf="item.consigliato">Top</span>
+              <span class="status-badge" *ngIf="!item.disponibile">Non disponibile</span>
             </div>
             <div class="info">
+              <span class="status-badge status-badge--inline" *ngIf="!dishImagesEnabled && !item.disponibile">Non disponibile</span>
               <h3 class="name">{{ item.nome }}</h3>
               <p class="description">{{ item.descrizione || categoryLabel(item) }}</p>
               <div class="card-footer">

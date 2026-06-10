@@ -42,6 +42,8 @@
 .card-image-shell { position:relative; }
 .card-image-shell img { width:100%; height:160px; object-fit:cover; background:var(--surface-soft); }
 .top-badge { position:absolute; top:.75rem; right:.75rem; padding:.25rem .5rem; border-radius:999px; background:rgba(216,122,44,.12); color:var(--accent-strong); font-size:.72rem; font-weight:700; }
+.status-badge { position:absolute; left:.75rem; bottom:.75rem; padding:.25rem .55rem; border-radius:999px; background:rgba(31,41,55,.78); color:#fff; font-size:.72rem; font-weight:700; }
+.status-badge--inline { position:static; display:inline-flex; margin-bottom:.45rem; background:rgba(31,41,55,.08); color:var(--text-muted); }
 .info { padding:.95rem; }
 .name { font-size:.98rem; font-weight:700; margin-bottom:.25rem; }
 .description { color:var(--text-muted); font-size:.85rem; margin-bottom:.75rem; }
