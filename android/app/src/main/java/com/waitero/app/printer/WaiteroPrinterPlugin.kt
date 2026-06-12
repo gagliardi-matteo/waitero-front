@@ -7,16 +7,12 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 
 @CapacitorPlugin(name = "WaiteroPrinter")
-class WaiteroPrinterPlugin : Plugin() {
+public class WaiteroPrinterPlugin : Plugin() {
     private val formatter = PrinterFormatter()
     private var sunmiPrinterManager: SunmiPrinterManager? = null
 
-    override fun load() {
-        sunmiPrinterManager = SunmiPrinterManager(context)
-    }
-
     @PluginMethod
-    fun printKitchenOrder(call: PluginCall) {
+    public fun printKitchenOrder(call: PluginCall) {
         val order = call.getObject("order") ?: call.data
         if (order == null) {
             call.resolve(result(false, "Payload ordine mancante"))
@@ -30,12 +26,16 @@ class WaiteroPrinterPlugin : Plugin() {
         }
 
         execute {
-            val manager = sunmiPrinterManager ?: SunmiPrinterManager(context).also {
-                sunmiPrinterManager = it
-            }
+            try {
+                val manager = sunmiPrinterManager ?: SunmiPrinterManager(context.applicationContext).also {
+                    sunmiPrinterManager = it
+                }
 
-            val printResult = manager.printText(formatted.ticket)
-            call.resolve(result(printResult.success, printResult.error))
+                val printResult = manager.printText(formatted.ticket)
+                call.resolve(result(printResult.success, printResult.error))
+            } catch (exception: Exception) {
+                call.resolve(result(false, "Errore inizializzazione stampa SUNMI: ${exception.message ?: "errore sconosciuto"}"))
+            }
         }
     }
 

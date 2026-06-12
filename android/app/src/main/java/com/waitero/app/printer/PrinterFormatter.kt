@@ -2,17 +2,16 @@ package com.waitero.app.printer
 
 import com.getcapacitor.JSObject
 import org.json.JSONArray
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class PrinterFormatter {
     private val separator = "========================"
     private val sectionSeparator = "------------------------"
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ITALY)
+    private val timeFormatter = SimpleDateFormat("HH:mm", Locale.ITALY)
 
     fun formatKitchenOrder(order: JSObject): FormatResult {
         val orderId = order.optLong("orderId", Long.MIN_VALUE)
@@ -100,16 +99,31 @@ class PrinterFormatter {
     }
 
     private fun formatTime(value: String): String {
-        return try {
-            val instant = Instant.parse(value)
-            timeFormatter.format(instant.atZone(ZoneId.systemDefault()))
-        } catch (_: DateTimeParseException) {
+        val parsed = parseDate(value) ?: return value
+        return timeFormatter.format(parsed)
+    }
+
+    private fun parseDate(value: String): Date? {
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        )
+
+        for (pattern in patterns) {
+            val parser = SimpleDateFormat(pattern, Locale.US)
+            if (pattern.endsWith("'Z'")) {
+                parser.timeZone = TimeZone.getTimeZone("UTC")
+            }
             try {
-                timeFormatter.format(LocalDateTime.parse(value))
-            } catch (_: DateTimeParseException) {
-                value
+                return parser.parse(value)
+            } catch (_: ParseException) {
+                // Try the next supported timestamp shape.
             }
         }
+
+        return null
     }
 
     private fun wrapLine(value: String, width: Int): List<String> {
