@@ -15,12 +15,20 @@
       <h1>Ordine #{{ currentOrder.id }}</h1>
       <p>Tavolo {{ currentOrder.tableId }} &middot; {{ itemCount }} articoli</p>
     </div>
-    <div class="status-box">
-      <span class="status" [class.partial]="currentOrder.status === 'PARZIALMENTE_PAGATO'" [class.paid]="isPaid">{{ currentOrder.status }}</span>
-      <span>{{ currentOrder.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
-      <span *ngIf="currentOrder.paymentMode">Ultima registrazione {{ currentOrder.paymentMode }}</span>
+    <div class="header-actions">
+      <button class="secondary-button" type="button" [disabled]="isReprinting" (click)="reprintOrder()">
+        {{ isReprinting ? 'Ristampa...' : 'Ristampa ordine' }}
+      </button>
+      <div class="status-box">
+        <span class="status" [class.partial]="currentOrder.status === 'PARZIALMENTE_PAGATO'" [class.paid]="isPaid">{{ currentOrder.status }}</span>
+        <span>{{ currentOrder.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        <span *ngIf="currentOrder.paymentMode">Ultima registrazione {{ currentOrder.paymentMode }}</span>
+      </div>
     </div>
   </div>
+
+  <p class="success-message" *ngIf="reprintMessage">{{ reprintMessage }}</p>
+  <p class="error-message" *ngIf="reprintError">{{ reprintError }}</p>
 
   <div class="summary-strip">
     <article class="summary-chip-card">

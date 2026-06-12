@@ -81,6 +81,10 @@ export class RestaurantOrderService {
     });
   }
 
+  reprintOrder(orderId: number): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/orders/${orderId}/reprint`, {});
+  }
+
   connectToStream(): EventSource | null {
     const token = this.auth.getToken();
     if (!token || typeof window === 'undefined') {

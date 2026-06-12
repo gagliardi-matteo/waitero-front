@@ -17,6 +17,9 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   order: CustomerOrder | null = null;
   isLoading = true;
   isPaying = false;
+  isReprinting = false;
+  reprintMessage = '';
+  reprintError = '';
   partialAmount: number | null = null;
   splitPeopleCount: number | null = null;
   participantName = '';
@@ -157,6 +160,27 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       error: err => {
         console.error('Errore pagamento ordine', err);
         this.isPaying = false;
+      }
+    });
+  }
+
+  reprintOrder(): void {
+    if (!this.order || this.isReprinting) {
+      return;
+    }
+
+    this.isReprinting = true;
+    this.reprintMessage = '';
+    this.reprintError = '';
+    this.ordersService.reprintOrder(this.order.id).subscribe({
+      next: () => {
+        this.isReprinting = false;
+        this.reprintMessage = 'Ristampa ordine inviata.';
+      },
+      error: err => {
+        console.error('Errore ristampa ordine', err);
+        this.isReprinting = false;
+        this.reprintError = err.error?.message ?? "Impossibile ristampare l'ordine.";
       }
     });
   }

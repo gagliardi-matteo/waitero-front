@@ -264,6 +264,10 @@ export class AppComponent implements OnDestroy {
           void this.printOrderOnLocalPos(payload.orderId);
         }
       }
+
+      if (payload?.type === 'ORDER_REPRINT_REQUESTED' && payload.orderId) {
+        void this.printOrderOnLocalPos(payload.orderId, true);
+      }
     });
 
     eventSource.addEventListener('error', () => {
@@ -292,7 +296,7 @@ export class AppComponent implements OnDestroy {
     }
   }
 
-  private async printOrderOnLocalPos(orderId: number): Promise<void> {
+  private async printOrderOnLocalPos(orderId: number, forceFullPrint = false): Promise<void> {
     if (!this.printerService.canPrintLocally()) {
       console.warn('Stampa POS locale non disponibile', this.printerService.getLocalPrinterStatus());
       return;
@@ -302,13 +306,13 @@ export class AppComponent implements OnDestroy {
       next: async order => {
         const printSnapshot = this.buildPrintedOrderSnapshot(order);
         const lastSnapshot = this.getPrintedOrderSnapshot(order.id);
-        if (lastSnapshot?.fingerprint === printSnapshot.fingerprint) {
+        if (!forceFullPrint && lastSnapshot?.fingerprint === printSnapshot.fingerprint) {
           console.info('Snapshot ordine gia stampato su POS locale', orderId);
           return;
         }
 
         console.info('Invio ordine a stampante POS locale', orderId);
-        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order, lastSnapshot));
+        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order, forceFullPrint ? undefined : lastSnapshot));
         if (!result.success) {
           console.error('Errore stampa ordine su POS locale', result.error);
           return;
