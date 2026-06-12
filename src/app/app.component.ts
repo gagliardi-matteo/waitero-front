@@ -10,8 +10,20 @@ import { WaiterAlertAudioService } from './services/waiter-alert-audio.service';
 import { WaiterCallNotificationService } from './services/waiter-call-notification.service';
 import { LegalAcceptanceService, LegalConfig } from './services/legal-acceptance.service';
 import { SidebarComponent } from './util/sidebar/sidebar.component';
-import { CustomerOrder } from './models/customer-order.model';
+import { CustomerOrder, CustomerOrderItem } from './models/customer-order.model';
 import { PrinterService } from './core/printer/printer.service';
+import { PrintOrderItem } from './core/printer/printer.models';
+
+interface PrintedOrderSnapshot {
+  orderId: number;
+  fingerprint: string;
+  items: PrintedOrderSnapshotItem[];
+}
+
+interface PrintedOrderSnapshotItem {
+  key: string;
+  quantity: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -32,7 +44,7 @@ export class AppComponent implements OnDestroy {
   private printerService = inject(PrinterService);
   private eventSource: EventSource | null = null;
   private routeEventsSubscription: Subscription | null = null;
-  private printedOrderFingerprints = new Set<string>();
+  private printedOrderSnapshots = new Map<number, PrintedOrderSnapshot>();
   legalModalVisible = false;
   legalConfig: LegalConfig | null = null;
   legalCheckedRestaurantId: number | null = null;
@@ -288,19 +300,21 @@ export class AppComponent implements OnDestroy {
 
     this.restaurantOrderService.getOrderById(orderId).subscribe({
       next: async order => {
-        const fingerprint = this.orderPrintFingerprint(order);
-        if (this.hasPrintedOrderSnapshot(fingerprint)) {
+        const printSnapshot = this.buildPrintedOrderSnapshot(order);
+        const lastSnapshot = this.getPrintedOrderSnapshot(order.id);
+        if (lastSnapshot?.fingerprint === printSnapshot.fingerprint) {
           console.info('Snapshot ordine gia stampato su POS locale', orderId);
           return;
         }
 
-        this.markOrderSnapshotPrinted(fingerprint);
         console.info('Invio ordine a stampante POS locale', orderId);
-        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order));
+        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order, lastSnapshot));
         if (!result.success) {
-          this.unmarkOrderSnapshotPrinted(fingerprint);
           console.error('Errore stampa ordine su POS locale', result.error);
+          return;
         }
+
+        this.storePrintedOrderSnapshot(printSnapshot);
       },
       error: err => {
         console.error('Errore caricamento ordine per stampa POS', err);
@@ -308,17 +322,13 @@ export class AppComponent implements OnDestroy {
     });
   }
 
-  private toPrintOrder(order: CustomerOrder) {
+  private toPrintOrder(order: CustomerOrder, lastSnapshot?: PrintedOrderSnapshot) {
     const note = order.noteCucina?.trim();
     return {
       orderId: order.id,
       tableName: `Tavolo ${order.tableId}`,
       createdAt: order.createdAt,
-      items: order.items.map((item, index) => ({
-        quantity: item.quantita,
-        name: this.formatPrintItemName(item.nome, item.portionLabel),
-        notes: index === 0 ? note : undefined
-      }))
+      items: this.buildPrintItems(order, lastSnapshot, note)
     };
   }
 
@@ -329,64 +339,109 @@ export class AppComponent implements OnDestroy {
     return `${name} - ${portionLabel}`;
   }
 
-  private orderPrintFingerprint(order: CustomerOrder): string {
-    const itemFingerprint = [...order.items]
-      .sort((left, right) => left.id - right.id)
-      .map(item => [
-        item.id,
-        item.dishId,
-        item.portionKey ?? '',
-        item.portionLabel ?? '',
-        item.quantita,
-        item.nome
-      ].join(':'))
-      .join('|');
+  private buildPrintItems(order: CustomerOrder, lastSnapshot: PrintedOrderSnapshot | undefined, note?: string): PrintOrderItem[] {
+    const previousQuantityByKey = new Map<string, number>(
+      lastSnapshot?.items.map(item => [item.key, item.quantity]) ?? []
+    );
+    const printedItems: PrintOrderItem[] = [];
+    const newItems: PrintOrderItem[] = [];
 
+    for (const item of order.items) {
+      const key = this.orderItemPrintKey(item);
+      const previousQuantity = previousQuantityByKey.get(key) ?? 0;
+      const printedQuantity = Math.min(previousQuantity, item.quantita);
+      const newQuantity = Math.max(item.quantita - previousQuantity, 0);
+      const name = this.formatPrintItemName(item.nome, item.portionLabel);
+
+      if (newQuantity > 0) {
+        newItems.push({
+          quantity: newQuantity,
+          name,
+          status: 'NEW'
+        });
+      }
+
+      if (printedQuantity > 0) {
+        printedItems.push({
+          quantity: printedQuantity,
+          name,
+          status: 'PRINTED'
+        });
+      }
+    }
+
+    const items = [...newItems, ...printedItems];
+    if (note && items.length > 0) {
+      items[0] = { ...items[0], notes: note };
+    }
+    return items;
+  }
+
+  private buildPrintedOrderSnapshot(order: CustomerOrder): PrintedOrderSnapshot {
+    const items = order.items
+      .map(item => ({
+        key: this.orderItemPrintKey(item),
+        quantity: item.quantita
+      }))
+      .sort((left, right) => left.key.localeCompare(right.key));
+
+    return {
+      orderId: order.id,
+      fingerprint: [
+        order.id,
+        order.noteCucina?.trim() ?? '',
+        items.map(item => `${item.key}:${item.quantity}`).join('|')
+      ].join('::'),
+      items
+    };
+  }
+
+  private orderItemPrintKey(item: CustomerOrderItem): string {
     return [
-      order.id,
-      order.noteCucina?.trim() ?? '',
-      itemFingerprint
+      item.dishId,
+      item.portionKey ?? '',
+      item.portionLabel ?? '',
+      item.nome
     ].join('::');
   }
 
-  private hasPrintedOrderSnapshot(fingerprint: string): boolean {
-    if (this.printedOrderFingerprints.size === 0) {
-      this.loadPrintedOrderFingerprints();
+  private getPrintedOrderSnapshot(orderId: number): PrintedOrderSnapshot | undefined {
+    if (this.printedOrderSnapshots.size === 0) {
+      this.loadPrintedOrderSnapshots();
     }
-    return this.printedOrderFingerprints.has(fingerprint);
+    return this.printedOrderSnapshots.get(orderId);
   }
 
-  private markOrderSnapshotPrinted(fingerprint: string): void {
-    this.printedOrderFingerprints.add(fingerprint);
-    this.storePrintedOrderFingerprints();
+  private storePrintedOrderSnapshot(snapshot: PrintedOrderSnapshot): void {
+    this.printedOrderSnapshots.set(snapshot.orderId, snapshot);
+    this.storePrintedOrderSnapshots();
   }
 
-  private unmarkOrderSnapshotPrinted(fingerprint: string): void {
-    this.printedOrderFingerprints.delete(fingerprint);
-    this.storePrintedOrderFingerprints();
-  }
-
-  private loadPrintedOrderFingerprints(): void {
+  private loadPrintedOrderSnapshots(): void {
     if (typeof localStorage === 'undefined') {
       return;
     }
-    const raw = localStorage.getItem('waiteroPrintedOrderFingerprints');
+    const raw = localStorage.getItem('waiteroPrintedOrderSnapshots');
     if (!raw) {
       return;
     }
     try {
-      const parsed = JSON.parse(raw) as string[];
-      this.printedOrderFingerprints = new Set(parsed.filter(value => typeof value === 'string' && value.length > 0));
+      const parsed = JSON.parse(raw) as PrintedOrderSnapshot[];
+      this.printedOrderSnapshots = new Map(
+        parsed
+          .filter(snapshot => Number.isFinite(snapshot.orderId) && typeof snapshot.fingerprint === 'string' && Array.isArray(snapshot.items))
+          .map(snapshot => [snapshot.orderId, snapshot])
+      );
     } catch {
-      this.printedOrderFingerprints.clear();
+      this.printedOrderSnapshots.clear();
     }
   }
 
-  private storePrintedOrderFingerprints(): void {
+  private storePrintedOrderSnapshots(): void {
     if (typeof localStorage === 'undefined') {
       return;
     }
-    const values = Array.from(this.printedOrderFingerprints).slice(-200);
-    localStorage.setItem('waiteroPrintedOrderFingerprints', JSON.stringify(values));
+    const values = Array.from(this.printedOrderSnapshots.values()).slice(-200);
+    localStorage.setItem('waiteroPrintedOrderSnapshots', JSON.stringify(values));
   }
 }

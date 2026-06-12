@@ -94,8 +94,21 @@ function formatKitchenTicket(order: PrintOrder): string {
     ''
   ];
 
-  for (const item of order.items) {
+  const newItems = order.items.filter(item => item.status !== 'PRINTED');
+  const printedItems = order.items.filter(item => item.status === 'PRINTED');
+
+  if (printedItems.length > 0) {
+    lines.push('NUOVI PIATTI', '');
+  }
+  for (const item of newItems) {
     lines.push(`${item.quantity}x ${item.name}`);
+  }
+
+  if (printedItems.length > 0) {
+    lines.push('', 'GIA STAMPATI', '');
+    for (const item of printedItems) {
+      lines.push(`${item.quantity}x ${item.name}`);
+    }
   }
 
   if (notes.length > 0) {

@@ -8,6 +8,7 @@ export interface PrintOrder {
 export interface PrintOrderItem {
   quantity: number;
   name: string;
+  status?: 'NEW' | 'PRINTED';
   notes?: string;
 }
 

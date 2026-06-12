@@ -56,8 +56,24 @@ class PrinterFormatter {
             ""
         )
 
-        parsedItems.forEach { item ->
+        val newItems = parsedItems.filter { it.status != "PRINTED" }
+        val printedItems = parsedItems.filter { it.status == "PRINTED" }
+
+        if (printedItems.isNotEmpty()) {
+            lines.add("NUOVI PIATTI")
+            lines.add("")
+        }
+        newItems.forEach { item ->
             lines.add("${item.quantity}x ${item.name}")
+        }
+
+        if (printedItems.isNotEmpty()) {
+            lines.add("")
+            lines.add("GIA STAMPATI")
+            lines.add("")
+            printedItems.forEach { item ->
+                lines.add("${item.quantity}x ${item.name}")
+            }
         }
 
         if (notes.isNotEmpty()) {
@@ -90,9 +106,14 @@ class PrinterFormatter {
             } else {
                 null
             }
+            val status = if (item.has("status") && !item.isNull("status")) {
+                item.optString("status").trim().uppercase(Locale.ROOT)
+            } else {
+                null
+            }
 
             if (quantity > 0 && name.isNotBlank()) {
-                parsedItems.add(PrintableItem(quantity, name, notes))
+                parsedItems.add(PrintableItem(quantity, name, notes, status))
             }
         }
         return parsedItems
@@ -178,7 +199,8 @@ class PrinterFormatter {
     private data class PrintableItem(
         val quantity: Int,
         val name: String,
-        val notes: String?
+        val notes: String?,
+        val status: String?
     )
 
     companion object {
