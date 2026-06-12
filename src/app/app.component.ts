@@ -32,7 +32,7 @@ export class AppComponent implements OnDestroy {
   private printerService = inject(PrinterService);
   private eventSource: EventSource | null = null;
   private routeEventsSubscription: Subscription | null = null;
-  private printedOrderIds = new Set<number>();
+  private printedOrderFingerprints = new Set<string>();
   legalModalVisible = false;
   legalConfig: LegalConfig | null = null;
   legalCheckedRestaurantId: number | null = null;
@@ -286,23 +286,23 @@ export class AppComponent implements OnDestroy {
       return;
     }
 
-    if (this.hasPrintedOrder(orderId)) {
-      console.info('Ordine gia stampato su POS locale', orderId);
-      return;
-    }
-
-    this.markOrderPrinted(orderId);
     this.restaurantOrderService.getOrderById(orderId).subscribe({
       next: async order => {
+        const fingerprint = this.orderPrintFingerprint(order);
+        if (this.hasPrintedOrderSnapshot(fingerprint)) {
+          console.info('Snapshot ordine gia stampato su POS locale', orderId);
+          return;
+        }
+
+        this.markOrderSnapshotPrinted(fingerprint);
         console.info('Invio ordine a stampante POS locale', orderId);
         const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order));
         if (!result.success) {
-          this.unmarkOrderPrinted(orderId);
+          this.unmarkOrderSnapshotPrinted(fingerprint);
           console.error('Errore stampa ordine su POS locale', result.error);
         }
       },
       error: err => {
-        this.unmarkOrderPrinted(orderId);
         console.error('Errore caricamento ordine per stampa POS', err);
       }
     });
@@ -329,44 +329,64 @@ export class AppComponent implements OnDestroy {
     return `${name} - ${portionLabel}`;
   }
 
-  private hasPrintedOrder(orderId: number): boolean {
-    if (this.printedOrderIds.size === 0) {
-      this.loadPrintedOrderIds();
+  private orderPrintFingerprint(order: CustomerOrder): string {
+    const itemFingerprint = [...order.items]
+      .sort((left, right) => left.id - right.id)
+      .map(item => [
+        item.id,
+        item.dishId,
+        item.portionKey ?? '',
+        item.portionLabel ?? '',
+        item.quantita,
+        item.nome
+      ].join(':'))
+      .join('|');
+
+    return [
+      order.id,
+      order.noteCucina?.trim() ?? '',
+      itemFingerprint
+    ].join('::');
+  }
+
+  private hasPrintedOrderSnapshot(fingerprint: string): boolean {
+    if (this.printedOrderFingerprints.size === 0) {
+      this.loadPrintedOrderFingerprints();
     }
-    return this.printedOrderIds.has(orderId);
+    return this.printedOrderFingerprints.has(fingerprint);
   }
 
-  private markOrderPrinted(orderId: number): void {
-    this.printedOrderIds.add(orderId);
-    this.storePrintedOrderIds();
+  private markOrderSnapshotPrinted(fingerprint: string): void {
+    this.printedOrderFingerprints.add(fingerprint);
+    this.storePrintedOrderFingerprints();
   }
 
-  private unmarkOrderPrinted(orderId: number): void {
-    this.printedOrderIds.delete(orderId);
-    this.storePrintedOrderIds();
+  private unmarkOrderSnapshotPrinted(fingerprint: string): void {
+    this.printedOrderFingerprints.delete(fingerprint);
+    this.storePrintedOrderFingerprints();
   }
 
-  private loadPrintedOrderIds(): void {
+  private loadPrintedOrderFingerprints(): void {
     if (typeof localStorage === 'undefined') {
       return;
     }
-    const raw = localStorage.getItem('waiteroPrintedOrderIds');
+    const raw = localStorage.getItem('waiteroPrintedOrderFingerprints');
     if (!raw) {
       return;
     }
     try {
-      const parsed = JSON.parse(raw) as number[];
-      this.printedOrderIds = new Set(parsed.filter(id => Number.isFinite(id)));
+      const parsed = JSON.parse(raw) as string[];
+      this.printedOrderFingerprints = new Set(parsed.filter(value => typeof value === 'string' && value.length > 0));
     } catch {
-      this.printedOrderIds.clear();
+      this.printedOrderFingerprints.clear();
     }
   }
 
-  private storePrintedOrderIds(): void {
+  private storePrintedOrderFingerprints(): void {
     if (typeof localStorage === 'undefined') {
       return;
     }
-    const values = Array.from(this.printedOrderIds).slice(-200);
-    localStorage.setItem('waiteroPrintedOrderIds', JSON.stringify(values));
+    const values = Array.from(this.printedOrderFingerprints).slice(-200);
+    localStorage.setItem('waiteroPrintedOrderFingerprints', JSON.stringify(values));
   }
 }
