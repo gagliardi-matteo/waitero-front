@@ -5,9 +5,15 @@ import { createPrinterProvider, PRINTER_PROVIDER_TYPE, PrinterProvider, PrinterP
 @Injectable({ providedIn: 'root' })
 export class PrinterService {
   private readonly provider: PrinterProvider;
+  private readonly providerType: PrinterProviderType;
 
   constructor(@Inject(PRINTER_PROVIDER_TYPE) providerType: PrinterProviderType) {
+    this.providerType = providerType;
     this.provider = createPrinterProvider(providerType);
+  }
+
+  canPrintLocally(): boolean {
+    return this.providerType === PrinterProviderType.SUNMI;
   }
 
   async printKitchenOrder(order: PrintOrder): Promise<PrintResult> {

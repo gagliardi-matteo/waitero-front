@@ -10,6 +10,8 @@ import { WaiterAlertAudioService } from './services/waiter-alert-audio.service';
 import { WaiterCallNotificationService } from './services/waiter-call-notification.service';
 import { LegalAcceptanceService, LegalConfig } from './services/legal-acceptance.service';
 import { SidebarComponent } from './util/sidebar/sidebar.component';
+import { CustomerOrder } from './models/customer-order.model';
+import { PrinterService } from './core/printer/printer.service';
 
 @Component({
   selector: 'app-root',
@@ -27,8 +29,10 @@ export class AppComponent implements OnDestroy {
   private waiterAlertAudioService = inject(WaiterAlertAudioService);
   private waiterCallNotificationService = inject(WaiterCallNotificationService);
   private legalAcceptanceService = inject(LegalAcceptanceService);
+  private printerService = inject(PrinterService);
   private eventSource: EventSource | null = null;
   private routeEventsSubscription: Subscription | null = null;
+  private printedOrderIds = new Set<number>();
   legalModalVisible = false;
   legalConfig: LegalConfig | null = null;
   legalCheckedRestaurantId: number | null = null;
@@ -244,6 +248,9 @@ export class AppComponent implements OnDestroy {
 
       if (payload?.type === 'ORDER_UPDATED') {
         void this.waiterAlertAudioService.playNewOrderAlert();
+        if (payload.orderId) {
+          void this.printOrderOnLocalPos(payload.orderId);
+        }
       }
     });
 
@@ -260,7 +267,7 @@ export class AppComponent implements OnDestroy {
     this.waiterCallNotificationService.clearAll();
   }
 
-  private parseOrderEvent(event: Event): { type?: string; restaurantId?: number; tableId?: number } | null {
+  private parseOrderEvent(event: Event): { type?: string; orderId?: number; restaurantId?: number; tableId?: number } | null {
     const data = (event as MessageEvent<string>).data;
     if (!data || typeof data !== 'string') {
       return null;
@@ -271,5 +278,88 @@ export class AppComponent implements OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  private async printOrderOnLocalPos(orderId: number): Promise<void> {
+    if (!this.printerService.canPrintLocally() || this.hasPrintedOrder(orderId)) {
+      return;
+    }
+
+    this.markOrderPrinted(orderId);
+    this.restaurantOrderService.getOrderById(orderId).subscribe({
+      next: async order => {
+        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order));
+        if (!result.success) {
+          this.unmarkOrderPrinted(orderId);
+          console.error('Errore stampa ordine su POS locale', result.error);
+        }
+      },
+      error: err => {
+        this.unmarkOrderPrinted(orderId);
+        console.error('Errore caricamento ordine per stampa POS', err);
+      }
+    });
+  }
+
+  private toPrintOrder(order: CustomerOrder) {
+    const note = order.noteCucina?.trim();
+    return {
+      orderId: order.id,
+      tableName: `Tavolo ${order.tableId}`,
+      createdAt: order.createdAt,
+      items: order.items.map((item, index) => ({
+        quantity: item.quantita,
+        name: this.formatPrintItemName(item.nome, item.portionLabel),
+        notes: index === 0 ? note : undefined
+      }))
+    };
+  }
+
+  private formatPrintItemName(name: string, portionLabel?: string | null): string {
+    if (!portionLabel || portionLabel === 'Standard') {
+      return name;
+    }
+    return `${name} - ${portionLabel}`;
+  }
+
+  private hasPrintedOrder(orderId: number): boolean {
+    if (this.printedOrderIds.size === 0) {
+      this.loadPrintedOrderIds();
+    }
+    return this.printedOrderIds.has(orderId);
+  }
+
+  private markOrderPrinted(orderId: number): void {
+    this.printedOrderIds.add(orderId);
+    this.storePrintedOrderIds();
+  }
+
+  private unmarkOrderPrinted(orderId: number): void {
+    this.printedOrderIds.delete(orderId);
+    this.storePrintedOrderIds();
+  }
+
+  private loadPrintedOrderIds(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    const raw = localStorage.getItem('waiteroPrintedOrderIds');
+    if (!raw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as number[];
+      this.printedOrderIds = new Set(parsed.filter(id => Number.isFinite(id)));
+    } catch {
+      this.printedOrderIds.clear();
+    }
+  }
+
+  private storePrintedOrderIds(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    const values = Array.from(this.printedOrderIds).slice(-200);
+    localStorage.setItem('waiteroPrintedOrderIds', JSON.stringify(values));
   }
 }
