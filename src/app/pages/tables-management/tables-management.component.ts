@@ -600,13 +600,13 @@ export class TablesManagementComponent {
               height: ${layout.heightMm.toFixed(1)}mm;
               flex: 0 0 ${layout.widthMm.toFixed(1)}mm;
               border: 1px dashed #98a2b3;
-              border-radius: 4mm;
-              padding: 3mm;
+              border-radius: 3mm;
+              padding: 2mm;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: flex-start;
-              gap: 1.2mm;
+              gap: 0.8mm;
               text-align: center;
               min-height: 0;
               break-inside: avoid;
@@ -619,7 +619,7 @@ export class TablesManagementComponent {
               grid-template-rows: 1fr;
               align-items: center;
               justify-items: center;
-              column-gap: 3mm;
+              column-gap: 2mm;
               text-align: left;
             }
             .card__copy {
@@ -628,7 +628,7 @@ export class TablesManagementComponent {
               flex-direction: column;
               align-items: center;
               justify-content: flex-start;
-              gap: 1.2mm;
+              gap: 0.8mm;
               text-align: center;
             }
             .card--horizontal .card__copy {
@@ -636,20 +636,20 @@ export class TablesManagementComponent {
               text-align: left;
             }
             .brand {
-              font-size: 8px;
+              font-size: 9px;
               font-weight: 700;
               line-height: 1.1;
             }
             .restaurant-name {
-              font-size: 9px;
+              font-size: 10px;
               font-weight: 700;
               color: #111827;
               line-height: 1.15;
               overflow: hidden;
             }
             .table-number {
-              margin-top: 0.4mm;
-              font-size: 15px;
+              margin-top: 0.2mm;
+              font-size: 18px;
               font-weight: 700;
               line-height: 1.05;
             }
@@ -658,17 +658,17 @@ export class TablesManagementComponent {
               height: ${qrSizeMm}mm;
               aspect-ratio: 1 / 1;
               object-fit: contain;
-              margin: 0.8mm 0;
+              margin: 0;
               flex: 0 0 auto;
             }
             .hint {
-              font-size: 8px;
+              font-size: 8.5px;
               color: #667085;
               line-height: 1.15;
               margin-top: auto;
             }
             .card--horizontal .hint {
-              margin-top: 1.5mm;
+              margin-top: 0.8mm;
             }
             @media print {
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -868,7 +868,8 @@ export class TablesManagementComponent {
 
     const widthMm = widthCm * 10;
     const heightMm = heightCm * 10;
-    const qrSizeMm = Math.max(26, Math.min(widthMm - 10, heightMm - 28, 58));
+    const horizontal = raw.orientation === 'horizontal';
+    const qrSizeMm = Math.max(26, Math.min(widthMm - (horizontal ? 34 : 8), heightMm - (horizontal ? 6 : 22), 58));
     return { widthMm, heightMm, qrSizeMm, orientation: raw.orientation };
   }
 
