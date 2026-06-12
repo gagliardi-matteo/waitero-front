@@ -19,6 +19,10 @@
       {{ submitConfirmationMessage }}
     </div>
 
+    <div class="submit-confirmation error" *ngIf="submitErrorMessage">
+      {{ submitErrorMessage }}
+    </div>
+
     <div class="submit-confirmation info" *ngIf="waiterCallConfirmationMessage">
       {{ waiterCallConfirmationMessage }}
     </div>

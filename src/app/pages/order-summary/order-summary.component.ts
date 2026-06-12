@@ -23,6 +23,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   noteCucina = '';
   cartUpsellSuggestions: Piatto[] = [];
   submitConfirmationMessage = '';
+  submitErrorMessage = '';
   waiterCallConfirmationMessage = '';
 
   private orderState = inject(OrderService);
@@ -165,6 +166,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
     this.isSubmitting = true;
     this.submitConfirmationMessage = '';
+    this.submitErrorMessage = '';
     this.customerOrderService.submitOrder({
       token,
       restaurantId,
@@ -174,15 +176,33 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       items: draftPayload
     }).subscribe({
       next: order => {
-        this.orderState.setConfirmedOrder(order);
-        this.orderState.clearDraft();
-        this.noteCucina = '';
-        this.isSubmitting = false;
-        this.showSubmitConfirmation();
+        this.customerOrderService.getCurrentState(token, restaurantId, tableId, false).subscribe({
+          next: state => {
+            const confirmedOrder = state.currentOrder;
+            if (confirmedOrder && confirmedOrder.id === order.id && confirmedOrder.items.length > 0) {
+              this.orderState.setConfirmedOrder(confirmedOrder);
+              this.orderState.clearDraft();
+              this.noteCucina = '';
+              this.isSubmitting = false;
+              this.showSubmitConfirmation();
+              return;
+            }
+
+            console.error('Ordine non verificato dopo la conferma', { submittedOrder: order, state });
+            this.isSubmitting = false;
+            this.submitErrorMessage = 'Ordine non confermato. Riprova tra pochi secondi.';
+          },
+          error: err => {
+            console.error('Errore verifica ordine dopo conferma', err);
+            this.isSubmitting = false;
+            this.submitErrorMessage = 'Ordine non verificato. Riprova tra pochi secondi.';
+          }
+        });
       },
       error: err => {
         console.error('Errore conferma ordine', err);
         this.isSubmitting = false;
+        this.submitErrorMessage = err.error?.message ?? "Impossibile confermare l'ordine.";
       }
     });
   }

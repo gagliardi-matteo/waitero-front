@@ -122,6 +122,12 @@ $peekHeight: 4.5rem;
       background: #eff6ff;
       color: #1d4ed8;
     }
+
+    &.error {
+      border-color: rgba(185, 28, 28, 0.22);
+      background: #fef2f2;
+      color: #991b1b;
+    }
   }
 
   .order-details {
