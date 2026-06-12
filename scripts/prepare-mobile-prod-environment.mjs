@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 const outputPath = resolve('src/environments/environment.mobile.prod.ts');
 const apiUrl = process.env.WAITERO_API_URL?.trim() || 'https://waitero-back.onrender.com/api';
-const publicFrontendUrl = process.env.WAITERO_PUBLIC_FRONTEND_URL?.trim() || 'https://waitero.front.vercel.app';
+const publicFrontendUrl = process.env.WAITERO_PUBLIC_FRONTEND_URL?.trim() || 'https://waitero-front.vercel.app';
 const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim() || '';
 
 const fileContent = `export const environment = {

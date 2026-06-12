@@ -146,6 +146,14 @@ export class OrderService {
     return total;
   }
 
+  totalDraftQuantity(): number {
+    let total = 0;
+    for (const line of this.draftLines.values()) {
+      total += line.quantity;
+    }
+    return total;
+  }
+
   clearDraft() {
     this.draftLines.clear();
     this.draftAttribution.clear();

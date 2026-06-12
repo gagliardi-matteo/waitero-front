@@ -36,6 +36,8 @@ export interface CustomerOrderState {
 
 @Injectable({ providedIn: 'root' })
 export class CustomerOrderService {
+  private static readonly STALE_DRAFT_SNAPSHOT_GUARD_MS = 8000;
+
   private http = inject(HttpClient);
   private auth = inject(AuthContextService);
   private router = inject(Router);
@@ -44,6 +46,7 @@ export class CustomerOrderService {
   private pendingOptimisticMutations: Array<{ id: number; dishId: number; delta: number; portionKey?: string | null }> = [];
   private optimisticMutationSequence = 0;
   private optimisticContextKey: string | null = null;
+  private lastAcceptedMutationAt = 0;
 
   getCurrentOrder(token: string, restaurantId: string, tableId: string): Observable<CustomerOrder> {
     const params = this.withAccessMetadata(new HttpParams()
@@ -117,6 +120,7 @@ export class CustomerOrderService {
       try {
         const draft = await this.performDraftMutationRequest(token, restaurantId, tableId, dishId, delta, portionKey);
         this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
+        this.lastAcceptedMutationAt = Date.now();
         this.reconcileDraftWithPendingMutations(draft);
         result$.next(draft);
         result$.complete();
@@ -133,6 +137,10 @@ export class CustomerOrderService {
 
   applyExternalDraftSnapshot(serverDraft: CustomerDraft): void {
     if (this.pendingOptimisticMutations.length > 0) {
+      return;
+    }
+
+    if (this.isLikelyStaleDraftSnapshot(serverDraft)) {
       return;
     }
 
@@ -211,6 +219,27 @@ export class CustomerOrderService {
     for (const mutation of this.pendingOptimisticMutations) {
       this.orderState.applyDraftDelta(mutation.dishId, mutation.delta, mutation.portionKey ?? null);
     }
+  }
+
+  private isLikelyStaleDraftSnapshot(serverDraft: CustomerDraft): boolean {
+    if (this.lastAcceptedMutationAt <= 0) {
+      return false;
+    }
+
+    const age = Date.now() - this.lastAcceptedMutationAt;
+    if (age > CustomerOrderService.STALE_DRAFT_SNAPSHOT_GUARD_MS) {
+      return false;
+    }
+
+    const localQuantity = this.orderState.totalDraftQuantity();
+    if (localQuantity <= 0) {
+      return false;
+    }
+
+    const serverQuantity = (serverDraft.items ?? [])
+      .reduce((total, item) => total + Math.max(0, item.quantity ?? 0), 0);
+
+    return serverQuantity < localQuantity;
   }
 
   callWaiter(payload: CallWaiterPayload): Observable<{ message: string }> {
