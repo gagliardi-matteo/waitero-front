@@ -15,8 +15,9 @@
       <span class="section-kicker">Stampante standard</span>
       <h2>POS Sunmi locale</h2>
       <p>Questa stampante resta sempre attiva sull'app Waitero Kitchen installata sul POS.</p>
+      <p class="error" *ngIf="sunmiStatusMessage()">{{ sunmiStatusMessage() }}</p>
     </div>
-    <button type="button" class="primary-btn" (click)="testSunmiPrint()" [disabled]="isTestingSunmi()">
+    <button type="button" class="primary-btn" (click)="testSunmiPrint()" [disabled]="isTestingSunmi() || !canTestSunmi()">
       {{ isTestingSunmi() ? 'Invio prova...' : 'Stampa prova Sunmi' }}
     </button>
   </section>

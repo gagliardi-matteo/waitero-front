@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { PrintOrder, PrintResult } from './printer.models';
 import { createPrinterProvider, PRINTER_PROVIDER_TYPE, PrinterProvider, PrinterProviderType } from './printer.provider';
 
@@ -13,7 +14,23 @@ export class PrinterService {
   }
 
   canPrintLocally(): boolean {
-    return this.providerType === PrinterProviderType.SUNMI;
+    return this.providerType === PrinterProviderType.SUNMI && Capacitor.isPluginAvailable('WaiteroPrinter');
+  }
+
+  getLocalPrinterStatus(): string {
+    if (!Capacitor.isNativePlatform()) {
+      return 'La stampa Sunmi funziona solo dall APK Android installata sul POS, non dal browser.';
+    }
+
+    if (Capacitor.getPlatform() !== 'android') {
+      return 'La stampa Sunmi e disponibile solo su Android.';
+    }
+
+    if (!Capacitor.isPluginAvailable('WaiteroPrinter')) {
+      return 'Plugin WaiteroPrinter non disponibile nella build installata. Aggiorna l APK sul POS.';
+    }
+
+    return '';
   }
 
   async printKitchenOrder(order: PrintOrder): Promise<PrintResult> {

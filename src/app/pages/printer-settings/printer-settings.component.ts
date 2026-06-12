@@ -237,6 +237,14 @@ export class PrinterSettingsComponent implements OnInit {
     return this.testingPrinterKey === 'SUNMI';
   }
 
+  canTestSunmi(): boolean {
+    return this.printerService.canPrintLocally();
+  }
+
+  sunmiStatusMessage(): string {
+    return this.printerService.getLocalPrinterStatus();
+  }
+
   isTestingExternal(stampante: Stampante): boolean {
     return this.testingPrinterKey === this.externalPrinterKey(stampante);
   }

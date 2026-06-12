@@ -281,13 +281,20 @@ export class AppComponent implements OnDestroy {
   }
 
   private async printOrderOnLocalPos(orderId: number): Promise<void> {
-    if (!this.printerService.canPrintLocally() || this.hasPrintedOrder(orderId)) {
+    if (!this.printerService.canPrintLocally()) {
+      console.warn('Stampa POS locale non disponibile', this.printerService.getLocalPrinterStatus());
+      return;
+    }
+
+    if (this.hasPrintedOrder(orderId)) {
+      console.info('Ordine gia stampato su POS locale', orderId);
       return;
     }
 
     this.markOrderPrinted(orderId);
     this.restaurantOrderService.getOrderById(orderId).subscribe({
       next: async order => {
+        console.info('Invio ordine a stampante POS locale', orderId);
         const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order));
         if (!result.success) {
           this.unmarkOrderPrinted(orderId);
