@@ -266,6 +266,10 @@ export class AppComponent implements OnDestroy {
       }
 
       if (payload?.type === 'ORDER_REPRINT_REQUESTED' && payload.orderId) {
+        if (this.shouldSkipLocalReprintEvent(payload.orderId)) {
+          console.info('Evento ristampa ignorato: stampa locale gia avviata dal dettaglio ordine', payload.orderId);
+          return;
+        }
         void this.printOrderOnLocalPos(payload.orderId, true);
       }
     });
@@ -447,5 +451,30 @@ export class AppComponent implements OnDestroy {
     }
     const values = Array.from(this.printedOrderSnapshots.values()).slice(-200);
     localStorage.setItem('waiteroPrintedOrderSnapshots', JSON.stringify(values));
+  }
+
+  private shouldSkipLocalReprintEvent(orderId: number): boolean {
+    if (typeof localStorage === 'undefined') {
+      return false;
+    }
+
+    const key = this.localReprintRequestKey(orderId);
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return false;
+    }
+
+    const timestamp = Number(raw);
+    if (Number.isFinite(timestamp) && Date.now() - timestamp < 15000) {
+      localStorage.removeItem(key);
+      return true;
+    }
+
+    localStorage.removeItem(key);
+    return false;
+  }
+
+  private localReprintRequestKey(orderId: number): string {
+    return `waiteroLocalReprint:${orderId}`;
   }
 }

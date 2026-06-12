@@ -5,6 +5,19 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CustomerOrder, CustomerOrderItem } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { PrinterService } from '../../core/printer/printer.service';
+import { PrintOrderItem } from '../../core/printer/printer.models';
+
+interface PrintedOrderSnapshot {
+  orderId: number;
+  fingerprint: string;
+  items: PrintedOrderSnapshotItem[];
+}
+
+interface PrintedOrderSnapshotItem {
+  key: string;
+  quantity: number;
+}
 
 @Component({
   selector: 'app-order-detail',
@@ -28,6 +41,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private ordersService = inject(RestaurantOrderService);
+  private printerService = inject(PrinterService);
   private eventSource: EventSource | null = null;
   private orderId = 0;
   private returnTo: 'active' | 'history' = 'active';
@@ -172,14 +186,31 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     this.isReprinting = true;
     this.reprintMessage = '';
     this.reprintError = '';
+    const shouldPrintLocally = this.printerService.canPrintLocally();
+    if (shouldPrintLocally) {
+      this.markLocalReprintRequested(this.order.id);
+    }
+
     this.ordersService.reprintOrder(this.order.id).subscribe({
-      next: () => {
+      next: async () => {
+        if (this.order && shouldPrintLocally) {
+          const result = await this.printerService.printKitchenOrder(this.toPrintOrder(this.order));
+          if (!result.success) {
+            this.isReprinting = false;
+            this.clearLocalReprintRequested(this.order.id);
+            this.reprintError = result.error ?? 'Errore durante la stampa locale sul POS.';
+            return;
+          }
+          this.storePrintedOrderSnapshot(this.buildPrintedOrderSnapshot(this.order));
+        }
+
         this.isReprinting = false;
         this.reprintMessage = 'Ristampa ordine inviata.';
       },
       error: err => {
         console.error('Errore ristampa ordine', err);
         this.isReprinting = false;
+        this.clearLocalReprintRequested(this.order?.id ?? 0);
         this.reprintError = err.error?.message ?? "Impossibile ristampare l'ordine.";
       }
     });
@@ -235,6 +266,106 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private get normalizedParticipantName(): string | undefined {
     const value = this.participantName.trim();
     return value.length > 0 ? value : undefined;
+  }
+
+  private toPrintOrder(order: CustomerOrder) {
+    const note = order.noteCucina?.trim();
+    const items = order.items.map((item, index): PrintOrderItem => ({
+      quantity: item.quantita,
+      name: this.formatPrintItemName(item.nome, item.portionLabel),
+      notes: index === 0 ? note : undefined
+    }));
+
+    return {
+      orderId: order.id,
+      tableName: `Tavolo ${order.tableId}`,
+      createdAt: order.createdAt,
+      items
+    };
+  }
+
+  private formatPrintItemName(name: string, portionLabel?: string | null): string {
+    if (!portionLabel || portionLabel === 'Standard') {
+      return name;
+    }
+    return `${name} - ${portionLabel}`;
+  }
+
+  private buildPrintedOrderSnapshot(order: CustomerOrder): PrintedOrderSnapshot {
+    const items = order.items
+      .map(item => ({
+        key: this.orderItemPrintKey(item),
+        quantity: item.quantita
+      }))
+      .sort((left, right) => left.key.localeCompare(right.key));
+
+    return {
+      orderId: order.id,
+      fingerprint: [
+        order.id,
+        order.noteCucina?.trim() ?? '',
+        items.map(item => `${item.key}:${item.quantity}`).join('|')
+      ].join('::'),
+      items
+    };
+  }
+
+  private orderItemPrintKey(item: CustomerOrderItem): string {
+    return [
+      item.dishId,
+      item.portionKey ?? '',
+      item.portionLabel ?? '',
+      item.nome
+    ].join('::');
+  }
+
+  private storePrintedOrderSnapshot(snapshot: PrintedOrderSnapshot): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const snapshots = this.loadPrintedOrderSnapshots()
+      .filter(existing => existing.orderId !== snapshot.orderId);
+    snapshots.push(snapshot);
+    localStorage.setItem('waiteroPrintedOrderSnapshots', JSON.stringify(snapshots.slice(-200)));
+  }
+
+  private loadPrintedOrderSnapshots(): PrintedOrderSnapshot[] {
+    if (typeof localStorage === 'undefined') {
+      return [];
+    }
+    const raw = localStorage.getItem('waiteroPrintedOrderSnapshots');
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as PrintedOrderSnapshot[];
+      return parsed.filter(snapshot =>
+        Number.isFinite(snapshot.orderId)
+        && typeof snapshot.fingerprint === 'string'
+        && Array.isArray(snapshot.items)
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  private markLocalReprintRequested(orderId: number): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+    localStorage.setItem(this.localReprintRequestKey(orderId), String(Date.now()));
+  }
+
+  private clearLocalReprintRequested(orderId: number): void {
+    if (typeof localStorage === 'undefined' || !orderId) {
+      return;
+    }
+    localStorage.removeItem(this.localReprintRequestKey(orderId));
+  }
+
+  private localReprintRequestKey(orderId: number): string {
+    return `waiteroLocalReprint:${orderId}`;
   }
 }
 
