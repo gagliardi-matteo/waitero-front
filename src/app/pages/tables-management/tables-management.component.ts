@@ -598,6 +598,7 @@ export class TablesManagementComponent {
             .card {
               width: ${layout.widthMm.toFixed(1)}mm;
               height: ${layout.heightMm.toFixed(1)}mm;
+              flex: 0 0 ${layout.widthMm.toFixed(1)}mm;
               border: 1px dashed #98a2b3;
               border-radius: 4mm;
               padding: 3mm;
@@ -608,7 +609,6 @@ export class TablesManagementComponent {
               gap: 1.2mm;
               text-align: center;
               min-height: 0;
-              height: 100%;
               break-inside: avoid;
               page-break-inside: avoid;
               overflow: hidden;
@@ -862,7 +862,7 @@ export class TablesManagementComponent {
     let widthCm = preset && preset.value !== 'custom' ? preset.widthCm : raw.customWidthCm;
     let heightCm = preset && preset.value !== 'custom' ? preset.heightCm : raw.customHeightCm;
 
-    if (raw.orientation === 'horizontal') {
+    if (raw.orientation === 'horizontal' && preset?.value !== 'custom') {
       [widthCm, heightCm] = [heightCm, widthCm];
     }
 
