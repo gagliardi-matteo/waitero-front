@@ -1,6 +1,7 @@
 import { Component, OnDestroy, effect, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from './auth/AuthService';
 import { RestaurantOrderService } from './services/restaurant-order.service';
@@ -36,6 +37,7 @@ interface PrintedOrderSnapshotItem {
 export class AppComponent implements OnDestroy {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private viewportScroller = inject(ViewportScroller);
   private mobileNativeService = inject(MobileNativeService);
   private orientationLockService = inject(OrientationLockService);
   private restaurantOrderService = inject(RestaurantOrderService);
@@ -101,6 +103,7 @@ export class AppComponent implements OnDestroy {
     this.routeEventsSubscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
+        this.scrollToPageTop();
         if (this.authService.authenticated()) {
           this.checkBackofficeLegalAcceptance();
         }
@@ -196,6 +199,14 @@ export class AppComponent implements OnDestroy {
   private canSubscribeToBackofficeStream(): boolean {
     return !!this.authService.getToken()
       && (this.authService.getActingRestaurantId() !== null || this.authService.getOwnedRestaurantId() !== null);
+  }
+
+  private scrollToPageTop(): void {
+    this.viewportScroller.scrollToPosition([0, 0]);
+    if (typeof document !== 'undefined') {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
   }
 
   private checkBackofficeLegalAcceptance(): void {

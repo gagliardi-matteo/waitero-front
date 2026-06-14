@@ -10,6 +10,13 @@
     <div class="search-field">
       <input type="text" [(ngModel)]="searchTerm" placeholder="Cerca per ID ordine o tavolo..." />
     </div>
+    <label class="table-filter">
+      <span>Tavolo</span>
+      <select [(ngModel)]="selectedTable">
+        <option value="ALL">Tutti i tavoli</option>
+        <option *ngFor="let tableNumber of availableTables" [value]="tableNumber">Tavolo {{ tableNumber }}</option>
+      </select>
+    </label>
     <div class="filter-chips">
       <button type="button" class="chip" [class.active]="selectedStatus === 'ALL'" (click)="selectedStatus = 'ALL'">Tutti</button>
       <button type="button" class="chip" *ngFor="let status of availableStatuses" [class.active]="selectedStatus === status" (click)="selectedStatus = status">{{ status }}</button>

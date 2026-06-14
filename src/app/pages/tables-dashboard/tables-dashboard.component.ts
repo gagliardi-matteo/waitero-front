@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { CustomerOrder } from '../../models/customer-order.model';
@@ -24,7 +25,7 @@ type TableDashboardFilter = 'ALL' | 'OPEN' | 'PARTIAL' | 'FREE' | 'INACTIVE';
 @Component({
   selector: 'app-tables-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgIf, NgFor, DecimalPipe, DatePipe, BrandLoaderComponent],
+  imports: [CommonModule, RouterModule, NgIf, NgFor, DecimalPipe, DatePipe, FormsModule, BrandLoaderComponent],
   templateUrl: './tables-dashboard.component.html',
   styleUrl: './tables-dashboard.component.scss'
 })
@@ -33,6 +34,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   errorMessage = '';
   selectedFilter: TableDashboardFilter = 'ALL';
+  selectedTable = 'ALL';
   waiterCallsExpanded = false;
 
   readonly filters: { value: TableDashboardFilter; label: string }[] = [
@@ -66,10 +68,13 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
   }
 
   get filteredCards(): TableDashboardCard[] {
-    if (this.selectedFilter === 'ALL') {
-      return this.cards;
-    }
-    return this.cards.filter(card => card.state === this.selectedFilter);
+    return this.cards.filter(card => this.matchesStatusFilter(card) && this.matchesTableFilter(card));
+  }
+
+  get availableTables(): number[] {
+    return [...this.cards]
+      .map(card => card.table.numero)
+      .sort((left, right) => left - right);
   }
 
   get occupiedCount(): number {
@@ -121,9 +126,9 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
 
   countBy(filter: TableDashboardFilter): number {
     if (filter === 'ALL') {
-      return this.cards.length;
+      return this.cards.filter(card => this.matchesTableFilter(card)).length;
     }
-    return this.cards.filter(card => card.state === filter).length;
+    return this.cards.filter(card => card.state === filter && this.matchesTableFilter(card)).length;
   }
 
   loadDashboard(markLoading = true): void {
@@ -218,6 +223,10 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     this.waiterCallsExpanded = !this.waiterCallsExpanded;
   }
 
+  resetTableFilter(): void {
+    this.selectedTable = 'ALL';
+  }
+
   tableLabel(card: TableDashboardCard): string {
     return card.table.nome?.trim() || `Tavolo ${card.table.numero}`;
   }
@@ -259,6 +268,14 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
         this.waiterCallNotificationService.clearWaiterCallCandidates(table.restaurantId, [table.numero, table.id]);
       }
     }
+  }
+
+  private matchesStatusFilter(card: TableDashboardCard): boolean {
+    return this.selectedFilter === 'ALL' || card.state === this.selectedFilter;
+  }
+
+  private matchesTableFilter(card: TableDashboardCard): boolean {
+    return this.selectedTable === 'ALL' || card.table.numero === Number(this.selectedTable);
   }
 
   private buildWaiterCallKey(restaurantId: number, tableId: number): string {

@@ -11,6 +11,13 @@
   </div>
 
   <div class="filters-row">
+    <label class="table-filter">
+      <span>Tavolo</span>
+      <select [(ngModel)]="selectedTable">
+        <option value="ALL">Tutti i tavoli</option>
+        <option *ngFor="let tableNumber of availableTables" [value]="tableNumber">Tavolo {{ tableNumber }}</option>
+      </select>
+    </label>
     <button
       type="button"
       *ngFor="let filter of filters"
@@ -21,6 +28,7 @@
       {{ filter.label }}
       <span>{{ countBy(filter.value) }}</span>
     </button>
+    <button type="button" class="ghost-btn reset-inline" *ngIf="selectedTable !== 'ALL'" (click)="resetTableFilter()">Reset tavolo</button>
   </div>
 
   <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>

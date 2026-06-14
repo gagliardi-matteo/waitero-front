@@ -18,6 +18,7 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
   isLoading = true;
   searchTerm = '';
   selectedStatus = 'ALL';
+  selectedTable = 'ALL';
 
   private ordersService = inject(RestaurantOrderService);
   private router = inject(Router);
@@ -39,6 +40,10 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
 
   get availableStatuses(): string[] {
     return Array.from(new Set(this.orders.map(order => order.status))).sort((a, b) => a.localeCompare(b));
+  }
+
+  get availableTables(): number[] {
+    return Array.from(new Set(this.orders.map(order => order.tableId))).sort((a, b) => a - b);
   }
 
   loadOrders(markLoading = true): void {
@@ -65,6 +70,7 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedStatus = 'ALL';
+    this.selectedTable = 'ALL';
   }
 
   trackOrder(index: number, order: OrderSummary): number {
@@ -79,7 +85,8 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
       || order.status.toLowerCase().includes(normalizedSearch);
 
     const matchesStatus = this.selectedStatus === 'ALL' || order.status === this.selectedStatus;
-    return matchesSearch && matchesStatus;
+    const matchesTable = this.selectedTable === 'ALL' || order.tableId === Number(this.selectedTable);
+    return matchesSearch && matchesStatus && matchesTable;
   }
 }
 
