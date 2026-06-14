@@ -28,6 +28,10 @@ export class TableService {
     return this.http.post<RestaurantTable>(`${environment.apiUrl}/tables/${tableId}/regenerate-token`, {});
   }
 
+  clearWaiterCall(tableId: number): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/tables/${tableId}/clear-waiter-call`, {});
+  }
+
   deleteTable(tableId: number): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/tables/${tableId}`);
   }

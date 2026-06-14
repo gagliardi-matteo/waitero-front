@@ -48,15 +48,21 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
   private waiterCallNotificationService = inject(WaiterCallNotificationService);
   private router = inject(Router);
   private eventSource: EventSource | null = null;
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.loadDashboard();
     this.eventSource = this.ordersService.connectToStream();
     this.eventSource?.addEventListener('orders-updated', () => this.loadDashboard(false));
+    this.refreshTimer = setInterval(() => this.loadDashboard(false), 10000);
   }
 
   ngOnDestroy(): void {
     this.eventSource?.close();
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
   }
 
   get filteredCards(): TableDashboardCard[] {
@@ -131,6 +137,7 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
       activeOrders: this.ordersService.getActiveOrders()
     }).subscribe({
       next: ({ tables, activeOrders }) => {
+        this.syncWaiterCalls(tables);
         this.cards = this.buildCards(tables, activeOrders);
         this.loading = false;
       },
@@ -148,6 +155,11 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.waiterCallNotificationService.clearWaiterCallCandidates(card.table.restaurantId, [card.table.numero, card.table.id]);
+    if (card.table.waiterCallPending) {
+      this.tableService.clearWaiterCall(card.table.id).subscribe({
+        error: err => console.error('Errore pulizia chiamata cameriere', err)
+      });
+    }
 
     if (card.activeOrder) {
       void this.router.navigate(['/orders', card.activeOrder.id]);
@@ -197,7 +209,8 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
   }
 
   hasWaiterCall(card: TableDashboardCard): boolean {
-    return this.waiterCallNotificationService.hasWaiterCall(card.table.restaurantId, card.table.numero)
+    return card.table.waiterCallPending
+      || this.waiterCallNotificationService.hasWaiterCall(card.table.restaurantId, card.table.numero)
       || this.waiterCallNotificationService.hasWaiterCall(card.table.restaurantId, card.table.id);
   }
 
@@ -231,10 +244,21 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
           total: activeOrder?.totale ?? 0,
           itemCount: activeOrder?.items.reduce((sum, item) => sum + item.quantita, 0) ?? 0,
           updatedAt: activeOrder?.updatedAt ?? table.updatedAt,
-          hasWaiterCall: this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.numero)
+          hasWaiterCall: table.waiterCallPending
+            || this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.numero)
             || this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.id)
         } satisfies TableDashboardCard;
       });
+  }
+
+  private syncWaiterCalls(tables: RestaurantTable[]): void {
+    for (const table of tables) {
+      if (table.waiterCallPending) {
+        this.waiterCallNotificationService.markWaiterCall(table.restaurantId, table.numero);
+      } else {
+        this.waiterCallNotificationService.clearWaiterCallCandidates(table.restaurantId, [table.numero, table.id]);
+      }
+    }
   }
 
   private buildWaiterCallKey(restaurantId: number, tableId: number): string {

@@ -4,6 +4,7 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from './auth/AuthService';
 import { RestaurantOrderService } from './services/restaurant-order.service';
+import { TableService } from './services/table.service';
 import { MobileNativeService } from './services/mobile-native.service';
 import { OrientationLockService } from './services/orientation-lock.service';
 import { WaiterAlertAudioService } from './services/waiter-alert-audio.service';
@@ -38,6 +39,7 @@ export class AppComponent implements OnDestroy {
   private mobileNativeService = inject(MobileNativeService);
   private orientationLockService = inject(OrientationLockService);
   private restaurantOrderService = inject(RestaurantOrderService);
+  private tableService = inject(TableService);
   private waiterAlertAudioService = inject(WaiterAlertAudioService);
   private waiterCallNotificationService = inject(WaiterCallNotificationService);
   private legalAcceptanceService = inject(LegalAcceptanceService);
@@ -45,6 +47,10 @@ export class AppComponent implements OnDestroy {
   private eventSource: EventSource | null = null;
   private routeEventsSubscription: Subscription | null = null;
   private printedOrderSnapshots = new Map<number, PrintedOrderSnapshot>();
+  private streamReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeOrdersPrintSyncTimer: ReturnType<typeof setInterval> | null = null;
+  private waiterCallSyncTimer: ReturnType<typeof setInterval> | null = null;
+  private printJobsInFlight = new Set<number>();
   legalModalVisible = false;
   legalConfig: LegalConfig | null = null;
   legalCheckedRestaurantId: number | null = null;
@@ -76,12 +82,18 @@ export class AppComponent implements OnDestroy {
       if (this.authService.authenticated()) {
         if (this.canSubscribeToBackofficeStream()) {
           this.connectBackofficeStream();
+          this.startActiveOrdersPrintSync();
+          this.startWaiterCallSync();
         } else {
-          this.disconnectBackofficeStream();
+          this.disconnectBackofficeStream(false);
+          this.stopActiveOrdersPrintSync();
+          this.stopWaiterCallSync();
         }
         this.checkBackofficeLegalAcceptance();
       } else {
-        this.disconnectBackofficeStream();
+        this.disconnectBackofficeStream(true);
+        this.stopActiveOrdersPrintSync();
+        this.stopWaiterCallSync(true);
         this.resetLegalState();
       }
     });
@@ -97,7 +109,9 @@ export class AppComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.routeEventsSubscription?.unsubscribe();
-    this.disconnectBackofficeStream();
+    this.disconnectBackofficeStream(true);
+    this.stopActiveOrdersPrintSync();
+    this.stopWaiterCallSync(true);
   }
 
   isLoggedIn(): boolean {
@@ -275,16 +289,112 @@ export class AppComponent implements OnDestroy {
     });
 
     eventSource.addEventListener('error', () => {
-      this.disconnectBackofficeStream();
+      this.disconnectBackofficeStream(false);
+      this.scheduleBackofficeStreamReconnect();
     });
 
     this.eventSource = eventSource;
   }
 
-  private disconnectBackofficeStream(): void {
+  private disconnectBackofficeStream(clearWaiterCalls: boolean): void {
     this.eventSource?.close();
     this.eventSource = null;
-    this.waiterCallNotificationService.clearAll();
+    if (this.streamReconnectTimer) {
+      clearTimeout(this.streamReconnectTimer);
+      this.streamReconnectTimer = null;
+    }
+    if (clearWaiterCalls) {
+      this.waiterCallNotificationService.clearAll();
+    }
+  }
+
+  private scheduleBackofficeStreamReconnect(): void {
+    if (this.streamReconnectTimer || !this.authService.authenticated() || !this.canSubscribeToBackofficeStream()) {
+      return;
+    }
+
+    this.streamReconnectTimer = setTimeout(() => {
+      this.streamReconnectTimer = null;
+      if (this.authService.authenticated() && this.canSubscribeToBackofficeStream()) {
+        this.connectBackofficeStream();
+      }
+    }, 3000);
+  }
+
+  private startActiveOrdersPrintSync(): void {
+    if (this.activeOrdersPrintSyncTimer) {
+      return;
+    }
+
+    void this.syncActiveOrdersForLocalPrint();
+    this.activeOrdersPrintSyncTimer = setInterval(() => {
+      void this.syncActiveOrdersForLocalPrint();
+    }, 20000);
+  }
+
+  private stopActiveOrdersPrintSync(): void {
+    if (this.activeOrdersPrintSyncTimer) {
+      clearInterval(this.activeOrdersPrintSyncTimer);
+      this.activeOrdersPrintSyncTimer = null;
+    }
+    this.printJobsInFlight.clear();
+  }
+
+  private startWaiterCallSync(): void {
+    if (this.waiterCallSyncTimer) {
+      return;
+    }
+
+    this.syncWaiterCallsFromTables();
+    this.waiterCallSyncTimer = setInterval(() => this.syncWaiterCallsFromTables(), 15000);
+  }
+
+  private stopWaiterCallSync(clearWaiterCalls = false): void {
+    if (this.waiterCallSyncTimer) {
+      clearInterval(this.waiterCallSyncTimer);
+      this.waiterCallSyncTimer = null;
+    }
+    if (clearWaiterCalls) {
+      this.waiterCallNotificationService.clearAll();
+    }
+  }
+
+  private syncWaiterCallsFromTables(): void {
+    if (!this.authService.authenticated() || !this.canSubscribeToBackofficeStream()) {
+      return;
+    }
+
+    this.tableService.getTables().subscribe({
+      next: tables => {
+        for (const table of tables) {
+          if (table.waiterCallPending) {
+            this.waiterCallNotificationService.markWaiterCall(table.restaurantId, table.numero);
+          } else {
+            this.waiterCallNotificationService.clearWaiterCallCandidates(table.restaurantId, [table.numero, table.id]);
+          }
+        }
+      },
+      error: err => {
+        console.warn('Sincronizzazione chiamate cameriere non riuscita', err);
+      }
+    });
+  }
+
+  private async syncActiveOrdersForLocalPrint(): Promise<void> {
+    if (!this.authService.authenticated() || !this.printerService.canPrintLocally()) {
+      return;
+    }
+
+    this.restaurantOrderService.getActiveOrders().subscribe({
+      next: orders => {
+        for (const order of orders) {
+          void this.printLoadedOrderOnLocalPos(order);
+        }
+      },
+      error: err => {
+        console.warn('Sincronizzazione stampa ordini attivi non riuscita', err);
+      }
+    });
   }
 
   private parseOrderEvent(event: Event): { type?: string; orderId?: number; restaurantId?: number; tableId?: number } | null {
@@ -308,26 +418,42 @@ export class AppComponent implements OnDestroy {
 
     this.restaurantOrderService.getOrderById(orderId).subscribe({
       next: async order => {
-        const printSnapshot = this.buildPrintedOrderSnapshot(order);
-        const lastSnapshot = this.getPrintedOrderSnapshot(order.id);
-        if (!forceFullPrint && lastSnapshot?.fingerprint === printSnapshot.fingerprint) {
-          console.info('Snapshot ordine gia stampato su POS locale', orderId);
-          return;
-        }
-
-        console.info('Invio ordine a stampante POS locale', orderId);
-        const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order, forceFullPrint ? undefined : lastSnapshot));
-        if (!result.success) {
-          console.error('Errore stampa ordine su POS locale', result.error);
-          return;
-        }
-
-        this.storePrintedOrderSnapshot(printSnapshot);
+        await this.printLoadedOrderOnLocalPos(order, forceFullPrint);
       },
       error: err => {
         console.error('Errore caricamento ordine per stampa POS', err);
       }
     });
+  }
+
+  private async printLoadedOrderOnLocalPos(order: CustomerOrder, forceFullPrint = false): Promise<void> {
+    if (!this.printerService.canPrintLocally()) {
+      return;
+    }
+    if (this.printJobsInFlight.has(order.id)) {
+      return;
+    }
+
+    this.printJobsInFlight.add(order.id);
+    try {
+      const printSnapshot = this.buildPrintedOrderSnapshot(order);
+      const lastSnapshot = this.getPrintedOrderSnapshot(order.id);
+      if (!forceFullPrint && lastSnapshot?.fingerprint === printSnapshot.fingerprint) {
+        console.info('Snapshot ordine gia stampato su POS locale', order.id);
+        return;
+      }
+
+      console.info('Invio ordine a stampante POS locale', order.id);
+      const result = await this.printerService.printKitchenOrder(this.toPrintOrder(order, forceFullPrint ? undefined : lastSnapshot));
+      if (!result.success) {
+        console.error('Errore stampa ordine su POS locale', result.error);
+        return;
+      }
+
+      this.storePrintedOrderSnapshot(printSnapshot);
+    } finally {
+      this.printJobsInFlight.delete(order.id);
+    }
   }
 
   private toPrintOrder(order: CustomerOrder, lastSnapshot?: PrintedOrderSnapshot) {

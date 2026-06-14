@@ -6,6 +6,8 @@ export interface RestaurantTable {
   nome: string;
   coperti: number;
   attivo: boolean;
+  waiterCallPending: boolean;
+  waiterCalledAt: string | null;
   qrToken: string;
   createdAt: string;
   updatedAt: string;
