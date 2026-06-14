@@ -32,9 +32,9 @@
       <h2>Documenti WaiterO</h2>
       <p>
         Continuando accetti i
-        <a [href]="termsClientUrl()" target="_blank" rel="noopener">Termini d'Uso</a>
+        <a [href]="legalDocumentUrl(legalConfig?.termsUrl || '/legal/termini-uso')" target="_blank" rel="noopener">Termini d'Uso</a>
         e dichiari di aver preso visione della
-        <a [href]="privacyClientUrl()" target="_blank" rel="noopener">Privacy Policy</a>.
+        <a [href]="legalDocumentUrl(legalConfig?.privacyUrl || '/legal/privacy-policy')" target="_blank" rel="noopener">Privacy Policy</a>.
       </p>
       <p class="allergen-disclaimer">⚠️ In caso di allergie o intolleranze verificare sempre con il personale del locale.</p>
       <p class="legal-error" *ngIf="legalErrorMessage">{{ legalErrorMessage }}</p>

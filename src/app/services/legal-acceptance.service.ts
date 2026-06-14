@@ -63,28 +63,59 @@ export class LegalAcceptanceService {
       return url;
     }
 
-    const apiOrigin = this.apiOrigin();
-    return `${apiOrigin}${url.startsWith('/') ? url : `/${url}`}`;
+    const publicPath = this.publicLegalPath(url);
+    const publicOrigin = this.publicFrontendOrigin();
+    return `${publicOrigin}${publicPath}`;
   }
 
   termsClientUrl(): string {
-    return this.documentUrl('/legal/terms-client-v1.0.html');
+    return this.documentUrl('/legal/termini-uso');
   }
 
   privacyClientUrl(): string {
-    return this.documentUrl('/legal/privacy-client-v1.0.html');
+    return this.documentUrl('/legal/privacy-policy');
   }
 
   contractUrl(url: string | null | undefined): string {
-    return this.documentUrl(url || '/legal/terms-client-v1.0.html');
+    return this.documentUrl(url || '/legal/contratto-saas');
   }
 
-  private apiOrigin(): string {
+  private publicLegalPath(url: string): string {
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    const lastSegment = normalized.split('/').pop()?.toLowerCase() ?? '';
+
+    if (lastSegment === 'terms-client-v1.0.html' || normalized === '/legal/termini-uso') {
+      return '/legal/termini-uso';
+    }
+    if (lastSegment === 'privacy-client-v1.0.html' || normalized === '/legal/privacy-policy') {
+      return '/legal/privacy-policy';
+    }
+    if (lastSegment === 'disclaimer-allergeni-v1.0.html') {
+      return '/legal/termini-uso';
+    }
+    if (normalized === '/legal/contratto-saas') {
+      return normalized;
+    }
+
+    return normalized;
+  }
+
+  private publicFrontendOrigin(): string {
+    if (environment.publicFrontendUrl) {
+      const origin = this.absoluteOrigin(environment.publicFrontendUrl);
+      if (origin) {
+        return origin;
+      }
+    }
+    return window.location.origin;
+  }
+
+  private absoluteOrigin(value: string): string | null {
     const anchor = document.createElement('a');
-    anchor.href = environment.apiUrl;
+    anchor.href = value;
     if (anchor.protocol && anchor.host) {
       return `${anchor.protocol}//${anchor.host}`;
     }
-    return window.location.origin;
+    return null;
   }
 }

@@ -109,7 +109,22 @@ export class LegalDocumentComponent {
   private route = inject(ActivatedRoute);
 
   get document(): LegalDocument {
-    const key = this.route.snapshot.paramMap.get('document') as LegalDocumentKey | null;
-    return key && DOCUMENTS[key] ? DOCUMENTS[key] : DOCUMENTS['privacy-policy'];
+    const key = this.resolveDocumentKey(this.route.snapshot.paramMap.get('document'));
+    return DOCUMENTS[key];
+  }
+
+  private resolveDocumentKey(document: string | null): LegalDocumentKey {
+    switch ((document ?? '').toLowerCase()) {
+      case 'contratto-saas':
+        return 'contratto-saas';
+      case 'termini-uso':
+      case 'terms-client-v1.0.html':
+        return 'termini-uso';
+      case 'privacy-policy':
+      case 'privacy-client-v1.0.html':
+        return 'privacy-policy';
+      default:
+        return 'privacy-policy';
+    }
   }
 }
