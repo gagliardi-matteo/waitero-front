@@ -30,20 +30,6 @@
     <div class="order-details">
       <h3>Il tuo ordine</h3>
 
-      <div class="section" *ngIf="hasConfirmedItems">
-        <div class="section-title">Gia inviati</div>
-        <ul>
-          <li *ngFor="let item of confirmedItems; trackBy: trackConfirmedItem">
-            <div class="item-row sent">
-              <div class="info">
-                {{ formatItemLabel(item.nome, item.portionLabel) }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;
-              </div>
-              <div class="sent-qty">x{{ item.quantita }}</div>
-            </div>
-          </li>
-        </ul>
-      </div>
-
       <div class="section" *ngIf="draftItems.length > 0">
         <div class="section-title">Da inviare</div>
         <ul>
@@ -57,6 +43,20 @@
                 <span>{{ quantita(item) }}</span>
                 <button (click)="aggiungi(item)">+</button>
               </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="section" *ngIf="hasConfirmedItems">
+        <div class="section-title">Gia inviati</div>
+        <ul>
+          <li *ngFor="let item of confirmedItems; trackBy: trackConfirmedItem">
+            <div class="item-row sent">
+              <div class="info">
+                {{ formatItemLabel(item.nome, item.portionLabel) }} &middot; {{ item.prezzoUnitario | number: '1.2-2' }} &euro;
+              </div>
+              <div class="sent-qty">x{{ item.quantita }}</div>
             </div>
           </li>
         </ul>
