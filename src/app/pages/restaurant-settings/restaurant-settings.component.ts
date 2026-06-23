@@ -190,7 +190,9 @@ export class RestaurantSettingsComponent {
           this.billingForm.patchValue({ accountHolderName: settings.nome ?? '' }, { emitEvent: false });
         }
         this.serviceHoursArray.clear();
-        settings.serviceHours.forEach(slot => this.serviceHoursArray.push(this.createSlot(slot)));
+        [...settings.serviceHours]
+          .sort((left, right) => this.compareSlots(left, right))
+          .forEach(slot => this.serviceHoursArray.push(this.createSlot(slot)));
         if (settings.serviceHours.length === 0) {
           this.serviceHoursArray.push(this.createSlot());
         }
@@ -704,12 +706,17 @@ export class RestaurantSettingsComponent {
   }
 
   private compareSlots(left: RestaurantServiceHour, right: RestaurantServiceHour): number {
-    const leftIndex = this.weekdays.findIndex(day => day.value === left.dayOfWeek);
-    const rightIndex = this.weekdays.findIndex(day => day.value === right.dayOfWeek);
+    const leftIndex = this.dayIndex(left.dayOfWeek);
+    const rightIndex = this.dayIndex(right.dayOfWeek);
     if (leftIndex !== rightIndex) {
       return leftIndex - rightIndex;
     }
     return left.startTime.localeCompare(right.startTime) || left.endTime.localeCompare(right.endTime);
+  }
+
+  private dayIndex(dayOfWeek: string): number {
+    const index = this.weekdays.findIndex(day => day.value === dayOfWeek);
+    return index === -1 ? this.weekdays.length : index;
   }
 
   private hasOverlap(candidate: RestaurantServiceHour, slots: RestaurantServiceHour[]): boolean {

@@ -186,8 +186,12 @@ export class AccessComponent implements OnInit {
     }).subscribe({
       next: response => {
         if (!response.allowed) {
-          this.errorMessage = response.message || 'Accesso al tavolo non consentito.';
-          this.accessStatus = `Esito backend: ${response.status}`;
+          this.router.navigate(['/menu/bloccato'], {
+            replaceUrl: true,
+            queryParams: {
+              message: response.message || 'In questo momento non e possibile ordinare da questo tavolo. Rivolgiti al personale del locale.'
+            }
+          });
           return;
         }
 

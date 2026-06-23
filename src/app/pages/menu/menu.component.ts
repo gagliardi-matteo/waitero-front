@@ -4,14 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgFor, NgIf } from '@angular/common';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, throwError } from 'rxjs';
 import { Piatto } from '../../models/piatto.model';
 import { OrderSummaryComponent } from '../order-summary/order-summary.component';
 import { Ristorante } from '../../models/ristorante.mode';
 import { environment } from '../../../environments/environment';
 import { AuthContextService } from '../../services/auth-context.service';
 import { OrderService } from '../../services/order.service';
-import { CustomerOrderService, CustomerOrderState } from '../../services/customer-order.service';
+import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
@@ -105,11 +105,17 @@ export class MenuComponent implements OnInit, OnDestroy {
       tableState: this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId, false)
         .pipe(catchError(err => {
           console.error('Errore caricamento stato tavolo iniziale', err);
-          return of(this.emptyTableState());
+          this.redirectToBlocked(err);
+          return throwError(() => err);
         })),
       menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
     }).subscribe({
         next: ({ restaurant, tableState, menu }) => {
+          if (this.isClosedOrderStatus(tableState.currentOrder?.status)) {
+            this.redirectToBlocked(null, 'Questo ordine e stato chiuso. Per effettuare un nuovo ordine rivolgiti al personale del locale.');
+            return;
+          }
+
           this.errorMessage = '';
           this.ristoranteObj = restaurant;
           this.orderService.setConfirmedOrder(tableState.currentOrder);
@@ -216,6 +222,11 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.customerOrderService.getCurrentState(this.token, this.restaurantId, this.tableId, false)
         .subscribe({
           next: state => {
+            if (this.isClosedOrderStatus(state.currentOrder?.status)) {
+              this.redirectToBlocked(null, 'Questo ordine e stato chiuso. Per effettuare un nuovo ordine rivolgiti al personale del locale.');
+              return;
+            }
+
             this.orderService.setConfirmedOrder(state.currentOrder);
             this.customerOrderService.applyExternalDraftSnapshot(state.draft);
           },
@@ -348,15 +359,21 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
-  private emptyTableState(): CustomerOrderState {
-    return {
-      currentOrder: null,
-      draft: {
-        restaurantId: Number(this.restaurantId),
-        tableId: Number(this.tableId),
-        items: []
+  private isClosedOrderStatus(status: string | null | undefined): boolean {
+    const normalized = status?.trim().toUpperCase();
+    return normalized === 'PAGATO' || normalized === 'ANNULLATO';
+  }
+
+  private redirectToBlocked(err?: any, fallbackMessage?: string): void {
+    this.eventSource?.close();
+    this.eventSource = null;
+    this.auth.clear();
+    void this.router.navigate(['/menu/bloccato'], {
+      replaceUrl: true,
+      queryParams: {
+        message: err?.error?.message || fallbackMessage || 'In questo momento non e possibile ordinare da questo tavolo. Rivolgiti al personale del locale.'
       }
-    };
+    });
   }
 
   private syncActiveVisibleCategory(): void {
@@ -455,7 +472,10 @@ export class MenuComponent implements OnInit, OnDestroy {
             }
           });
         },
-        error: err => console.error('Errore aggiornamento bozza', err)
+        error: err => {
+          console.error('Errore aggiornamento bozza', err);
+          this.redirectToBlocked(err);
+        }
       });
   }
 
@@ -472,7 +492,10 @@ export class MenuComponent implements OnInit, OnDestroy {
             }
           });
         },
-        error: err => console.error('Errore aggiornamento bozza', err)
+        error: err => {
+          console.error('Errore aggiornamento bozza', err);
+          this.redirectToBlocked(err);
+        }
       });
   }
 

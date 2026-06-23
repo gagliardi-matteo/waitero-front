@@ -260,7 +260,12 @@ export class CustomerOrderService {
     const message = err?.error?.message ?? '';
     if (redirectOnUnauthorized && typeof message === 'string' && message.includes('Accesso tavolo non autorizzato')) {
       this.auth.clear();
-      void this.router.navigate(['/menu', restaurantId, tableId, token], { replaceUrl: true });
+      void this.router.navigate(['/menu/bloccato'], {
+        replaceUrl: true,
+        queryParams: {
+          message: 'In questo momento non e possibile ordinare da questo tavolo. Rivolgiti al personale del locale.'
+        }
+      });
     }
 
     return throwError(() => err);

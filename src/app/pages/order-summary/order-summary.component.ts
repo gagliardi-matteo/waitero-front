@@ -144,6 +144,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       error: err => {
         console.error('Errore chiamata cameriere', err);
         this.isCallingWaiter = false;
+        this.redirectToBlocked(err);
       }
     });
   }
@@ -195,14 +196,14 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
           error: err => {
             console.error('Errore verifica ordine dopo conferma', err);
             this.isSubmitting = false;
-            this.submitErrorMessage = 'Ordine non verificato. Riprova tra pochi secondi.';
+            this.redirectToBlocked(err, 'Ordine non verificato. Rivolgiti al personale del locale.');
           }
         });
       },
       error: err => {
         console.error('Errore conferma ordine', err);
         this.isSubmitting = false;
-        this.submitErrorMessage = err.error?.message ?? "Impossibile confermare l'ordine.";
+        this.redirectToBlocked(err);
       }
     });
   }
@@ -225,7 +226,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
             }
           });
         },
-        error: err => console.error('Errore aggiornamento bozza', err)
+        error: err => {
+          console.error('Errore aggiornamento bozza', err);
+          this.redirectToBlocked(err);
+        }
       });
   }
 
@@ -247,7 +251,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
             }
           });
         },
-        error: err => console.error('Errore aggiornamento bozza', err)
+        error: err => {
+          console.error('Errore aggiornamento bozza', err);
+          this.redirectToBlocked(err);
+        }
       });
   }
 
@@ -267,7 +274,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     this.customerOrderService.mutateDraftOptimistically(token, restaurantId, tableId, piatto.id, 1)
       .subscribe({
         next: () => {},
-        error: err => console.error('Errore aggiornamento bozza', err)
+        error: err => {
+          console.error('Errore aggiornamento bozza', err);
+          this.redirectToBlocked(err);
+        }
       });
   }
 
@@ -378,5 +388,15 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       this.waiterCallConfirmationMessage = '';
       this.waiterCallConfirmationTimer = null;
     }, 5000);
+  }
+
+  private redirectToBlocked(err?: any, fallbackMessage?: string): void {
+    this.auth.clear();
+    void this.router.navigate(['/menu/bloccato'], {
+      replaceUrl: true,
+      queryParams: {
+        message: err?.error?.message || fallbackMessage || 'In questo momento non e possibile ordinare da questo tavolo. Rivolgiti al personale del locale.'
+      }
+    });
   }
 }

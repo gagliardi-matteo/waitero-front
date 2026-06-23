@@ -85,6 +85,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dettaglio-piatto/dettaglio-piatto.component').then(m => m.DettaglioPiattoComponent)
   },
   {
+    path: 'menu/bloccato',
+    loadComponent: () => import('./pages/menu-blocked/menu-blocked.component').then(m => m.MenuBlockedComponent)
+  },
+  {
     path: 'menu/:tablePublicId/:token',
     loadComponent: () => import('./pages/access/access.component').then(m => m.AccessComponent)
   },
