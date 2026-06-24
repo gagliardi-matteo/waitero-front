@@ -176,18 +176,7 @@ export class PrinterSettingsComponent implements OnInit {
   async testSunmiPrint(): Promise<void> {
     this.clearMessages();
     this.testingPrinterKey = 'SUNMI';
-    const result = await this.printerService.printKitchenOrder({
-      orderId: 0,
-      tableName: 'TEST',
-      createdAt: new Date().toISOString(),
-      items: [
-        {
-          quantity: 1,
-          name: 'Stampa di prova WaiterO',
-          notes: 'POS Sunmi locale'
-        }
-      ]
-    });
+    const result = await this.printerService.printTestPage();
     this.testingPrinterKey = null;
 
     if (result.success) {

@@ -95,6 +95,32 @@ class PrinterFormatter {
         return FormatResult.success(lines.joinToString("\n"))
     }
 
+    fun formatTestPage(): String {
+        val lines = listOf(
+            separator,
+            "WAITERO",
+            "STAMPA DI PROVA",
+            separator,
+            "",
+            "Ora: ${timeFormatter.format(Date())}",
+            "",
+            sectionSeparator,
+            "",
+            "POS Sunmi locale",
+            "Template senza ordine",
+            "",
+            "Se leggi questo ticket,",
+            "la stampante funziona.",
+            "",
+            sectionSeparator,
+            "",
+            separator,
+            ""
+        )
+
+        return lines.joinToString("\n")
+    }
+
     private fun parseItems(items: JSONArray): List<PrintableItem> {
         val parsedItems = mutableListOf<PrintableItem>()
         for (index in 0 until items.length()) {

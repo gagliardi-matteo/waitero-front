@@ -25,13 +25,22 @@ public class WaiteroPrinterPlugin : Plugin() {
             return
         }
 
+        printTicket(call, formatted.ticket)
+    }
+
+    @PluginMethod
+    public fun printTestPage(call: PluginCall) {
+        printTicket(call, formatter.formatTestPage())
+    }
+
+    private fun printTicket(call: PluginCall, ticket: String) {
         execute {
             try {
                 val manager = sunmiPrinterManager ?: SunmiPrinterManager(context.applicationContext).also {
                     sunmiPrinterManager = it
                 }
 
-                val printResult = manager.printText(formatted.ticket)
+                val printResult = manager.printText(ticket)
                 call.resolve(result(printResult.success, printResult.error))
             } catch (exception: Exception) {
                 call.resolve(result(false, "Errore inizializzazione stampa SUNMI: ${exception.message ?: "errore sconosciuto"}"))

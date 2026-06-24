@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -46,6 +46,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   private lastScrollBucket = 0;
   private impressionObserver: IntersectionObserver | null = null;
   private impressionDishIds = new Set<number>();
+  private scrollListener: (() => void) | null = null;
+  private scrollAnimationFrameId: number | null = null;
 
   constructor(
     private orderService: OrderService,
@@ -55,10 +57,13 @@ export class MenuComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private menuCatalogService: MenuCatalogService,
-    private trackingService: TrackingService
+    private trackingService: TrackingService,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
+    this.registerScrollListener();
+
     const token = this.route.snapshot.queryParamMap.get('token') ?? this.auth.tokenValue;
     const restaurantId = this.route.snapshot.queryParamMap.get('restaurantId') ?? this.auth.restaurantIdValue;
     const tableId = this.route.snapshot.queryParamMap.get('tableId') ?? this.auth.tableIdValue;
@@ -138,6 +143,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.eventSource?.close();
+    this.unregisterScrollListener();
     this.impressionObserver?.disconnect();
     this.impressionObserver = null;
     this.trackingService.trackTimeSpent(this.enteredAt, {
@@ -149,8 +155,22 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
+  private onWindowScroll(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.scrollAnimationFrameId !== null) {
+      return;
+    }
+
+    this.scrollAnimationFrameId = window.requestAnimationFrame(() => {
+      this.scrollAnimationFrameId = null;
+      this.handleScrollFrame();
+    });
+  }
+
+  private handleScrollFrame(): void {
     this.updateActiveVisibleCategory();
 
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -384,6 +404,33 @@ export class MenuComponent implements OnInit, OnDestroy {
     window.requestAnimationFrame(() => this.updateActiveVisibleCategory());
   }
 
+  private registerScrollListener(): void {
+    if (typeof window === 'undefined' || this.scrollListener) {
+      return;
+    }
+
+    this.zone.runOutsideAngular(() => {
+      this.scrollListener = () => this.onWindowScroll();
+      window.addEventListener('scroll', this.scrollListener, { passive: true });
+    });
+  }
+
+  private unregisterScrollListener(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (this.scrollListener) {
+      window.removeEventListener('scroll', this.scrollListener);
+      this.scrollListener = null;
+    }
+
+    if (this.scrollAnimationFrameId !== null) {
+      window.cancelAnimationFrame(this.scrollAnimationFrameId);
+      this.scrollAnimationFrameId = null;
+    }
+  }
+
   private updateActiveVisibleCategory(): void {
     if (typeof document === 'undefined' || this.piattiRaggruppati.length === 0) {
       return;
@@ -407,7 +454,11 @@ export class MenuComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.activeVisibleCategory = nextActive;
+    if (nextActive !== this.activeVisibleCategory) {
+      this.zone.run(() => {
+        this.activeVisibleCategory = nextActive;
+      });
+    }
   }
 
   private scheduleMenuItemImpressionObserver(): void {

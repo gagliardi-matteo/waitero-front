@@ -41,8 +41,13 @@ export class PrinterService {
     return this.provider.printKitchenOrder(order);
   }
 
+  async printTestPage(): Promise<PrintResult> {
+    return this.provider.printTestPage();
+  }
+
   private isValidOrder(order: PrintOrder): boolean {
     return Number.isFinite(order.orderId)
+      && order.orderId > 0
       && !!order.tableName?.trim()
       && !!order.createdAt?.trim()
       && Array.isArray(order.items)

@@ -10,10 +10,12 @@ export enum PrinterProviderType {
 export interface PrinterProvider {
   readonly type: PrinterProviderType;
   printKitchenOrder(order: PrintOrder): Promise<PrintResult>;
+  printTestPage(): Promise<PrintResult>;
 }
 
 export interface WaiteroPrinterPlugin {
   printKitchenOrder(order: PrintOrder): Promise<PrintResult>;
+  printTestPage(): Promise<PrintResult>;
 }
 
 export const Printer = registerPlugin<WaiteroPrinterPlugin>('WaiteroPrinter');
@@ -36,6 +38,12 @@ export class MockPrinterProvider implements PrinterProvider {
     console.log('[WaiterO Printer MOCK]\n' + formatKitchenTicket(order));
     return { success: true };
   }
+
+  async printTestPage(): Promise<PrintResult> {
+    await new Promise<void>(resolve => window.setTimeout(resolve, 250));
+    console.log('[WaiterO Printer MOCK]\n' + formatTestTicket());
+    return { success: true };
+  }
 }
 
 export class SunmiPrinterProvider implements PrinterProvider {
@@ -44,6 +52,18 @@ export class SunmiPrinterProvider implements PrinterProvider {
   async printKitchenOrder(order: PrintOrder): Promise<PrintResult> {
     try {
       const result = await Printer.printKitchenOrder(order);
+      return normalizePrintResult(result);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'SUNMI printer plugin unavailable'
+      };
+    }
+  }
+
+  async printTestPage(): Promise<PrintResult> {
+    try {
+      const result = await Printer.printTestPage();
       return normalizePrintResult(result);
     } catch (error) {
       return {
@@ -126,6 +146,31 @@ function formatKitchenTicket(order: PrintOrder): string {
   );
 
   return lines.join('\n');
+}
+
+function formatTestTicket(): string {
+  const separator = '========================';
+  const sectionSeparator = '------------------------';
+  return [
+    separator,
+    'WAITERO',
+    'STAMPA DI PROVA',
+    separator,
+    '',
+    `Ora: ${formatTicketTime(new Date().toISOString())}`,
+    '',
+    sectionSeparator,
+    '',
+    'POS Sunmi locale',
+    'Template senza ordine',
+    '',
+    'Se leggi questo ticket,',
+    'la stampante funziona.',
+    '',
+    sectionSeparator,
+    '',
+    separator
+  ].join('\n');
 }
 
 function formatTicketTime(value: string): string {
