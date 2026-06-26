@@ -40,6 +40,8 @@ h1 {
   color: var(--text-muted);
   margin-bottom: .9rem;
   padding: 0 var(--mobile-padding);
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
 }
 
 .price {
