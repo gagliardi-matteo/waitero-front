@@ -116,12 +116,13 @@ export class CustomerOrderService {
     this.pendingOptimisticMutations.push(mutation);
 
     const result$ = new ReplaySubject<CustomerDraft>(1);
+    result$.next(this.buildLocalDraftSnapshot(restaurantId, tableId));
+
     const runMutation = async () => {
       try {
-        const draft = await this.performDraftMutationRequest(token, restaurantId, tableId, dishId, delta, portionKey);
+        await this.performDraftMutationRequest(token, restaurantId, tableId, dishId, delta, portionKey);
         this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
         this.lastAcceptedMutationAt = Date.now();
-        result$.next(draft);
         result$.complete();
       } catch (err) {
         this.pendingOptimisticMutations = this.pendingOptimisticMutations.filter(item => item.id !== mutation.id);
@@ -132,6 +133,14 @@ export class CustomerOrderService {
 
     this.draftMutationQueue = this.draftMutationQueue.then(runMutation, runMutation);
     return result$.asObservable();
+  }
+
+  private buildLocalDraftSnapshot(restaurantId: string, tableId: string): CustomerDraft {
+    return {
+      restaurantId: Number(restaurantId),
+      tableId: Number(tableId),
+      items: this.orderState.getDraftSnapshot()
+    };
   }
 
   applyExternalDraftSnapshot(serverDraft: CustomerDraft): void {

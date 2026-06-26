@@ -72,6 +72,17 @@ export class OrderService {
       }));
   }
 
+  getDraftSnapshot(): CustomerDraftItem[] {
+    return Array.from(this.draftLines.values())
+      .filter(item => item.quantity > 0)
+      .map(item => ({
+        lineKey: item.lineKey,
+        dishId: item.dishId,
+        portionKey: item.portionKey ?? null,
+        quantity: item.quantity
+      }));
+  }
+
   getDraftLineItems(): DraftLineItem[] {
     const result: DraftLineItem[] = [];
     for (const line of this.draftLines.values()) {
