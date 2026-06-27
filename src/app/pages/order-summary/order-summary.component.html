@@ -1,7 +1,7 @@
 ﻿<div class="order-summary-wrapper" [class.expanded]="isExpanded">
-  <div class="summary-header" (click)="toggleExpanded()">
+  <div class="summary-header" [class.has-draft-items]="hasDraftItems" [class.cart-pulse]="cartPulseActive" (click)="toggleExpanded()">
     <div class="badge">{{ badgeCount }}</div>
-    <div class="vedi-carrello-text">{{ isExpanded ? 'Torna al menu' : 'Vedi carrello' }}</div>
+    <div class="vedi-carrello-text">{{ isExpanded ? 'Torna al menu' : 'Conferma ordine' }}</div>
     <div class="prezzo">{{ totale | number: '1.2-2' }} &euro;</div>
     <button
       type="button"

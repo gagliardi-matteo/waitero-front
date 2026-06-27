@@ -38,6 +38,13 @@ $peekHeight: 4.5rem;
     flex-shrink: 0;
   }
 
+  .summary-header.has-draft-items {
+    background: linear-gradient(135deg, #1f6b47 0%, #268d5c 100%);
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 -10px 34px rgba(31, 107, 71, 0.28);
+  }
+
   .summary-header::before {
     content: '';
     position: absolute;
@@ -48,6 +55,14 @@ $peekHeight: 4.5rem;
     border-radius: 999px;
     background: rgba(36, 39, 47, 0.22);
     transform: translateX(-50%);
+  }
+
+  .summary-header.has-draft-items::before {
+    background: rgba(255, 255, 255, 0.46);
+  }
+
+  .summary-header.cart-pulse {
+    animation: cartCtaPulse 0.65s ease;
   }
 
   &.expanded .summary-header {
@@ -65,6 +80,11 @@ $peekHeight: 4.5rem;
     font: 700 .84rem/1 inherit;
   }
 
+  .summary-header.has-draft-items .badge {
+    background: #fff;
+    color: #1f6b47;
+  }
+
   .vedi-carrello-text,
   .prezzo,
   h3,
@@ -75,6 +95,15 @@ $peekHeight: 4.5rem;
 
   .vedi-carrello-text { text-align: center; font-size: 1rem; }
   .prezzo { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .summary-header.has-draft-items .vedi-carrello-text {
+    font-size: 1.06rem;
+    font-weight: 800;
+  }
+
+  .summary-header.has-draft-items .prezzo {
+    color: rgba(255, 255, 255, 0.94);
+  }
 
   .header-call-waiter-btn {
     min-height: 2.35rem;
@@ -93,6 +122,12 @@ $peekHeight: 4.5rem;
       cursor: default;
       opacity: .68;
     }
+  }
+
+  .summary-header.has-draft-items .header-call-waiter-btn {
+    border-color: rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
   }
 
   .order-content {
@@ -250,6 +285,21 @@ $peekHeight: 4.5rem;
     font-weight: 700;
 
     &:disabled { opacity: .55; }
+  }
+}
+
+@keyframes cartCtaPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 -10px 34px rgba(31, 107, 71, 0.28);
+  }
+  42% {
+    transform: scale(1.018);
+    box-shadow: 0 -16px 42px rgba(31, 107, 71, 0.42);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 -10px 34px rgba(31, 107, 71, 0.28);
   }
 }
 

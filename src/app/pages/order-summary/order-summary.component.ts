@@ -25,6 +25,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   submitConfirmationMessage = '';
   submitErrorMessage = '';
   waiterCallConfirmationMessage = '';
+  cartPulseActive = false;
 
   private orderState = inject(OrderService);
   private auth = inject(AuthContextService);
@@ -32,12 +33,15 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   private trackingService = inject(TrackingService);
   private router = inject(Router);
   private lastCartSignature = '';
+  private lastDraftQuantity = 0;
   private lastUpsellRequestSignature = '';
   private upsellRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   private submitConfirmationTimer: ReturnType<typeof setTimeout> | null = null;
   private waiterCallConfirmationTimer: ReturnType<typeof setTimeout> | null = null;
+  private cartPulseTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
+    this.lastDraftQuantity = this.getDraftQuantity();
     this.refreshCartUpsellSuggestions();
   }
 
@@ -45,6 +49,11 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     const signature = this.buildCartSignature();
     if (signature !== this.lastCartSignature) {
       this.lastCartSignature = signature;
+      const draftQuantity = this.getDraftQuantity();
+      if (draftQuantity > this.lastDraftQuantity) {
+        this.triggerCartPulse();
+      }
+      this.lastDraftQuantity = draftQuantity;
       this.scheduleCartUpsellRefresh();
     }
   }
@@ -61,6 +70,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     if (this.waiterCallConfirmationTimer) {
       clearTimeout(this.waiterCallConfirmationTimer);
       this.waiterCallConfirmationTimer = null;
+    }
+    if (this.cartPulseTimer) {
+      clearTimeout(this.cartPulseTimer);
+      this.cartPulseTimer = null;
     }
   }
 
@@ -82,6 +95,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
 
   get totalDraft(): number {
     return this.draftItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+  }
+
+  get hasDraftItems(): boolean {
+    return this.draftItems.length > 0;
   }
 
   get totale(): number {
@@ -354,6 +371,25 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       ...this.draftItems.map(item => item.dishId),
       ...this.confirmedItems.map(item => item.dishId)
     ]));
+  }
+
+  private getDraftQuantity(): number {
+    return this.draftItems.reduce((acc, item) => acc + item.quantity, 0);
+  }
+
+  private triggerCartPulse(): void {
+    this.cartPulseActive = false;
+    if (this.cartPulseTimer) {
+      clearTimeout(this.cartPulseTimer);
+    }
+
+    requestAnimationFrame(() => {
+      this.cartPulseActive = true;
+      this.cartPulseTimer = setTimeout(() => {
+        this.cartPulseActive = false;
+        this.cartPulseTimer = null;
+      }, 650);
+    });
   }
 
   private buildCartSignature(): string {
