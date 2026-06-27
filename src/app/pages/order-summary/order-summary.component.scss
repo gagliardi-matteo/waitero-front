@@ -69,6 +69,11 @@ $peekHeight: 4.5rem;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 255, 255, 0.96));
   }
 
+  &.expanded .summary-header.has-draft-items {
+    background: linear-gradient(135deg, #1f6b47 0%, #268d5c 100%);
+    color: #fff;
+  }
+
   .badge {
     min-width: 2.2rem;
     height: 2.2rem;
