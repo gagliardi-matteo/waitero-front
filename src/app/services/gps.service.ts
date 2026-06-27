@@ -50,7 +50,7 @@ export class GpsService {
     });
   }
 
-  private async getPermissionState(): Promise<'granted' | 'prompt' | 'denied' | 'unsupported'> {
+  async getPermissionState(): Promise<'granted' | 'prompt' | 'denied' | 'unsupported'> {
     if (!('permissions' in navigator) || typeof navigator.permissions.query !== 'function') {
       return 'unsupported';
     }

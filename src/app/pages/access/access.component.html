@@ -12,7 +12,7 @@
       </p>
       <p class="location-hint" *ngIf="locationRetryMessage">{{ locationRetryMessage }}</p>
       <button type="button" class="retry-btn" (click)="locationPermissionDenied ? retryWithLocation() : enterWithLocation()" [disabled]="retryingLocation">
-        {{ retryingLocation ? 'Controllo posizione in corso...' : (locationPermissionDenied ? 'Riprova con la posizione' : 'Entra con la posizione') }}
+        {{ retryingLocation ? 'Controllo posizione in corso...' : (locationPermissionDenied ? 'Riprova con la posizione' : 'Continua') }}
       </button>
       <p class="location-hint" *ngIf="locationBlockedPermanently">
         Se hai scelto "Non consentire mai", il browser non puo riaprire il popup automaticamente.

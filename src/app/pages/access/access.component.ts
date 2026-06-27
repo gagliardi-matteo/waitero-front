@@ -38,6 +38,7 @@ export class AccessComponent implements OnInit {
   private gpsService = inject(GpsService);
   private tableAccessService = inject(TableAccessService);
   private legalAcceptanceService = inject(LegalAcceptanceService);
+  private accessFlowRunning = false;
 
   async ngOnInit(): Promise<void> {
     this.prepareAccess();
@@ -92,7 +93,7 @@ export class AccessComponent implements OnInit {
   private showLegalModalOrContinue(config: LegalConfig): void {
     this.legalConfig = config;
     if (this.hasCustomerLegalAcceptanceForCurrentVersion()) {
-      void this.runAccessFlow();
+      void this.showLocationNoticeOrRunAccessFlow();
       return;
     }
     this.legalModalVisible = true;
@@ -124,7 +125,7 @@ export class AccessComponent implements OnInit {
         this.legalModalVisible = false;
         this.legalAccepting = false;
         this.rememberCustomerLegalAcceptance(response.config);
-        void this.runAccessFlow();
+        void this.showLocationNoticeOrRunAccessFlow();
       },
       error: err => {
         console.error('Errore accettazione documenti cliente', err);
@@ -135,6 +136,10 @@ export class AccessComponent implements OnInit {
   }
 
   private async runAccessFlow(): Promise<void> {
+    if (this.accessFlowRunning) {
+      return;
+    }
+
     if (!this.hasCustomerLegalAcceptanceForCurrentVersion()) {
       this.legalModalVisible = true;
       this.accessStatus = 'Accetta i documenti per continuare.';
@@ -152,6 +157,7 @@ export class AccessComponent implements OnInit {
       return;
     }
 
+    this.accessFlowRunning = true;
     const deviceId = this.deviceIdService.getOrCreate();
     const shouldCollectFingerprint = environment.privacy?.customerBrowserFingerprintEnabled === true;
     const [fingerprint, gps] = await Promise.all([
@@ -168,6 +174,7 @@ export class AccessComponent implements OnInit {
         ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
         : 'Serve autorizzare la posizione per continuare.';
       this.accessStatus = 'Per entrare nel tavolo serve autorizzare la posizione.';
+      this.accessFlowRunning = false;
       return;
     }
 
@@ -185,6 +192,7 @@ export class AccessComponent implements OnInit {
       accuracy: gps.accuracy
     }).subscribe({
       next: response => {
+        this.accessFlowRunning = false;
         if (!response.allowed) {
           this.router.navigate(['/menu/bloccato'], {
             replaceUrl: true,
@@ -215,11 +223,37 @@ export class AccessComponent implements OnInit {
         });
       },
       error: err => {
+        this.accessFlowRunning = false;
         console.error('Errore validazione accesso tavolo', err);
         this.errorMessage = err.error?.message ?? 'Impossibile validare l accesso al tavolo.';
         this.accessStatus = `HTTP ${err.status ?? 'errore sconosciuto'}`;
       }
     });
+  }
+
+  private async showLocationNoticeOrRunAccessFlow(): Promise<void> {
+    if (!this.hasCustomerLegalAcceptanceForCurrentVersion()) {
+      this.legalModalVisible = true;
+      this.accessStatus = 'Accetta i documenti per continuare.';
+      return;
+    }
+
+    const permissionState = await this.gpsService.getPermissionState();
+    if (permissionState === 'granted') {
+      this.locationNoticeVisible = false;
+      await this.runAccessFlow();
+      return;
+    }
+
+    this.locationNoticeVisible = true;
+    this.locationPermissionDenied = permissionState === 'denied';
+    this.locationBlockedPermanently = permissionState === 'denied';
+    this.locationRetryMessage = this.locationBlockedPermanently
+      ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
+      : '';
+    this.accessStatus = this.locationBlockedPermanently
+      ? 'Per entrare nel tavolo serve autorizzare la posizione.'
+      : 'Autorizza la posizione per continuare.';
   }
 
   formatCoordinate(value: number | null): string {
