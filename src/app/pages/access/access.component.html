@@ -5,7 +5,6 @@
     <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
 
     <div class="location-banner" *ngIf="locationNoticeVisible || locationPermissionDenied">
-      <h2>{{ locationPermissionDenied ? 'Posizione necessaria per l'accesso' : 'Usiamo la posizione solo per sicurezza' }}</h2>
       <p>
         La posizione non viene salvata e non viene usata per marketing o profilazione.
         Serve solo per controlli di sicurezza sull'accesso al tavolo tramite QR.
@@ -37,6 +36,13 @@
         <a [href]="legalDocumentUrl(legalConfig?.privacyUrl || '/legal/privacy-policy')" target="_blank" rel="noopener">Privacy Policy</a>.
       </p>
       <p class="allergen-disclaimer">⚠️ In caso di allergie o intolleranze verificare sempre con il personale del locale.</p>
+      <div class="location-banner embedded" *ngIf="locationNoticeInLegalModal">
+        <p>
+          Prima di entrare ti chiederemo la posizione. Non viene salvata e non viene usata per marketing o profilazione:
+          serve solo per controlli di sicurezza sull'accesso al tavolo tramite QR.
+        </p>
+        <p class="location-hint" *ngIf="locationRetryMessage">{{ locationRetryMessage }}</p>
+      </div>
       <p class="legal-error" *ngIf="legalErrorMessage">{{ legalErrorMessage }}</p>
       <button type="button" class="retry-btn" (click)="continueAfterLegalAcceptance()" [disabled]="legalAccepting">
         {{ legalAccepting ? 'Registrazione in corso...' : 'Continua' }}

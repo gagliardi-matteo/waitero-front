@@ -29,6 +29,7 @@ export class AccessComponent implements OnInit {
   legalAccepting = false;
   legalConfig: LegalConfig | null = null;
   legalErrorMessage = '';
+  locationNoticeInLegalModal = false;
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -98,6 +99,7 @@ export class AccessComponent implements OnInit {
     }
     this.legalModalVisible = true;
     this.accessStatus = 'Accetta i documenti per continuare.';
+    void this.updateLocationNoticeInLegalModal();
   }
 
   continueAfterLegalAcceptance(): void {
@@ -125,6 +127,10 @@ export class AccessComponent implements OnInit {
         this.legalModalVisible = false;
         this.legalAccepting = false;
         this.rememberCustomerLegalAcceptance(response.config);
+        if (this.locationNoticeInLegalModal) {
+          void this.enterWithLocation();
+          return;
+        }
         void this.showLocationNoticeOrRunAccessFlow();
       },
       error: err => {
@@ -254,6 +260,16 @@ export class AccessComponent implements OnInit {
     this.accessStatus = this.locationBlockedPermanently
       ? 'Per entrare nel tavolo serve autorizzare la posizione.'
       : 'Autorizza la posizione per continuare.';
+  }
+
+  private async updateLocationNoticeInLegalModal(): Promise<void> {
+    const permissionState = await this.gpsService.getPermissionState();
+    this.locationNoticeInLegalModal = permissionState !== 'granted';
+    this.locationPermissionDenied = permissionState === 'denied';
+    this.locationBlockedPermanently = permissionState === 'denied';
+    this.locationRetryMessage = this.locationBlockedPermanently
+      ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
+      : '';
   }
 
   formatCoordinate(value: number | null): string {
