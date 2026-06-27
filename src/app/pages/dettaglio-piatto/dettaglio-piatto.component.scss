@@ -92,10 +92,33 @@ h1 {
 }
 
 .allergen-badge,
+.portion-chip,
 .ingredient-list span {
   padding: .34rem .6rem;
   border-radius: 999px;
   font-size: .78rem;
+}
+
+.portion-chip {
+  min-height: 36px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.portion-chip.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(216, 122, 44, .24);
+}
+
+.portion-chip:focus-visible {
+  outline: 2px solid rgba(216, 122, 44, .35);
+  outline-offset: 2px;
 }
 
 .allergen-badge {

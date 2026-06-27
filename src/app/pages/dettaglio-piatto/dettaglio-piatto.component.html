@@ -23,7 +23,7 @@
       <div class="badge-list">
         <button
           type="button"
-          class="allergen-badge"
+          class="portion-chip"
           *ngFor="let portion of piatto.porzioni"
           [class.active]="selectedPortionKey === portion.key"
           (click)="selectedPortionKey = portion.key"
