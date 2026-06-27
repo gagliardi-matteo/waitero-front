@@ -28,7 +28,7 @@ $peekHeight: 4.5rem;
     position: relative;
     height: $peekHeight;
     display: grid;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: .65rem;
     padding: 0 1rem;
@@ -108,31 +108,6 @@ $peekHeight: 4.5rem;
 
   .summary-header.has-draft-items .prezzo {
     color: rgba(255, 255, 255, 0.94);
-  }
-
-  .header-call-waiter-btn {
-    min-height: 2.35rem;
-    border: 1px solid rgba(216, 122, 44, 0.38);
-    border-radius: 999px;
-    padding: 0 .8rem;
-    background: rgba(255, 248, 241, 0.96);
-    color: var(--accent);
-    font-size: .82rem;
-    font-weight: 800;
-    line-height: 1.1;
-    white-space: nowrap;
-    cursor: pointer;
-
-    &:disabled {
-      cursor: default;
-      opacity: .68;
-    }
-  }
-
-  .summary-header.has-draft-items .header-call-waiter-btn {
-    border-color: rgba(255, 255, 255, 0.42);
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
   }
 
   .order-content {
@@ -323,12 +298,6 @@ $peekHeight: 4.5rem;
       font-size: .9rem;
     }
 
-    .header-call-waiter-btn {
-      max-width: 6.4rem;
-      padding: 0 .65rem;
-      font-size: .76rem;
-      white-space: normal;
-    }
   }
 }
 

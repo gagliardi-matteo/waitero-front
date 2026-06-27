@@ -3,15 +3,6 @@
     <div class="badge">{{ badgeCount }}</div>
     <div class="vedi-carrello-text">{{ isExpanded ? 'Torna al menu' : 'Conferma ordine' }}</div>
     <div class="prezzo">{{ totale | number: '1.2-2' }} &euro;</div>
-    <button
-      type="button"
-      class="header-call-waiter-btn"
-      [disabled]="isCallingWaiter"
-      aria-label="Chiama cameriere"
-      (click)="callWaiter($event)"
-    >
-      {{ waiterButtonLabel }}
-    </button>
   </div>
 
   <div class="order-content">
