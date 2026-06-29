@@ -173,16 +173,7 @@ export class AccessComponent implements OnInit {
 
     this.gpsSnapshot = gps;
     this.locationPermissionDenied = gps.denied === true;
-
-    if (this.locationPermissionDenied) {
-      this.locationBlockedPermanently = gps.permissionState === 'denied';
-      this.locationRetryMessage = this.locationBlockedPermanently
-        ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
-        : 'Serve autorizzare la posizione per continuare.';
-      this.accessStatus = 'Per entrare nel tavolo serve autorizzare la posizione.';
-      this.accessFlowRunning = false;
-      return;
-    }
+    const locationUnavailable = gps.latitude == null || gps.longitude == null || gps.denied === true || gps.permissionState === 'unsupported';
 
     this.accessStatus = 'Verifica accesso tavolo in corso...';
 
@@ -195,7 +186,8 @@ export class AccessComponent implements OnInit {
       fingerprint,
       latitude: gps.latitude,
       longitude: gps.longitude,
-      accuracy: gps.accuracy
+      accuracy: gps.accuracy,
+      locationUnavailable
     }).subscribe({
       next: response => {
         this.accessFlowRunning = false;
@@ -215,7 +207,8 @@ export class AccessComponent implements OnInit {
           String(response.tableId),
           deviceId,
           fingerprint,
-          response.tablePublicId
+          response.tablePublicId,
+          response.locationUnverified === true
         );
 
         this.router.navigate(['/menu'], {
@@ -255,10 +248,10 @@ export class AccessComponent implements OnInit {
     this.locationPermissionDenied = permissionState === 'denied';
     this.locationBlockedPermanently = permissionState === 'denied';
     this.locationRetryMessage = this.locationBlockedPermanently
-      ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
+      ? 'Hai bloccato la posizione nel browser. Puoi continuare, ma il locale vedra che la posizione non e stata verificata.'
       : '';
     this.accessStatus = this.locationBlockedPermanently
-      ? 'Per entrare nel tavolo serve autorizzare la posizione.'
+      ? 'Posizione non verificata.'
       : 'Autorizza la posizione per continuare.';
   }
 
@@ -268,7 +261,7 @@ export class AccessComponent implements OnInit {
     this.locationPermissionDenied = permissionState === 'denied';
     this.locationBlockedPermanently = permissionState === 'denied';
     this.locationRetryMessage = this.locationBlockedPermanently
-      ? 'Hai bloccato la posizione nel browser. Riattivala dalle impostazioni del sito o del browser, poi riprova.'
+      ? 'Hai bloccato la posizione nel browser. Puoi continuare, ma il locale vedra che la posizione non e stata verificata.'
       : '';
   }
 

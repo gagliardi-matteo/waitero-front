@@ -13,6 +13,7 @@ export interface SecureTableAccessPayload {
   latitude?: number | null;
   longitude?: number | null;
   accuracy?: number | null;
+  locationUnavailable?: boolean | null;
 }
 
 export interface SecureTableAccessResponse {
@@ -25,6 +26,7 @@ export interface SecureTableAccessResponse {
   tableName: string;
   qrToken: string;
   riskScore: number;
+  locationUnverified?: boolean | null;
 }
 
 @Injectable({ providedIn: 'root' })

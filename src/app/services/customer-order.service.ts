@@ -14,6 +14,7 @@ interface SubmitOrderPayload {
   tableId: string;
   noteCucina?: string;
   sessionId?: string;
+  locationUnverified?: boolean;
   items: Array<{
     dishId: number;
     quantity: number;
@@ -202,7 +203,8 @@ export class CustomerOrderService {
     return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/orders`, {
       ...payload,
       deviceId: this.auth.deviceIdValue,
-      fingerprint: this.auth.fingerprintValue
+      fingerprint: this.auth.fingerprintValue,
+      locationUnverified: this.auth.locationUnverifiedValue
     }).pipe(catchError(err => this.handleTableAccessError(err, payload.token, payload.restaurantId, payload.tableId)));
   }
 

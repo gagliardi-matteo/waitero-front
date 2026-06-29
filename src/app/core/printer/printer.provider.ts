@@ -110,9 +110,13 @@ function formatKitchenTicket(order: PrintOrder): string {
     `Ordine: #${order.orderId}`,
     `Ora: ${formatTicketTime(order.createdAt)}`,
     '',
-    sectionSeparator,
-    ''
   ];
+
+  if (order.warningMessage?.trim()) {
+    lines.push('ATTENZIONE:', order.warningMessage.trim(), '');
+  }
+
+  lines.push(sectionSeparator, '');
 
   const newItems = order.items.filter(item => item.status !== 'PRINTED');
   const printedItems = order.items.filter(item => item.status === 'PRINTED');

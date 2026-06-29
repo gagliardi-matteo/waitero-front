@@ -17,6 +17,7 @@ class PrinterFormatter {
         val orderId = order.optLong("orderId", Long.MIN_VALUE)
         val tableName = order.optString("tableName", "").trim()
         val createdAt = order.optString("createdAt", "").trim()
+        val warningMessage = order.optString("warningMessage", "").trim()
         val items = order.optJSONArray("items")
 
         if (orderId == Long.MIN_VALUE || orderId <= 0) {
@@ -52,9 +53,16 @@ class PrinterFormatter {
             "Ordine: #$orderId",
             "Ora: ${formatTime(createdAt)}",
             "",
-            sectionSeparator,
-            ""
         )
+
+        if (warningMessage.isNotBlank()) {
+            lines.add("ATTENZIONE:")
+            lines.addAll(wrapLine(warningMessage, MAX_LINE_CHARS))
+            lines.add("")
+        }
+
+        lines.add(sectionSeparator)
+        lines.add("")
 
         val newItems = parsedItems.filter { it.status != "PRINTED" }
         val printedItems = parsedItems.filter { it.status == "PRINTED" }

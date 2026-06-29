@@ -76,7 +76,8 @@ export class MenuComponent implements OnInit, OnDestroy {
         tableId,
         this.auth.deviceIdValue ?? 'browser-device',
         this.auth.fingerprintValue,
-        tablePublicId
+        tablePublicId,
+        this.auth.locationUnverifiedValue
       );
     }
 

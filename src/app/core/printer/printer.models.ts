@@ -2,6 +2,7 @@ export interface PrintOrder {
   orderId: number;
   tableName: string;
   createdAt: string;
+  warningMessage?: string;
   items: PrintOrderItem[];
 }
 

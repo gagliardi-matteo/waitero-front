@@ -14,6 +14,7 @@
 .order-row.muted { opacity:.92; }
 .row-title { font-size:.95rem; font-weight:700; }
 .row-subtitle, .row-time { color:var(--text-muted); font-size:.85rem; }
+.location-warning { display:inline-flex; width:fit-content; margin-top:.38rem; padding:.24rem .5rem; border:1px solid rgba(201,139,31,.28); border-radius:999px; background:var(--warning-soft); color:#8a5a00; font-size:.76rem; font-weight:800; }
 .row-status { font-size:.8rem; font-weight:700; color:var(--accent-strong); }
 .row-total { font-weight:700; }
 .empty-state { padding:1.1rem; border:1px solid var(--border); border-radius:18px; background:rgba(255,255,255,.92); color:var(--text-muted); }

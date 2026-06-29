@@ -9,6 +9,7 @@ export class AuthContextService {
   private qrToken: string | null = null;
   private deviceId: string | null = null;
   private fingerprint: string | null = null;
+  private locationUnverified: boolean | null = null;
 
   setPendingAccess(qrToken: string, tablePublicId: string | null, restaurantId: string | null, tableId: string | null) {
     this.qrToken = qrToken;
@@ -39,7 +40,8 @@ export class AuthContextService {
     tableId: string,
     deviceId: string,
     fingerprint: string | null,
-    tablePublicId: string | null = null
+    tablePublicId: string | null = null,
+    locationUnverified = false
   ) {
     this.token = token;
     this.restaurantId = restaurantId;
@@ -48,6 +50,7 @@ export class AuthContextService {
     this.tablePublicId = tablePublicId;
     this.deviceId = deviceId;
     this.fingerprint = fingerprint;
+    this.locationUnverified = locationUnverified;
 
     sessionStorage.setItem('authToken', token);
     sessionStorage.setItem('qrToken', token);
@@ -59,6 +62,7 @@ export class AuthContextService {
       sessionStorage.removeItem('tablePublicId');
     }
     sessionStorage.setItem('waiteroDeviceId', deviceId);
+    sessionStorage.setItem('waiteroLocationUnverified', locationUnverified ? 'true' : 'false');
     if (fingerprint) {
       sessionStorage.setItem('waiteroFingerprint', fingerprint);
     } else {
@@ -94,6 +98,13 @@ export class AuthContextService {
     return this.fingerprint ?? sessionStorage.getItem('waiteroFingerprint');
   }
 
+  get locationUnverifiedValue(): boolean {
+    if (this.locationUnverified !== null) {
+      return this.locationUnverified;
+    }
+    return sessionStorage.getItem('waiteroLocationUnverified') === 'true';
+  }
+
   clear() {
     this.token = null;
     this.restaurantId = null;
@@ -102,6 +113,7 @@ export class AuthContextService {
     this.qrToken = null;
     this.deviceId = null;
     this.fingerprint = null;
+    this.locationUnverified = null;
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('qrToken');
     sessionStorage.removeItem('restaurantId');
@@ -109,5 +121,6 @@ export class AuthContextService {
     sessionStorage.removeItem('tablePublicId');
     sessionStorage.removeItem('waiteroDeviceId');
     sessionStorage.removeItem('waiteroFingerprint');
+    sessionStorage.removeItem('waiteroLocationUnverified');
   }
 }

@@ -16,6 +16,8 @@ import { CustomerOrder, CustomerOrderItem } from './models/customer-order.model'
 import { PrinterService } from './core/printer/printer.service';
 import { PrintOrderItem } from './core/printer/printer.models';
 
+const LOCATION_UNVERIFIED_WARNING = 'Posizione non verificata. Controllare la presenza al tavolo';
+
 interface PrintedOrderSnapshot {
   orderId: number;
   fingerprint: string;
@@ -473,6 +475,7 @@ export class AppComponent implements OnDestroy {
       orderId: order.id,
       tableName: `Tavolo ${order.tableId}`,
       createdAt: order.createdAt,
+      warningMessage: order.locationUnverified ? LOCATION_UNVERIFIED_WARNING : undefined,
       items: this.buildPrintItems(order, lastSnapshot, note)
     };
   }
@@ -534,6 +537,7 @@ export class AppComponent implements OnDestroy {
       orderId: order.id,
       fingerprint: [
         order.id,
+        order.locationUnverified ? 'location_unverified' : 'location_verified',
         order.noteCucina?.trim() ?? '',
         items.map(item => `${item.key}:${item.quantity}`).join('|')
       ].join('::'),

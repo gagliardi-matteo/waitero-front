@@ -56,6 +56,7 @@ export interface CustomerOrder {
   totale: number;
   paidAmount: number;
   remainingAmount: number;
+  locationUnverified?: boolean | null;
   items: CustomerOrderItem[];
   payments: CustomerOrderPayment[];
 }
@@ -69,4 +70,5 @@ export interface OrderSummary {
   updatedAt: string;
   totale: number;
   itemCount: number;
+  locationUnverified?: boolean | null;
 }

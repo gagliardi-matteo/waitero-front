@@ -22,6 +22,9 @@
       <div class="row-main">
         <div class="row-title">Ordine #{{ order.id }}</div>
         <div class="row-subtitle">Tavolo {{ order.tableId }} - {{ getItemCount(order) }} articoli</div>
+        <div class="location-warning" *ngIf="order.locationUnverified">
+          Posizione non verificata. Controllare la presenza al tavolo.
+        </div>
       </div>
       <div class="row-status">{{ order.status }}</div>
       <div class="row-total">{{ order.totale | number: '1.2-2' }} &euro;</div>
@@ -32,6 +35,9 @@
       <div class="row-main">
         <div class="row-title">Ordine #{{ order.id }}</div>
         <div class="row-subtitle">Tavolo {{ order.tableId }} - {{ getItemCount(order) }} articoli</div>
+        <div class="location-warning" *ngIf="order.locationUnverified">
+          Posizione non verificata. Controllare la presenza al tavolo.
+        </div>
       </div>
       <div class="row-status">{{ order.status }}</div>
       <div class="row-total">{{ order.totale | number: '1.2-2' }} &euro;</div>

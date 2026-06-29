@@ -29,6 +29,9 @@
 
   <p class="success-message" *ngIf="reprintMessage">{{ reprintMessage }}</p>
   <p class="error-message" *ngIf="reprintError">{{ reprintError }}</p>
+  <p class="location-warning-banner" *ngIf="currentOrder.locationUnverified">
+    Posizione non verificata. Controllare la presenza al tavolo.
+  </p>
 
   <div class="summary-strip">
     <article class="summary-chip-card">
