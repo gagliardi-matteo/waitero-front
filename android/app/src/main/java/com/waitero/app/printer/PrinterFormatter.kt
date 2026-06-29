@@ -12,12 +12,14 @@ class PrinterFormatter {
     private val separator = "========================"
     private val sectionSeparator = "------------------------"
     private val timeFormatter = SimpleDateFormat("HH:mm", Locale.ITALY)
+    private val locationUnverifiedWarning = "Posizione non verificata. Controllare la presenza al tavolo"
 
     fun formatKitchenOrder(order: JSObject): FormatResult {
         val orderId = order.optLong("orderId", Long.MIN_VALUE)
         val tableName = order.optString("tableName", "").trim()
         val createdAt = order.optString("createdAt", "").trim()
         val warningMessage = order.optString("warningMessage", "").trim()
+        val hasUnverifiedLocation = order.optBoolean("locationUnverified", false)
         val items = order.optJSONArray("items")
 
         if (orderId == Long.MIN_VALUE || orderId <= 0) {
@@ -55,9 +57,15 @@ class PrinterFormatter {
             "",
         )
 
-        if (warningMessage.isNotBlank()) {
+        val resolvedWarning = when {
+            warningMessage.isNotBlank() -> warningMessage
+            hasUnverifiedLocation -> locationUnverifiedWarning
+            else -> ""
+        }
+
+        if (resolvedWarning.isNotBlank()) {
             lines.add("ATTENZIONE:")
-            lines.addAll(wrapLine(warningMessage, MAX_LINE_CHARS))
+            lines.addAll(wrapLine(resolvedWarning, MAX_LINE_CHARS))
             lines.add("")
         }
 

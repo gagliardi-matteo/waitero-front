@@ -283,6 +283,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
       tableName: `Tavolo ${order.tableId}`,
       createdAt: order.createdAt,
       warningMessage: order.locationUnverified ? LOCATION_UNVERIFIED_WARNING : undefined,
+      locationUnverified: Boolean(order.locationUnverified),
       items
     };
   }

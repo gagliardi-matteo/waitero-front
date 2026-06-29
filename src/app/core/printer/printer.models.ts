@@ -3,6 +3,7 @@ export interface PrintOrder {
   tableName: string;
   createdAt: string;
   warningMessage?: string;
+  locationUnverified?: boolean;
   items: PrintOrderItem[];
 }
 

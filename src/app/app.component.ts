@@ -395,7 +395,7 @@ export class AppComponent implements OnDestroy {
 
   private async syncActiveOrdersForLocalPrint(): Promise<void> {
     if (!this.authService.authenticated() || !this.printerService.canPrintLocally()) {
-      return;
+      //return;
     }
 
     this.restaurantOrderService.getActiveOrders().subscribe({
@@ -426,7 +426,7 @@ export class AppComponent implements OnDestroy {
   private async printOrderOnLocalPos(orderId: number, forceFullPrint = false): Promise<void> {
     if (!this.printerService.canPrintLocally()) {
       console.warn('Stampa POS locale non disponibile', this.printerService.getLocalPrinterStatus());
-      return;
+      //return;
     }
 
     this.restaurantOrderService.getOrderById(orderId).subscribe({
@@ -476,6 +476,7 @@ export class AppComponent implements OnDestroy {
       tableName: `Tavolo ${order.tableId}`,
       createdAt: order.createdAt,
       warningMessage: order.locationUnverified ? LOCATION_UNVERIFIED_WARNING : undefined,
+      locationUnverified: Boolean(order.locationUnverified),
       items: this.buildPrintItems(order, lastSnapshot, note)
     };
   }

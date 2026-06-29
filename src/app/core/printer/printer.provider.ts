@@ -112,8 +112,11 @@ function formatKitchenTicket(order: PrintOrder): string {
     '',
   ];
 
-  if (order.warningMessage?.trim()) {
-    lines.push('ATTENZIONE:', order.warningMessage.trim(), '');
+  const warningMessage = order.warningMessage?.trim()
+    || (order.locationUnverified ? 'Posizione non verificata. Controllare la presenza al tavolo' : '');
+
+  if (warningMessage) {
+    lines.push('ATTENZIONE:', warningMessage, '');
   }
 
   lines.push(sectionSeparator, '');
