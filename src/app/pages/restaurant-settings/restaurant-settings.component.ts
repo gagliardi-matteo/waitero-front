@@ -406,6 +406,7 @@ export class RestaurantSettingsComponent {
       next: profile => {
         this.accountProfile = profile;
         this.syncPasswordValidators(profile);
+        void this.authService.updateRememberedLocalEmail(profile.email);
         this.passwordForm.reset();
         this.successMessage = 'Password aggiornata.';
         this.changingPassword = false;

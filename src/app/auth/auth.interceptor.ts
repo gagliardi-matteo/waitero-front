@@ -49,7 +49,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
 
       return next(authorizedReq).pipe(
         catchError((err: HttpErrorResponse) => {
-          if (!onCustomerRoute && (err.status === 401 || err.status === 403)) {
+          if (!onCustomerRoute && (err.status === 401 || err.status === 403) && auth.shouldAutoLogoutOnAuthFailure()) {
             auth.logout();
             void router.navigate(['/login']);
           }

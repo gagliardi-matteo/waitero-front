@@ -6,7 +6,9 @@ import { Capacitor } from '@capacitor/core';
 import { Preferences } from '@capacitor/preferences';
 import { SocialLogin } from '@capgo/capacitor-social-login';
 import { firstValueFrom } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { jwtDecode } from 'jwt-decode';
+import { DeviceIdService } from '../services/device-id.service';
 import { TokenPayload } from '../models/TokenPayload.model';
 import { environment } from '../../environments/environment';
 import { BusinessType } from '../models/business-type.model';
@@ -14,6 +16,7 @@ import { BusinessType } from '../models/business-type.model';
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  deviceTrustToken?: string | null;
 }
 
 export interface BackofficeProfile {
@@ -31,10 +34,13 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private deviceIdService = inject(DeviceIdService);
 
   private readonly ACCESS_KEY = 'accessToken';
   private readonly REFRESH_KEY = 'refreshToken';
   private readonly IMPERSONATION_NAME_KEY = 'impersonatedRestaurantName';
+  private readonly LOCAL_EMAIL_KEY = 'localLoginEmail';
+  private readonly DEVICE_TRUST_KEY = 'deviceTrustToken';
   private readonly nativePlatform = Capacitor.isNativePlatform();
   private refreshPromise: Promise<string | null> | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -42,6 +48,8 @@ export class AuthService {
   private accessTokenCache: string | null = null;
   private refreshTokenCache: string | null = null;
   private impersonationNameCache: string | null = null;
+  private localLoginEmailCache: string | null = null;
+  private deviceTrustTokenCache: string | null = null;
 
   readonly authenticated = signal(false);
 
@@ -60,21 +68,32 @@ export class AuthService {
   }
 
   async loginWithLocalCredentials(email: string, password: string): Promise<void> {
-    const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/local-login`, { email, password }));
+    const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/local-login`, {
+      email,
+      password,
+      deviceId: this.deviceIdService.getOrCreate()
+    }));
+    await this.storeRememberedLocalEmail(email);
     await this.storeTokens(tokens);
     await this.navigateAfterLogin(tokens.accessToken);
   }
 
   getProfile() {
-    return this.http.get<BackofficeProfile>(`${environment.apiUrl}/auth/profile`);
+    return this.http.get<BackofficeProfile>(`${environment.apiUrl}/auth/profile`).pipe(
+      tap(profile => this.storeRememberedLocalEmail(profile.email))
+    );
   }
 
   updateProfile(nome: string) {
-    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/profile`, { nome });
+    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/profile`, { nome }).pipe(
+      tap(profile => this.storeRememberedLocalEmail(profile.email))
+    );
   }
 
   changePassword(currentPassword: string, newPassword: string) {
-    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/password`, { currentPassword, newPassword });
+    return this.http.put<BackofficeProfile>(`${environment.apiUrl}/auth/password`, { currentPassword, newPassword }).pipe(
+      tap(profile => this.storeRememberedLocalEmail(profile.email))
+    );
   }
 
   async ensureValidAccessToken(): Promise<string | null> {
@@ -87,6 +106,10 @@ export class AuthService {
 
     const refreshToken = this.getStoredRefreshToken();
     if (!this.isTokenUsable(refreshToken)) {
+      const deviceAccessToken = await this.tryDeviceTrustLogin();
+      if (deviceAccessToken) {
+        return deviceAccessToken;
+      }
       this.clearSession(false);
       return null;
     }
@@ -100,6 +123,15 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.authenticated();
+  }
+
+  async getRememberedLocalEmail(): Promise<string | null> {
+    await this.sessionBootstrapPromise;
+    return this.getStoredLocalLoginEmail();
+  }
+
+  shouldAutoLogoutOnAuthFailure(): boolean {
+    return !this.isNativeApp();
   }
 
   isMaster(): boolean {
@@ -163,6 +195,10 @@ export class AuthService {
     this.clearSession(true);
   }
 
+  async updateRememberedLocalEmail(email: string): Promise<void> {
+    await this.storeRememberedLocalEmail(email);
+  }
+
   getUserIdFromToken(): number | null {
     return this.getDecodedAccessToken()?.sub ?? null;
   }
@@ -183,12 +219,25 @@ export class AuthService {
       if (accessToken) {
         this.syncImpersonationState(accessToken);
         this.scheduleRefresh(accessToken);
+        this.syncRememberedEmailFromToken(accessToken);
       }
       return;
     }
 
     if (this.isTokenUsable(refreshToken)) {
       void this.refreshAccessToken();
+      return;
+    }
+
+    if (this.isNativeApp() && accessToken) {
+      this.authenticated.set(true);
+      this.syncImpersonationState(accessToken);
+      this.syncRememberedEmailFromToken(accessToken);
+      return;
+    }
+
+    const deviceAccessToken = await this.tryDeviceTrustLogin();
+    if (deviceAccessToken) {
       return;
     }
 
@@ -202,8 +251,13 @@ export class AuthService {
 
     const refreshToken = this.getStoredRefreshToken();
     if (!this.isTokenUsable(refreshToken)) {
-      this.clearSession(false);
-      return Promise.resolve(null);
+      return this.tryDeviceTrustLogin().then(deviceAccessToken => {
+        if (deviceAccessToken) {
+          return deviceAccessToken;
+        }
+        this.clearSession(false);
+        return null;
+      });
     }
 
     this.refreshPromise = firstValueFrom(
@@ -213,6 +267,9 @@ export class AuthService {
       return tokens.accessToken;
     }).catch(err => {
       console.error('Errore refresh access token', err);
+      if (this.isNativeApp()) {
+        return this.loginWithStoredDeviceTrustToken();
+      }
       this.clearSession(false);
       return null;
     }).finally(() => {
@@ -225,7 +282,11 @@ export class AuthService {
   private async storeTokens(tokens: AuthTokens): Promise<void> {
     this.setStoredAccessToken(tokens.accessToken);
     this.setStoredRefreshToken(tokens.refreshToken);
+    if (tokens.deviceTrustToken) {
+      this.setStoredDeviceTrustToken(tokens.deviceTrustToken);
+    }
     this.syncImpersonationState(tokens.accessToken);
+    this.syncRememberedEmailFromToken(tokens.accessToken);
     this.authenticated.set(true);
     this.scheduleRefresh(tokens.accessToken);
   }
@@ -239,6 +300,7 @@ export class AuthService {
     this.removeStoredAccessToken();
     this.removeStoredRefreshToken();
     this.removeStoredImpersonationName();
+    this.removeStoredDeviceTrustToken();
 
     this.authenticated.set(false);
 
@@ -364,15 +426,19 @@ export class AuthService {
       return;
     }
 
-    const [accessToken, refreshToken, impersonationName] = await Promise.all([
+    const [accessToken, refreshToken, impersonationName, localLoginEmail, deviceTrustToken] = await Promise.all([
       Preferences.get({ key: this.ACCESS_KEY }),
       Preferences.get({ key: this.REFRESH_KEY }),
-      Preferences.get({ key: this.IMPERSONATION_NAME_KEY })
+      Preferences.get({ key: this.IMPERSONATION_NAME_KEY }),
+      Preferences.get({ key: this.LOCAL_EMAIL_KEY }),
+      Preferences.get({ key: this.DEVICE_TRUST_KEY })
     ]);
 
     this.accessTokenCache = accessToken.value;
     this.refreshTokenCache = refreshToken.value;
     this.impersonationNameCache = impersonationName.value;
+    this.localLoginEmailCache = localLoginEmail.value;
+    this.deviceTrustTokenCache = deviceTrustToken.value;
   }
 
   private setStoredAccessToken(accessToken: string): void {
@@ -408,6 +474,88 @@ export class AuthService {
 
     if (this.isBrowser()) {
       localStorage.setItem(this.IMPERSONATION_NAME_KEY, restaurantName);
+    }
+  }
+
+  private async storeRememberedLocalEmail(email: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (this.isNativeApp()) {
+      this.localLoginEmailCache = normalizedEmail;
+      await Preferences.set({ key: this.LOCAL_EMAIL_KEY, value: normalizedEmail });
+      return;
+    }
+
+    if (this.isBrowser()) {
+      localStorage.setItem(this.LOCAL_EMAIL_KEY, normalizedEmail);
+    }
+  }
+
+  private getStoredLocalLoginEmail(): string | null {
+    if (this.isNativeApp()) {
+      return this.localLoginEmailCache;
+    }
+
+    return this.isBrowser() ? localStorage.getItem(this.LOCAL_EMAIL_KEY) : null;
+  }
+
+  private getStoredDeviceTrustToken(): string | null {
+    if (this.isNativeApp()) {
+      return this.deviceTrustTokenCache;
+    }
+
+    return null;
+  }
+
+  private async loginWithDeviceTrustToken(deviceTrustToken: string): Promise<string | null> {
+    try {
+      const tokens = await firstValueFrom(this.http.post<AuthTokens>(`${environment.apiUrl}/auth/device-login`, {
+        deviceId: this.deviceIdService.getOrCreate(),
+        deviceTrustToken
+      }));
+      await this.storeTokens(tokens);
+      return tokens.accessToken;
+    } catch (err) {
+      console.error('Errore device trust login', err);
+      return null;
+    }
+  }
+
+  private async loginWithStoredDeviceTrustToken(): Promise<string | null> {
+    const trustToken = this.getStoredDeviceTrustToken();
+    if (!trustToken) {
+      return null;
+    }
+
+    return this.loginWithDeviceTrustToken(trustToken);
+  }
+
+  private async tryDeviceTrustLogin(): Promise<string | null> {
+    if (!this.isNativeApp()) {
+      return null;
+    }
+
+    return this.loginWithStoredDeviceTrustToken();
+  }
+
+  private setStoredDeviceTrustToken(deviceTrustToken: string): void {
+    if (this.isNativeApp()) {
+      this.deviceTrustTokenCache = deviceTrustToken;
+      void Preferences.set({ key: this.DEVICE_TRUST_KEY, value: deviceTrustToken });
+      return;
+    }
+  }
+
+  private removeStoredDeviceTrustToken(): void {
+    if (this.isNativeApp()) {
+      this.deviceTrustTokenCache = null;
+      void Preferences.remove({ key: this.DEVICE_TRUST_KEY });
+    }
+  }
+
+  private syncRememberedEmailFromToken(accessToken: string): void {
+    const decoded = this.decodeToken(accessToken);
+    if (decoded?.email) {
+      void this.storeRememberedLocalEmail(decoded.email);
     }
   }
 

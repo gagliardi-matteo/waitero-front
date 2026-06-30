@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, PLATFORM_ID, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, PLATFORM_ID, ViewChild, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Capacitor } from '@capacitor/core';
@@ -323,7 +323,7 @@ const GOOGLE_SERVER_CLIENT_ID = (environment as {
     }
   `]
 })
-export class LoginComponent implements AfterViewInit {
+export class LoginComponent implements OnInit, AfterViewInit {
   @ViewChild('googleButtonHost') private googleButtonHost?: ElementRef<HTMLDivElement>;
   @ViewChild('emailInput') private emailInput?: ElementRef<HTMLInputElement>;
   @ViewChild('passwordInput') private passwordInput?: ElementRef<HTMLInputElement>;
@@ -353,6 +353,10 @@ export class LoginComponent implements AfterViewInit {
     return this.googleFlowPending && !this.authLoading
       ? 'Attendo la risposta di Google prima della verifica account'
       : 'Verifica credenziali e apertura della Sala';
+  }
+
+  ngOnInit(): void {
+    void this.prefillRememberedEmail();
   }
 
   ngAfterViewInit(): void {
@@ -608,6 +612,15 @@ export class LoginComponent implements AfterViewInit {
 
   private resolvePasswordValue(): string {
     return this.passwordInput?.nativeElement?.value ?? this.password;
+  }
+
+  private async prefillRememberedEmail(): Promise<void> {
+    const rememberedEmail = await this.auth.getRememberedLocalEmail();
+    if (!rememberedEmail) {
+      return;
+    }
+
+    this.email = rememberedEmail;
   }
 
   private loadGoogleIdentityScript(forceReload: boolean): Promise<any> {
