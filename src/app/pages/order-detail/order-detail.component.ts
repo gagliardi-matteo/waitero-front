@@ -2,11 +2,13 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CustomerOrder, CustomerOrderItem } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import { PrinterService } from '../../core/printer/printer.service';
 import { PrintOrderItem } from '../../core/printer/printer.models';
+import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
 
 const LOCATION_UNVERIFIED_WARNING = 'Posizione non verificata. Controllare la presenza al tavolo';
 
@@ -43,8 +45,9 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private ordersService = inject(RestaurantOrderService);
+  private backofficeEventService = inject(BackofficeEventService);
   private printerService = inject(PrinterService);
-  private eventSource: EventSource | null = null;
+  private ordersUpdatedSubscription: Subscription | null = null;
   private orderId = 0;
   private returnTo: 'active' | 'history' = 'active';
 
@@ -57,12 +60,12 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     }
 
     this.loadOrder();
-    this.eventSource = this.ordersService.connectToStream();
-    this.eventSource?.addEventListener('orders-updated', () => this.loadOrder(false));
+    this.ordersUpdatedSubscription = this.backofficeEventService.ordersUpdated$
+      .subscribe(event => this.handleBackofficeEvent(event));
   }
 
   ngOnDestroy(): void {
-    this.eventSource?.close();
+    this.ordersUpdatedSubscription?.unsubscribe();
   }
 
   loadOrder(markLoading = true): void {
@@ -371,6 +374,27 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
 
   private localReprintRequestKey(orderId: number): string {
     return `waiteroLocalReprint:${orderId}`;
+  }
+
+  private handleBackofficeEvent(event: BackofficeOrderEvent): void {
+    const payload = event.payload;
+    if (!payload?.type) {
+      this.loadOrder(false);
+      return;
+    }
+
+    if (!payload.orderId || payload.orderId !== this.orderId) {
+      return;
+    }
+
+    if (payload.type === 'ORDER_DELETED') {
+      this.navigateBack();
+      return;
+    }
+
+    if (payload.type === 'ORDER_UPDATED' || payload.type === 'ORDER_CREATED' || payload.type === 'ORDER_PAYMENT_UPDATED') {
+      this.loadOrder(false);
+    }
   }
 }
 

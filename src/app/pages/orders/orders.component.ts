@@ -2,9 +2,10 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { CustomerOrder } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
+import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
 
 @Component({
   selector: 'app-orders',
@@ -21,17 +22,18 @@ export class OrdersComponent implements OnInit, OnDestroy {
   selectedStatus = 'ALL';
 
   private ordersService = inject(RestaurantOrderService);
+  private backofficeEventService = inject(BackofficeEventService);
   private router = inject(Router);
-  private eventSource: EventSource | null = null;
+  private ordersUpdatedSubscription: Subscription | null = null;
 
   ngOnInit(): void {
     this.loadOrders();
-    this.eventSource = this.ordersService.connectToStream();
-    this.eventSource?.addEventListener('orders-updated', () => this.loadOrders(false));
+    this.ordersUpdatedSubscription = this.backofficeEventService.ordersUpdated$
+      .subscribe(event => this.handleBackofficeEvent(event));
   }
 
   ngOnDestroy(): void {
-    this.eventSource?.close();
+    this.ordersUpdatedSubscription?.unsubscribe();
   }
 
   get filteredActiveOrders(): CustomerOrder[] {
@@ -94,5 +96,66 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
     const matchesStatus = this.selectedStatus === 'ALL' || order.status === this.selectedStatus;
     return matchesSearch && matchesStatus;
+  }
+
+  private handleBackofficeEvent(event: BackofficeOrderEvent): void {
+    const payload = event.payload;
+    if (!payload?.type) {
+      this.loadOrders(false);
+      return;
+    }
+
+    if (payload.type === 'WAITER_CALLED' || payload.type === 'SUSPICIOUS_TABLE_ACCESS' || payload.type === 'ORDER_REPRINT_REQUESTED') {
+      return;
+    }
+
+    if (payload.type === 'ORDER_DELETED' && payload.orderId) {
+      this.removeOrder(payload.orderId);
+      return;
+    }
+
+    if (this.isOrderMutation(payload.type) && payload.orderId) {
+      this.refreshOrder(payload.orderId);
+      return;
+    }
+
+    this.loadOrders(false);
+  }
+
+  private refreshOrder(orderId: number): void {
+    this.ordersService.getOrderById(orderId).subscribe({
+      next: order => this.upsertOrder(order),
+      error: err => {
+        console.error('Errore aggiornamento ordine', err);
+        this.loadOrders(false);
+      }
+    });
+  }
+
+  private upsertOrder(order: CustomerOrder): void {
+    this.removeOrder(order.id);
+    if (this.isActiveStatus(order.status)) {
+      this.activeOrders = [order, ...this.activeOrders].sort(this.sortByUpdatedAtDesc);
+      return;
+    }
+
+    this.historyOrders = [order, ...this.historyOrders].sort(this.sortByUpdatedAtDesc);
+  }
+
+  private removeOrder(orderId: number): void {
+    this.activeOrders = this.activeOrders.filter(order => order.id !== orderId);
+    this.historyOrders = this.historyOrders.filter(order => order.id !== orderId);
+  }
+
+  private isOrderMutation(type: string): boolean {
+    return type === 'ORDER_UPDATED' || type === 'ORDER_CREATED' || type === 'ORDER_PAYMENT_UPDATED';
+  }
+
+  private isActiveStatus(status: string): boolean {
+    return status === 'APERTO' || status === 'PARZIALMENTE_PAGATO';
+  }
+
+  private sortByUpdatedAtDesc(left: CustomerOrder, right: CustomerOrder): number {
+    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
   }
 }

@@ -2,13 +2,14 @@ import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/commo
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { CustomerOrder } from '../../models/customer-order.model';
 import { RestaurantTable } from '../../models/table.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { TableService } from '../../services/table.service';
 import { WaiterCallNotificationService } from '../../services/waiter-call-notification.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
 
 interface TableDashboardCard {
   table: RestaurantTable;
@@ -47,24 +48,34 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
 
   private ordersService = inject(RestaurantOrderService);
   private tableService = inject(TableService);
+  private backofficeEventService = inject(BackofficeEventService);
   private waiterCallNotificationService = inject(WaiterCallNotificationService);
   private router = inject(Router);
-  private eventSource: EventSource | null = null;
-  private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private ordersUpdatedSubscription: Subscription | null = null;
+  private connectionStateSubscription: Subscription | null = null;
+  private fallbackRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.loadDashboard();
-    this.eventSource = this.ordersService.connectToStream();
-    this.eventSource?.addEventListener('orders-updated', () => this.loadDashboard(false));
-    this.refreshTimer = setInterval(() => this.loadDashboard(false), 10000);
+    this.ordersUpdatedSubscription = this.backofficeEventService.ordersUpdated$
+      .subscribe(event => this.handleBackofficeEvent(event));
+    this.connectionStateSubscription = this.backofficeEventService.connectionState$
+      .subscribe(state => {
+        if (state === 'closed') {
+          this.startFallbackRefresh();
+          return;
+        }
+
+        if (state === 'open') {
+          this.stopFallbackRefresh();
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    this.eventSource?.close();
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
-    }
+    this.ordersUpdatedSubscription?.unsubscribe();
+    this.connectionStateSubscription?.unsubscribe();
+    this.stopFallbackRefresh();
   }
 
   get filteredCards(): TableDashboardCard[] {
@@ -290,6 +301,145 @@ export class TablesDashboardComponent implements OnInit, OnDestroy {
       return 'FREE';
     }
     return activeOrder.status === 'PARZIALMENTE_PAGATO' ? 'PARTIAL' : 'OPEN';
+  }
+
+  private handleBackofficeEvent(event: BackofficeOrderEvent): void {
+    const payload = event.payload;
+    if (!payload?.type) {
+      this.loadDashboard(false);
+      return;
+    }
+
+    if (payload.type === 'WAITER_CALLED' && payload.restaurantId && payload.tableId) {
+      this.applyWaiterCall(payload.restaurantId, payload.tableId);
+      return;
+    }
+
+    if (payload.type === 'ORDER_REPRINT_REQUESTED' || payload.type === 'SUSPICIOUS_TABLE_ACCESS') {
+      return;
+    }
+
+    if (payload.type === 'TABLE_UPDATED') {
+      this.loadDashboard(false);
+      return;
+    }
+
+    if (payload.type === 'ORDER_DELETED' && payload.orderId) {
+      this.removeOrderFromCards(payload.orderId);
+      return;
+    }
+
+    if (this.isOrderMutation(payload.type) && payload.orderId) {
+      if (payload.status && !this.isActiveStatus(payload.status)) {
+        this.removeOrderFromCards(payload.orderId);
+        return;
+      }
+
+      this.refreshOrderCard(payload.orderId);
+      return;
+    }
+
+    this.loadDashboard(false);
+  }
+
+  private refreshOrderCard(orderId: number): void {
+    this.ordersService.getOrderById(orderId).subscribe({
+      next: order => {
+        if (this.isActiveStatus(order.status)) {
+          this.upsertOrderCard(order);
+          return;
+        }
+
+        this.removeOrderFromCards(order.id);
+      },
+      error: err => {
+        console.error('Errore aggiornamento card tavolo', err);
+        this.loadDashboard(false);
+      }
+    });
+  }
+
+  private upsertOrderCard(order: CustomerOrder): void {
+    const cardIndex = this.cards.findIndex(card => this.orderBelongsToCard(order, card));
+    if (cardIndex === -1) {
+      this.loadDashboard(false);
+      return;
+    }
+
+    const card = this.cards[cardIndex];
+    this.cards = this.cards.map((existing, index) =>
+      index === cardIndex ? this.buildCard(card.table, order) : existing
+    );
+  }
+
+  private removeOrderFromCards(orderId: number): void {
+    this.cards = this.cards.map(card => {
+      if (card.activeOrder?.id !== orderId) {
+        return card;
+      }
+
+      return this.buildCard(card.table, null);
+    });
+  }
+
+  private applyWaiterCall(restaurantId: number, tableId: number): void {
+    this.waiterCallNotificationService.markWaiterCall(restaurantId, tableId);
+    this.cards = this.cards.map(card => {
+      if (card.table.restaurantId !== restaurantId || (card.table.numero !== tableId && card.table.id !== tableId)) {
+        return card;
+      }
+
+      const table = {
+        ...card.table,
+        waiterCallPending: true,
+        waiterCalledAt: card.table.waiterCalledAt ?? new Date().toISOString()
+      };
+      return this.buildCard(table, card.activeOrder);
+    });
+  }
+
+  private buildCard(table: RestaurantTable, activeOrder: CustomerOrder | null): TableDashboardCard {
+    return {
+      table,
+      activeOrder,
+      state: this.resolveState(table, activeOrder),
+      total: activeOrder?.totale ?? 0,
+      itemCount: activeOrder?.items.reduce((sum, item) => sum + item.quantita, 0) ?? 0,
+      updatedAt: activeOrder?.updatedAt ?? table.updatedAt,
+      hasWaiterCall: table.waiterCallPending
+        || this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.numero)
+        || this.waiterCallNotificationService.hasWaiterCall(table.restaurantId, table.id)
+    };
+  }
+
+  private orderBelongsToCard(order: CustomerOrder, card: TableDashboardCard): boolean {
+    return order.tableId === card.table.numero || order.tableId === card.table.id;
+  }
+
+  private isOrderMutation(type: string): boolean {
+    return type === 'ORDER_UPDATED' || type === 'ORDER_CREATED' || type === 'ORDER_PAYMENT_UPDATED';
+  }
+
+  private isActiveStatus(status: string): boolean {
+    return status === 'APERTO' || status === 'PARZIALMENTE_PAGATO';
+  }
+
+  private startFallbackRefresh(): void {
+    if (this.fallbackRefreshTimer) {
+      return;
+    }
+
+    this.loadDashboard(false);
+    this.fallbackRefreshTimer = setInterval(() => this.loadDashboard(false), 10000);
+  }
+
+  private stopFallbackRefresh(): void {
+    if (!this.fallbackRefreshTimer) {
+      return;
+    }
+
+    clearInterval(this.fallbackRefreshTimer);
+    this.fallbackRefreshTimer = null;
   }
 }
 

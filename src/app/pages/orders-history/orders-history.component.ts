@@ -2,10 +2,11 @@ import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { OrderSummary } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
+import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
 
 @Component({
   selector: 'app-orders-history',
@@ -28,14 +29,15 @@ export class OrdersHistoryComponent implements OnInit, OnDestroy {
   readonly statusOptions = ['ALL', 'APERTO', 'PARZIALMENTE_PAGATO', 'PAGATO', 'ANNULLATO'];
 
   private ordersService = inject(RestaurantOrderService);
+  private backofficeEventService = inject(BackofficeEventService);
   private router = inject(Router);
-  private eventSource: EventSource | null = null;
+  private ordersUpdatedSubscription: Subscription | null = null;
   private searchChanges = new Subject<string>();
 
   ngOnInit(): void {
     this.loadOrders();
-    this.eventSource = this.ordersService.connectToStream();
-    this.eventSource?.addEventListener('orders-updated', () => this.loadOrders(false));
+    this.ordersUpdatedSubscription = this.backofficeEventService.ordersUpdated$
+      .subscribe(event => this.handleBackofficeEvent(event));
     this.searchChanges.pipe(
       debounceTime(250),
       distinctUntilChanged()
@@ -46,7 +48,7 @@ export class OrdersHistoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.eventSource?.close();
+    this.ordersUpdatedSubscription?.unsubscribe();
     this.searchChanges.complete();
   }
 
@@ -125,6 +127,67 @@ export class OrdersHistoryComponent implements OnInit, OnDestroy {
   trackOrder(index: number, order: OrderSummary): number {
     return order.id;
   }
+
+  private handleBackofficeEvent(event: BackofficeOrderEvent): void {
+    const payload = event.payload;
+    if (!payload?.type) {
+      this.loadOrders(false);
+      return;
+    }
+
+    if (payload.type === 'WAITER_CALLED' || payload.type === 'SUSPICIOUS_TABLE_ACCESS' || payload.type === 'ORDER_REPRINT_REQUESTED') {
+      return;
+    }
+
+    if (payload.type === 'ORDER_DELETED' && payload.orderId) {
+      if (this.hasOrder(payload.orderId)) {
+        this.loadOrders(false);
+      }
+      return;
+    }
+
+    if (!this.isOrderMutation(payload.type)) {
+      this.loadOrders(false);
+      return;
+    }
+
+    if (!payload.orderId) {
+      this.loadOrders(false);
+      return;
+    }
+
+    if (payload.status) {
+      this.handleOrderStatusEvent(payload.orderId, payload.status);
+      return;
+    }
+
+    this.refreshOrderStatus(payload.orderId);
+  }
+
+  private handleOrderStatusEvent(orderId: number, status: string): void {
+    if (this.selectedStatus === 'ALL' || this.selectedStatus === status || this.hasOrder(orderId)) {
+      this.loadOrders(false);
+    }
+  }
+
+  private refreshOrderStatus(orderId: number): void {
+    this.ordersService.getOrderById(orderId).subscribe({
+      next: order => this.handleOrderStatusEvent(order.id, order.status),
+      error: err => {
+        console.error('Errore verifica stato ordine storico', err);
+        this.loadOrders(false);
+      }
+    });
+  }
+
+  private hasOrder(orderId: number): boolean {
+    return this.orders.some(order => order.id === orderId);
+  }
+
+  private isOrderMutation(type: string): boolean {
+    return type === 'ORDER_UPDATED' || type === 'ORDER_CREATED' || type === 'ORDER_PAYMENT_UPDATED';
+  }
+
 }
 
 

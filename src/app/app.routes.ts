@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, loginGuard, masterGuard } from './auth/AuthGuard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: '', loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
   { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent), canActivate: [loginGuard] },
   { path: 'legal/:document', loadComponent: () => import('./pages/legal-document/legal-document.component').then(m => m.LegalDocumentComponent) },
   {
