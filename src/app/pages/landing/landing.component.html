@@ -71,9 +71,9 @@
         <div class="form-row"><label>Email *<input type="email" name="email" ngModel required email autocomplete="email"></label><label>Telefono<input type="tel" name="phone" ngModel autocomplete="tel"></label></div>
         <label>Città *<input name="city" ngModel required autocomplete="address-level2"></label>
         <label>Messaggio<textarea name="message" ngModel placeholder="Raccontaci brevemente del tuo locale"></textarea></label>
-        <button class="landing-button" type="submit">Richiedi una demo</button>
-        <p class="form-note">Il form non invia ancora dati: è in attesa del collegamento al canale commerciale.</p>
-        <p class="form-feedback" role="status" aria-live="polite" *ngIf="formNotice">{{ formNotice }}</p>
+        <label class="contact-honeypot" aria-hidden="true">Sito web<input name="website" ngModel tabindex="-1" autocomplete="off"></label>
+        <button class="landing-button" type="submit" [disabled]="sending">{{ sending ? 'Invio in corso…' : 'Richiedi una demo' }}</button>
+        <p class="form-feedback" [class.is-success]="formSuccess" role="status" aria-live="polite" *ngIf="formNotice">{{ formNotice }}</p>
       </form>
     </div></section>
   </main>
