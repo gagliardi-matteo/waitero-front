@@ -7,6 +7,7 @@ import { OrderSummary } from '../../models/customer-order.model';
 import { RestaurantOrderService } from '../../services/restaurant-order.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
+import { DemoContextService } from '../../services/demo-context.service';
 
 @Component({
   selector: 'app-orders-active',
@@ -25,6 +26,7 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
   private ordersService = inject(RestaurantOrderService);
   private backofficeEventService = inject(BackofficeEventService);
   private router = inject(Router);
+  private demo = inject(DemoContextService);
   private ordersUpdatedSubscription: Subscription | null = null;
 
   ngOnInit(): void {
@@ -67,7 +69,9 @@ export class OrdersActiveComponent implements OnInit, OnDestroy {
   }
 
   openOrder(order: OrderSummary): void {
-    this.router.navigate(['/orders', order.id], { queryParams: { from: 'active' } });
+    this.router.navigate([this.demo.enabled ? '/demo/ristorante/ordini' : '/orders', order.id], {
+      queryParams: this.demo.enabled ? { from: 'active', s: this.demo.token } : { from: 'active' }
+    });
   }
 
   resetFilters(): void {

@@ -1,12 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, Observable, of, ReplaySubject, throwError } from 'rxjs';
+import { catchError, map, Observable, of, ReplaySubject, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { CustomerDraft, CustomerOrder } from '../models/customer-order.model';
 import { AuthContextService } from './auth-context.service';
 import { Piatto } from '../models/piatto.model';
 import { OrderService } from './order.service';
+import { DemoContextService } from './demo-context.service';
 
 interface SubmitOrderPayload {
   token: string;
@@ -43,6 +44,7 @@ export class CustomerOrderService {
   private auth = inject(AuthContextService);
   private router = inject(Router);
   private orderState = inject(OrderService);
+  private demo = inject(DemoContextService);
   private draftMutationQueue: Promise<void> = Promise.resolve();
   private pendingOptimisticMutations: Array<{ id: number; dishId: number; delta: number; portionKey?: string | null }> = [];
   private optimisticMutationSequence = 0;
@@ -50,6 +52,11 @@ export class CustomerOrderService {
   private lastAcceptedMutationAt = 0;
 
   getCurrentOrder(token: string, restaurantId: string, tableId: string): Observable<CustomerOrder> {
+    if (this.demo.enabled) {
+      return this.http.get<CustomerOrder[]>(`${environment.apiUrl}/customer/demo/orders/active`, {
+        params: new HttpParams().set('token', this.demo.token ?? token)
+      }).pipe(map(orders => orders[0]));
+    }
     const params = this.withAccessMetadata(new HttpParams()
       .set('token', token)
       .set('restaurantId', restaurantId)
@@ -60,6 +67,7 @@ export class CustomerOrderService {
   }
 
   getCurrentDraft(token: string, restaurantId: string, tableId: string): Observable<CustomerDraft> {
+    if (this.demo.enabled) return of(this.buildLocalDraftSnapshot(restaurantId, tableId));
     const params = this.withAccessMetadata(new HttpParams()
       .set('token', token)
       .set('restaurantId', restaurantId)
@@ -70,6 +78,11 @@ export class CustomerOrderService {
   }
 
   getCurrentState(token: string, restaurantId: string, tableId: string, redirectOnUnauthorized = true): Observable<CustomerOrderState> {
+    if (this.demo.enabled) {
+      return this.http.get<CustomerOrderState>(`${environment.apiUrl}/customer/demo/orders/state`, {
+        params: new HttpParams().set('token', this.demo.token ?? token)
+      });
+    }
     const params = this.withAccessMetadata(new HttpParams()
       .set('token', token)
       .set('restaurantId', restaurantId)
@@ -80,6 +93,7 @@ export class CustomerOrderService {
   }
 
   mutateDraft(token: string, restaurantId: string, tableId: string, dishId: number, delta: number, portionKey?: string): Observable<CustomerDraft> {
+    if (this.demo.enabled) return of(this.buildLocalDraftSnapshot(restaurantId, tableId));
     return this.http.post<CustomerDraft>(`${environment.apiUrl}/customer/orders/draft/items`, {
       token,
       restaurantId,
@@ -157,6 +171,7 @@ export class CustomerOrderService {
   }
 
   getUpsellSuggestions(dishId: number, restaurantId: string, sessionId?: string): Observable<Piatto[]> {
+    if (this.demo.enabled) return of([]);
     let params = new HttpParams().set('restaurantId', restaurantId);
     if (sessionId) {
       params = params.set('sessionId', sessionId);
@@ -164,6 +179,7 @@ export class CustomerOrderService {
     return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/upsell/${dishId}`, { params });
   }
   getCartUpsellSuggestions(dishIds: number[], restaurantId: string, sessionId?: string): Observable<Piatto[]> {
+    if (this.demo.enabled) return of([]);
     if (dishIds.length === 0) {
       return of([]);
     }
@@ -184,6 +200,9 @@ export class CustomerOrderService {
       return null;
     }
 
+    if (this.demo.enabled) {
+      return new EventSource(`${environment.apiUrl}/customer/demo/stream?token=${encodeURIComponent(this.demo.token ?? token)}`);
+    }
     const params = new URLSearchParams({
       token,
       restaurantId,
@@ -200,6 +219,12 @@ export class CustomerOrderService {
   }
 
   submitOrder(payload: SubmitOrderPayload): Observable<CustomerOrder> {
+    if (this.demo.enabled) {
+      return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/demo/orders`, {
+        noteCucina: payload.noteCucina,
+        items: payload.items
+      }, { params: new HttpParams().set('token', this.demo.token ?? payload.token) });
+    }
     return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/orders`, {
       ...payload,
       deviceId: this.auth.deviceIdValue,
@@ -246,6 +271,7 @@ export class CustomerOrderService {
   }
 
   callWaiter(payload: CallWaiterPayload): Observable<{ message: string }> {
+    if (this.demo.enabled) return of({ message: 'Nella demo il personale verrebbe avvisato in tempo reale.' });
     return this.http.post<{ message: string }>(`${environment.apiUrl}/customer/orders/call-waiter`, {
       ...payload,
       deviceId: this.auth.deviceIdValue,

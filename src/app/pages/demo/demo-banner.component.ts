@@ -1,0 +1,4 @@
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+@Component({ selector:'app-demo-banner', standalone:true, imports:[RouterLink], template:`<aside class="demo-banner" aria-label="Modalità demo"><strong>Modalità demo — Osteria WaiterO</strong><a routerLink="/" fragment="contatti">Richiedi una demo per il tuo locale</a></aside>`, styles:[`.demo-banner{position:sticky;top:0;z-index:100;display:flex;justify-content:center;align-items:center;gap:24px;padding:10px 18px;background:#202329;color:#fff;font:600 13px/1.3 Inter,sans-serif}.demo-banner a{color:#f1a867}.demo-banner a:focus-visible{outline:2px solid #fff;outline-offset:3px}@media(max-width:600px){.demo-banner{position:relative;flex-direction:column;gap:4px;text-align:center}}`] })
+export class DemoBannerComponent {}

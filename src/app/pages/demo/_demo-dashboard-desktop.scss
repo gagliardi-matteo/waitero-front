@@ -1,0 +1,44 @@
+app-demo-restaurant-page {
+  .demo-dashboard {
+    padding: 0 0 70px;
+  }
+
+  .demo-dashboard-head {
+    margin-bottom: 22px;
+    padding: 42px max(24px, calc((100vw - 1440px) / 2));
+    background: #202329;
+    color: #fff;
+  }
+
+  .demo-dashboard-head h1 {
+    margin: 8px 0 0;
+    font-size: clamp(1.8rem, 4vw, 3.25rem);
+  }
+
+  .demo-dashboard-head small,
+  .demo-dashboard-head a {
+    color: #f1a867;
+  }
+
+  .demo-dashboard > app-orders-active {
+    display: block;
+    width: min(1440px, calc(100% - 48px));
+    margin: 0 auto;
+  }
+
+  .demo-guide {
+    width: min(310px, calc(100vw - 32px));
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  @media (max-width: 760px) {
+    .demo-dashboard-head {
+      padding: 28px 18px;
+    }
+
+    .demo-dashboard > app-orders-active {
+      width: 100%;
+    }
+  }
+}

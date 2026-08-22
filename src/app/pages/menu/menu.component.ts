@@ -15,6 +15,7 @@ import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
 import { MenuCatalogService } from '../../services/menu-catalog.service';
 import { TrackingService } from '../../services/tracking.service';
+import { DemoContextService } from '../../services/demo-context.service';
 import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.component';
 import { categoryOptionsFromDishes, dishCategoryCode, groupDishesByCategory, DishCategoryGroup } from '../../shared/dish-category';
 
@@ -58,6 +59,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     private router: Router,
     private menuCatalogService: MenuCatalogService,
     private trackingService: TrackingService,
+    private demoContext: DemoContextService,
     private zone: NgZone
   ) {}
 
@@ -114,7 +116,7 @@ export class MenuComponent implements OnInit, OnDestroy {
           this.redirectToBlocked(err);
           return throwError(() => err);
         })),
-      menu: this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
+      menu: this.loadMenuRequest()
     }).subscribe({
         next: ({ restaurant, tableState, menu }) => {
           if (this.isClosedOrderStatus(tableState.currentOrder?.status)) {
@@ -220,7 +222,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.loading = true;
     }
 
-    this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`)
+    this.loadMenuRequest()
       .subscribe({
         next: data => {
           this.errorMessage = '';
@@ -378,6 +380,13 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.orderService.setCatalog(this.piatti);
     this.menuCatalogService.setCatalog(this.restaurantId, this.piatti);
     this.applyFilters();
+  }
+
+  private loadMenuRequest() {
+    if (this.demoContext.enabled) {
+      return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/demo/menu?token=${encodeURIComponent(this.demoContext.token ?? '')}`);
+    }
+    return this.http.get<Piatto[]>(`${environment.apiUrl}/customer/menu/piatti/${this.restaurantId}?sessionId=${encodeURIComponent(this.trackingService.sessionId)}`);
   }
 
   private isClosedOrderStatus(status: string | null | undefined): boolean {

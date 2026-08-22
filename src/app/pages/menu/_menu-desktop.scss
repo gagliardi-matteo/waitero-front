@@ -1,0 +1,28 @@
+@media (min-width: 960px) {
+  app-menu {
+    .menu-header .header-wrapper,
+    .category-nav__inner,
+    .menu-container {
+      width: min(1440px, calc(100% - 48px));
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .category {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      padding: 0 var(--mobile-menu-margin-left);
+    }
+
+    .category-title {
+      grid-column: 1 / -1;
+      padding: 0;
+    }
+
+    .category .dish-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+    }
+  }
+}

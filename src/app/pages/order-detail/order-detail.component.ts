@@ -9,6 +9,7 @@ import { BrandLoaderComponent } from '../../shared/brand-loader/brand-loader.com
 import { PrinterService } from '../../core/printer/printer.service';
 import { PrintOrderItem } from '../../core/printer/printer.models';
 import { BackofficeEventService, BackofficeOrderEvent } from '../../services/backoffice-event.service';
+import { DemoContextService } from '../../services/demo-context.service';
 
 const LOCATION_UNVERIFIED_WARNING = 'Posizione non verificata. Controllare la presenza al tavolo';
 
@@ -47,6 +48,7 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   private ordersService = inject(RestaurantOrderService);
   private backofficeEventService = inject(BackofficeEventService);
   private printerService = inject(PrinterService);
+  private demo = inject(DemoContextService);
   private ordersUpdatedSubscription: Subscription | null = null;
   private orderId = 0;
   private returnTo: 'active' | 'history' = 'active';
@@ -184,6 +186,11 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   }
 
   reprintOrder(): void {
+    if (this.demo.enabled) {
+      this.reprintError = '';
+      this.reprintMessage = 'Funzione disabilitata nella demo. Nel tuo account WaiterO potrai configurare le stampanti del locale.';
+      return;
+    }
     if (!this.order || this.isReprinting) {
       return;
     }
@@ -257,6 +264,10 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   }
 
   private navigateBack(): void {
+    if (this.demo.enabled) {
+      this.router.navigate(['/demo/ristorante'], { queryParams: { s: this.demo.token } });
+      return;
+    }
     this.router.navigate([this.returnTo === 'history' ? '/orders-history' : '/orders']);
   }
 

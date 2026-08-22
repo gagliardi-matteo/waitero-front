@@ -1,0 +1,10 @@
+<main class="demo-hub">
+  <header><a routerLink="/" class="demo-brand">WaiterO</a><span>Demo interattiva</span></header>
+  <section class="demo-intro"><p class="eyebrow">Prova il prodotto reale</p><h1>Prova WaiterO</h1><p>Scopri WaiterO da entrambi i lati del tavolo.</p></section>
+  <div *ngIf="loading" class="demo-state">Prepariamo Osteria WaiterO…</div>
+  <div *ngIf="error" class="demo-state"><p>{{error}}</p><button (click)="restart()">Riprova</button></div>
+  <section *ngIf="session" class="demo-grid">
+    <article class="demo-card demo-card--customer"><div><span class="card-number">01</span><h2>Demo ordine cliente</h2><p>Consulta il menu reale, aggiungi i prodotti al carrello e invia un ordine.</p></div><div class="qr-area" *ngIf="qr"><img [src]="qr" alt="QR per aprire la demo cliente sullo smartphone"><strong>Scansiona il QR con il tuo smartphone</strong><small>L’ordine apparirà nella dashboard associata a questa sessione.</small></div><a class="demo-button mobile-primary" [routerLink]="['/demo/cliente']" [queryParams]="{s:session.token}">Inizia la demo cliente</a><a class="browser-link" [routerLink]="['/demo/cliente']" [queryParams]="{s:session.token}">Apri comunque nel browser</a></article>
+    <article class="demo-card demo-card--restaurant"><div><span class="card-number">02</span><h2>Demo ristorante</h2><p>Guarda WaiterO dal punto di vista del locale e osserva in tempo reale ordini e servizio.</p></div><div class="dashboard-preview"><span>Osteria WaiterO</span><strong>Dashboard operativa</strong><i></i><i></i><i></i></div><a class="demo-button" [routerLink]="['/demo/ristorante']" [queryParams]="{s:session.token}">Apri la dashboard demo</a></article>
+  </section>
+</main>

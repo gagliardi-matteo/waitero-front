@@ -130,7 +130,11 @@ export class AppComponent implements OnDestroy {
 
   isCustomerMenuRoute(): boolean {
     const url = this.router.url.toLowerCase();
-    return url === '/menu' || url.startsWith('/menu/');
+    return url === '/menu'
+      || url.startsWith('/menu/')
+      || url === '/demo'
+      || url.startsWith('/demo?')
+      || url.startsWith('/demo/');
   }
 
   showImpersonationBanner(): boolean {

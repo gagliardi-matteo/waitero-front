@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { AuthContextService } from './auth-context.service';
+import { DemoContextService } from './demo-context.service';
 
 export type TrackingEventType =
   | 'view_dish'
@@ -24,9 +25,10 @@ interface TrackEventOptions {
 export class TrackingService {
   private http = inject(HttpClient);
   private auth = inject(AuthContextService);
+  private demo = inject(DemoContextService);
 
   trackEvent(eventType: TrackingEventType, options: TrackEventOptions = {}): void {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || this.demo.enabled) {
       return;
     }
 

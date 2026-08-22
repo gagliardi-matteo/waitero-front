@@ -3,6 +3,10 @@ import { authGuard, loginGuard, masterGuard } from './auth/AuthGuard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
+  { path: 'demo', loadComponent: () => import('./pages/demo/demo-hub.component').then(m => m.DemoHubComponent) },
+  { path: 'demo/cliente', loadComponent: () => import('./pages/demo/demo-client-page.component').then(m => m.DemoClientPageComponent) },
+  { path: 'demo/ristorante', loadComponent: () => import('./pages/demo/demo-restaurant-page.component').then(m => m.DemoRestaurantPageComponent) },
+  { path: 'demo/ristorante/ordini/:id', loadComponent: () => import('./pages/demo/demo-order-detail-page.component').then(m => m.DemoOrderDetailPageComponent) },
   { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent), canActivate: [loginGuard] },
   { path: 'legal/:document', loadComponent: () => import('./pages/legal-document/legal-document.component').then(m => m.LegalDocumentComponent) },
   {
