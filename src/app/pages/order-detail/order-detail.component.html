@@ -29,6 +29,8 @@
 
   <p class="success-message" *ngIf="reprintMessage">{{ reprintMessage }}</p>
   <p class="error-message" *ngIf="reprintError">{{ reprintError }}</p>
+  <p class="success-message" *ngIf="paymentMessage">{{ paymentMessage }}</p>
+  <p class="error-message" *ngIf="paymentError">{{ paymentError }}</p>
   <p class="location-warning-banner" *ngIf="currentOrder.locationUnverified">
     Posizione non verificata. Controllare la presenza al tavolo.
   </p>
@@ -102,7 +104,7 @@
         <label for="participantName">Partecipante opzionale</label>
         <input id="participantName" type="text" [(ngModel)]="participantName" placeholder="Es. Marco" />
 
-        <button class="pay-button" [disabled]="isPaid || isPaying || currentOrder.remainingAmount <= 0" (click)="payFull()">
+        <button type="button" class="pay-button" [disabled]="isPaid || isPaying || currentOrder.remainingAmount <= 0" (click)="payFull()">
           {{ isPaid ? 'Ordine saldato' : (isPaying ? 'Registrazione...' : 'Segna residuo come saldato') }}
         </button>
 
@@ -130,7 +132,7 @@
           <label for="partialAmount">Quota libera da inserire su POS</label>
           <input id="partialAmount" type="number" min="0.01" step="0.01" [(ngModel)]="partialAmount" />
           <div class="split-actions">
-            <button class="secondary-button" [disabled]="isPaying || !partialAmount || partialAmount <= 0" (click)="payPartial('PARTIAL')">
+            <button type="button" class="secondary-button" [disabled]="isPaying || !partialAmount || partialAmount <= 0" (click)="payPartial('PARTIAL')">
               Registra quota libera come saldata
             </button>
           </div>
@@ -175,7 +177,7 @@
             <span>Totale da inserire su POS</span>
             <strong>{{ selectedSplitTotal | number: '1.2-2' }} &euro;</strong>
           </div>
-          <button class="secondary-button" [disabled]="isPaying || !hasSplitSelection" (click)="paySplitByItems()">
+          <button type="button" class="secondary-button" [disabled]="isPaying || !hasSplitSelection" (click)="paySplitByItems()">
             Registra selezione split come saldata
           </button>
         </div>

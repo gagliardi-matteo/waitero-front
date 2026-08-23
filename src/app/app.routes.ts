@@ -5,6 +5,7 @@ export const routes: Routes = [
   { path: '', loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent), pathMatch: 'full' },
   { path: 'demo', loadComponent: () => import('./pages/demo/demo-hub.component').then(m => m.DemoHubComponent) },
   { path: 'demo/cliente', loadComponent: () => import('./pages/demo/demo-client-page.component').then(m => m.DemoClientPageComponent) },
+  { path: 'demo/cliente/piatto/:dishId', loadComponent: () => import('./pages/demo/demo-dish-detail-page.component').then(m => m.DemoDishDetailPageComponent) },
   { path: 'demo/ristorante', loadComponent: () => import('./pages/demo/demo-restaurant-page.component').then(m => m.DemoRestaurantPageComponent) },
   { path: 'demo/ristorante/ordini/:id', loadComponent: () => import('./pages/demo/demo-order-detail-page.component').then(m => m.DemoOrderDetailPageComponent) },
   { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent), canActivate: [loginGuard] },

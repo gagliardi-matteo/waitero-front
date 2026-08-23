@@ -9,6 +9,7 @@ import { OrderService } from '../../services/order.service';
 import { CustomerOrderService } from '../../services/customer-order.service';
 import { splitStoredAllergens } from '../../shared/allergens';
 import { TrackingService } from '../../services/tracking.service';
+import { DemoContextService } from '../../services/demo-context.service';
 
 @Component({
   selector: 'app-dettaglio-piatto',
@@ -33,7 +34,8 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
     private router: Router,
     private orderService: OrderService,
     private customerOrderService: CustomerOrderService,
-    private trackingService: TrackingService
+    private trackingService: TrackingService,
+    private demoContext: DemoContextService
   ) {}
 
   ngOnInit(): void {
@@ -193,10 +195,18 @@ export class DettaglioPiattoComponent implements OnInit, OnDestroy {
   }
 
   addToCart() {
-    this.router.navigate(['/menu']);
+    this.navigateToMenu();
   }
 
   goBack() {
+    this.navigateToMenu();
+  }
+
+  private navigateToMenu(): void {
+    if (this.demoContext.enabled) {
+      this.router.navigate(['/demo/cliente'], { queryParams: { s: this.demoContext.token } });
+      return;
+    }
     this.router.navigate(['/menu']);
   }
 

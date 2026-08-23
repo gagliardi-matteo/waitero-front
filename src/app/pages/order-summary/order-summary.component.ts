@@ -8,6 +8,7 @@ import { CustomerOrderService } from '../../services/customer-order.service';
 import { CustomerOrderItem } from '../../models/customer-order.model';
 import { TrackingService } from '../../services/tracking.service';
 import { Router } from '@angular/router';
+import { DemoContextService } from '../../services/demo-context.service';
 
 @Component({
   selector: 'app-order-summary',
@@ -32,6 +33,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   private customerOrderService = inject(CustomerOrderService);
   private trackingService = inject(TrackingService);
   private router = inject(Router);
+  private demoContext = inject(DemoContextService);
   private lastCartSignature = '';
   private lastDraftQuantity = 0;
   private lastUpsellRequestSignature = '';
@@ -213,6 +215,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
           error: err => {
             console.error('Errore verifica ordine dopo conferma', err);
             this.isSubmitting = false;
+            if (this.demoContext.enabled) {
+              this.submitErrorMessage = err?.error?.message || err?.error?.detail || 'Ordine non verificato. Riprova tra pochi secondi.';
+              return;
+            }
             this.redirectToBlocked(err, 'Ordine non verificato. Rivolgiti al personale del locale.');
           }
         });
@@ -220,6 +226,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
       error: err => {
         console.error('Errore conferma ordine', err);
         this.isSubmitting = false;
+        if (this.demoContext.enabled) {
+          this.submitErrorMessage = err?.error?.message || err?.error?.detail || 'Invio non riuscito. Riprova tra pochi secondi.';
+          return;
+        }
         this.redirectToBlocked(err);
       }
     });
@@ -278,6 +288,10 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
   aggiungiUpsell(piatto: Piatto, event: Event): void {
     event.stopPropagation();
     if ((piatto.porzioni?.length ?? 0) > 0) {
+      if (this.demoContext.enabled) {
+        void this.router.navigate(['/demo/cliente/piatto', piatto.id], { queryParams: { s: this.demoContext.token } });
+        return;
+      }
       void this.router.navigate(['/menu/piatto', piatto.id]);
       return;
     }

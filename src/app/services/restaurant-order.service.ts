@@ -84,7 +84,14 @@ export class RestaurantOrderService {
   }
 
   payOrder(orderId: number, paymentMode: string, payload?: { amount?: number; participantName?: string; allocations?: PaymentAllocationPayload[] }): Observable<CustomerOrder> {
-    if (this.demo.enabled) return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/demo/orders/${orderId}/complete`, {}, { params: this.demoParams() });
+    if (this.demo.enabled) {
+      return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/demo/orders/${orderId}/pay`, {
+        paymentMode,
+        amount: payload?.amount,
+        participantName: payload?.participantName,
+        allocations: payload?.allocations
+      }, { params: this.demoParams() });
+    }
     return this.http.post<CustomerOrder>(`${environment.apiUrl}/orders/${orderId}/pay`, {
       paymentMode,
       amount: payload?.amount,

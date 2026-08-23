@@ -590,6 +590,10 @@ export class MenuComponent implements OnInit, OnDestroy {
         category: piatto.categoriaCode ?? piatto.categoria ?? null
       }
     });
+    if (this.demoContext.enabled) {
+      this.router.navigate(['/demo/cliente/piatto', piatto.id], { queryParams: { s: this.demoContext.token } });
+      return;
+    }
     this.router.navigate(['/menu/piatto', piatto.id]);
   }
 

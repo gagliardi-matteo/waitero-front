@@ -38,6 +38,8 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
   isReprinting = false;
   reprintMessage = '';
   reprintError = '';
+  paymentMessage = '';
+  paymentError = '';
   partialAmount: number | null = null;
   splitPeopleCount: number | null = null;
   participantName = '';
@@ -170,6 +172,8 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
     }
 
     this.isPaying = true;
+    this.paymentMessage = '';
+    this.paymentError = '';
     this.ordersService.payOrder(this.order.id, mode, payload).subscribe({
       next: order => {
         this.order = order;
@@ -177,10 +181,14 @@ export class OrderDetailComponent implements OnInit, OnDestroy {
         this.participantName = '';
         this.syncSelectionWithOrder(order);
         this.isPaying = false;
+        this.paymentMessage = order.status === 'PAGATO'
+          ? 'Ordine registrato come saldato.'
+          : `Pagamento registrato. Residuo: ${Number(order.remainingAmount).toFixed(2)} €.`;
       },
       error: err => {
         console.error('Errore pagamento ordine', err);
         this.isPaying = false;
+        this.paymentError = err?.error?.message || err?.error?.detail || 'Pagamento non registrato. Riprova.';
       }
     });
   }
