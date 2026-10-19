@@ -5,10 +5,19 @@ import { environment } from '../../environments/environment';
 import { DemoContextService } from './demo-context.service';
 
 export interface DemoSession { token: string; restaurantId: number; tableId: number; tablePublicId: string; restaurantName: string; expiresAt: string; }
+export interface DemoWaiterCall { pending: boolean; calledAt: string | null; }
 
 @Injectable({ providedIn: 'root' })
 export class DemoSessionService {
   private http = inject(HttpClient); private context = inject(DemoContextService);
+  waiterCall(): Observable<DemoWaiterCall> {
+    return this.http.get<DemoWaiterCall>(`${environment.apiUrl}/customer/demo/waiter-call`,
+      { params: new HttpParams().set('token', this.context.token ?? '') });
+  }
+  clearWaiterCall(): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/customer/demo/clear-waiter-call`, {},
+      { params: new HttpParams().set('token', this.context.token ?? '') });
+  }
   create(): Observable<DemoSession> { return this.http.post<DemoSession>(`${environment.apiUrl}/customer/demo/sessions`, {}).pipe(tap(s => this.context.activate(s.token))); }
   current(token?: string | null): Observable<DemoSession> {
     const sessionToken = token || this.context.token;

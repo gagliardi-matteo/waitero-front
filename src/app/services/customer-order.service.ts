@@ -310,7 +310,9 @@ export class CustomerOrderService {
   }
 
   callWaiter(payload: CallWaiterPayload): Observable<{ message: string }> {
-    if (this.demo.enabled) return of({ message: 'Nella demo il personale verrebbe avvisato in tempo reale.' });
+    if (this.demo.enabled) return this.http.post<{ message: string }>(
+      `${environment.apiUrl}/customer/demo/call-waiter`, {},
+      { params: new HttpParams().set('token', this.demo.token ?? '') });
     return this.http.post<{ message: string }>(`${environment.apiUrl}/customer/orders/call-waiter`, {
       ...payload,
       deviceId: this.auth.deviceIdValue,

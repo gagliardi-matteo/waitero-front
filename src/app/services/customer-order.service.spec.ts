@@ -63,6 +63,15 @@ describe('CustomerOrderService submit idempotency', () => {
     request.flush({});
   });
 
+  it('sends demo waiter calls to the session API instead of simulating success', () => {
+    demo.activate('demo-session');
+    service.callWaiter({ token: 'qr', restaurantId: '11', tableId: '7' }).subscribe();
+    const request = http.expectOne(req => req.url.endsWith('/customer/demo/call-waiter'));
+    expect(request.request.method).toBe('POST');
+    expect(request.request.params.get('token')).toBe('demo-session');
+    request.flush({ message: 'OK' });
+  });
+
   it('also sends the persistent request id to the demo API', () => {
     demo.activate('demo-token');
     const requestId = service.getOrCreateSubmitRequestId(payload);
