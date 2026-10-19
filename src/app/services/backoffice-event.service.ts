@@ -28,6 +28,7 @@ export class BackofficeEventService {
   private eventSource: EventSource | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectEnabled = false;
+  private resyncRequired = false;
 
   readonly ordersUpdated$: Observable<BackofficeOrderEvent> = this.ordersUpdatedSubject.asObservable();
   readonly connectionLost$: Observable<void> = this.connectionLostSubject.asObservable();
@@ -45,6 +46,7 @@ export class BackofficeEventService {
 
   stop(): void {
     this.reconnectEnabled = false;
+    this.resyncRequired = false;
     this.closeStream();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -71,11 +73,17 @@ export class BackofficeEventService {
     }
 
     eventSource.addEventListener('open', () => {
+      if (this.eventSource !== eventSource) return;
       this.connectionStateSubject.next('open');
       this.connectionRestoredSubject.next();
+      if (this.resyncRequired) {
+        this.resyncRequired = false;
+        this.ordersUpdatedSubject.next({ rawEvent: new Event('backoffice-resync'), payload: null });
+      }
     });
 
     eventSource.addEventListener('orders-updated', event => {
+      if (this.eventSource !== eventSource) return;
       this.ordersUpdatedSubject.next({
         rawEvent: event,
         payload: this.parseOrderEvent(event)
@@ -83,6 +91,8 @@ export class BackofficeEventService {
     });
 
     eventSource.addEventListener('error', () => {
+      if (this.eventSource !== eventSource) return;
+      this.resyncRequired = true;
       this.closeStream();
       this.connectionStateSubject.next('closed');
       this.connectionLostSubject.next();

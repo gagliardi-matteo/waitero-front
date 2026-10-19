@@ -13,6 +13,7 @@ interface SubmitOrderPayload {
   token: string;
   restaurantId: string;
   tableId: string;
+  requestId?: string;
   noteCucina?: string;
   sessionId?: string;
   locationUnverified?: boolean;
@@ -39,6 +40,7 @@ export interface CustomerOrderState {
 @Injectable({ providedIn: 'root' })
 export class CustomerOrderService {
   private static readonly STALE_DRAFT_SNAPSHOT_GUARD_MS = 8000;
+  private static readonly SUBMIT_INTENT_PREFIX = 'waiteroSubmitIntent:';
 
   private http = inject(HttpClient);
   private auth = inject(AuthContextService);
@@ -218,9 +220,46 @@ export class CustomerOrderService {
     return new EventSource(`${environment.apiUrl}/customer/orders/stream?${params.toString()}`);
   }
 
+  getOrCreateSubmitRequestId(payload: SubmitOrderPayload): string {
+    const storageKey = this.submitIntentStorageKey(payload);
+    const signature = this.submitIntentSignature(payload);
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+      if (stored?.signature === signature && typeof stored?.requestId === 'string') return stored.requestId;
+    } catch {
+      localStorage.removeItem(storageKey);
+    }
+    const requestId = crypto.randomUUID();
+    localStorage.setItem(storageKey, JSON.stringify({ signature, requestId }));
+    return requestId;
+  }
+
+  completeSubmitIntent(payload: SubmitOrderPayload, requestId: string): void {
+    const storageKey = this.submitIntentStorageKey(payload);
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+      if (stored?.requestId === requestId) localStorage.removeItem(storageKey);
+    } catch {
+      localStorage.removeItem(storageKey);
+    }
+  }
+
+  private submitIntentStorageKey(payload: SubmitOrderPayload): string {
+    return `${CustomerOrderService.SUBMIT_INTENT_PREFIX}${payload.restaurantId}:${payload.tableId}`;
+  }
+
+  private submitIntentSignature(payload: SubmitOrderPayload): string {
+    return JSON.stringify({
+      noteCucina: payload.noteCucina?.trim() ?? '',
+      sessionId: payload.sessionId ?? '',
+      items: payload.items
+    });
+  }
+
   submitOrder(payload: SubmitOrderPayload): Observable<CustomerOrder> {
     if (this.demo.enabled) {
       return this.http.post<CustomerOrder>(`${environment.apiUrl}/customer/demo/orders`, {
+        requestId: payload.requestId,
         noteCucina: payload.noteCucina,
         items: payload.items
       }, { params: new HttpParams().set('token', this.demo.token ?? payload.token) });

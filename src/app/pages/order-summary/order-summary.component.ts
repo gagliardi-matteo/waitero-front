@@ -187,14 +187,16 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
     this.isSubmitting = true;
     this.submitConfirmationMessage = '';
     this.submitErrorMessage = '';
-    this.customerOrderService.submitOrder({
+    const submitPayload = {
       token,
       restaurantId,
       tableId,
       noteCucina: this.normalizedKitchenNote,
       sessionId: this.trackingService.sessionId,
       items: draftPayload
-    }).subscribe({
+    };
+    const requestId = this.customerOrderService.getOrCreateSubmitRequestId(submitPayload);
+    this.customerOrderService.submitOrder({ ...submitPayload, requestId }).subscribe({
       next: order => {
         this.customerOrderService.getCurrentState(token, restaurantId, tableId, false).subscribe({
           next: state => {
@@ -202,6 +204,7 @@ export class OrderSummaryComponent implements OnInit, DoCheck, OnDestroy {
             if (confirmedOrder && confirmedOrder.id === order.id && confirmedOrder.items.length > 0) {
               this.orderState.setConfirmedOrder(confirmedOrder);
               this.orderState.clearDraft();
+              this.customerOrderService.completeSubmitIntent(submitPayload, requestId);
               this.noteCucina = '';
               this.isSubmitting = false;
               this.showSubmitConfirmation();

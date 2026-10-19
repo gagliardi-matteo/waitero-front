@@ -19,11 +19,15 @@
     "build:mobile:prod": "cross-env WAITERO_MOBILE_CHANNEL=prod node scripts/validate-mobile-production-url.mjs && npm run _build:mobile:prod",
     "_build:mobile:prod": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-prod-environment.mjs && node scripts/patch-capgo-social-login-android.mjs && ng build --configuration mobile-prod && npx cap sync",
     "build:mobile:dev": "cross-env WAITERO_MOBILE_CHANNEL=dev WAITERO_MOBILE_LAN=true npm run _build:mobile:dev",
-    "_build:mobile:dev": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-lan-environment.mjs && node scripts/patch-capgo-social-login-android.mjs && ng build --configuration mobile-dev && npx cap sync"
+    "_build:mobile:dev": "node scripts/prepare-mobile-native-config.mjs && node scripts/prepare-mobile-brand-assets.mjs && npm run assets:mobile && node scripts/prepare-mobile-lan-environment.mjs && node scripts/patch-capgo-social-login-android.mjs && ng build --configuration mobile-dev && npx cap sync",
+    "e2e": "playwright test"
   },
   "private": true,
+  "overrides": {
+    "piscina": "4.9.4"
+  },
   "dependencies": {
-    "@abacritt/angularx-social-login": "^2.4.0",
+    "@abacritt/angularx-social-login": "2.4.0",
     "@angular/animations": "^19.2.14",
     "@angular/common": "^19.2.14",
     "@angular/compiler": "^19.2.14",
@@ -62,6 +66,7 @@
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.1",
     "@capacitor/ios": "^7.6.1",
+    "@playwright/test": "^1.63.0",
     "@types/express": "^4.17.17",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^18.19.130",

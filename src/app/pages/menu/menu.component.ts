@@ -258,6 +258,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     }
 
   connectTableStream() {
+    this.eventSource?.close();
+    this.eventSource = null;
     this.eventSource = this.customerOrderService.connectToTableStream(this.token, this.restaurantId, this.tableId);
     this.eventSource?.addEventListener('customer-order-updated', () => this.loadCurrentState());
   }

@@ -1,18 +1,22 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AggiungiPiattoComponent } from './aggiungi-piatto.component';
+import { AddDishComponent } from './aggiungi-piatto.component';
 
-describe('AggiungiPiattoComponent', () => {
-  let component: AggiungiPiattoComponent;
-  let fixture: ComponentFixture<AggiungiPiattoComponent>;
+describe('AddDishComponent', () => {
+  let component: AddDishComponent;
+  let fixture: ComponentFixture<AddDishComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AggiungiPiattoComponent]
+      imports: [AddDishComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(AggiungiPiattoComponent);
+    fixture = TestBed.createComponent(AddDishComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
