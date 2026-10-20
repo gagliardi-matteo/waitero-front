@@ -1,5 +1,5 @@
 <main class="demo-hub">
-  <header><a routerLink="/" class="demo-brand">WaiterO</a><span>Demo interattiva</span></header>
+  <header><a routerLink="/" class="demo-brand">WaiterO</a><span>Demo interattiva</span><a routerLink="/" class="demo-back" aria-label="Indietro alla landing page">← Indietro</a></header>
   <section class="demo-intro"><p class="eyebrow">Prova il prodotto reale</p><h1>Prova WaiterO</h1><p>Scopri WaiterO da entrambi i lati del tavolo.</p></section>
   <div *ngIf="loading" class="demo-state">Prepariamo Osteria WaiterO…</div>
   <div *ngIf="error" class="demo-state"><p>{{error}}</p><button (click)="restart()">Riprova</button></div>

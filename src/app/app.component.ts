@@ -106,7 +106,9 @@ export class AppComponent implements OnDestroy {
     this.routeEventsSubscription = this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {
-        this.scrollToPageTop();
+        if (!this.router.parseUrl(this.router.url).fragment) {
+          this.scrollToPageTop();
+        }
         if (this.authService.authenticated()) {
           this.checkBackofficeLegalAcceptance();
         }

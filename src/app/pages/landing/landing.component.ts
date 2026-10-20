@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Meta, Title } from '@angular/platform-browser';
@@ -13,6 +13,15 @@ export class LandingComponent implements OnInit {
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
   private readonly http = inject(HttpClient);
+  private readonly document = inject(DOCUMENT);
+  goToSection(event: Event, sectionId: string): void {
+    event.preventDefault();
+    const section = this.document.getElementById(sectionId);
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const view = this.document.defaultView;
+    view?.history.replaceState(view.history.state, '', '#' + sectionId);
+  }
   formNotice = '';
   formSuccess = false;
   sending = false;
