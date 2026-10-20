@@ -13,6 +13,7 @@ const PUBLIC_API_PATTERNS = [
   '/api/legal/config',
   '/api/legal/customer/',
   '/api/customer/',
+  '/api/contact/demo',
   '/api/table/access',
   '/api/image/'
 ];

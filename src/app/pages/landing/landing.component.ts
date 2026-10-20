@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Meta, Title } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -46,9 +46,15 @@ export class LandingComponent implements OnInit {
         this.formNotice = 'Richiesta inviata. Ti ricontatteremo il prima possibile.';
         form.resetForm();
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.formSuccess = false;
-        this.formNotice = 'Non è stato possibile inviare la richiesta. Riprova tra poco o scrivi a info@cdevia.com.';
+        if (error.status === 400) {
+          this.formNotice = 'Controlla i dati inseriti e la lunghezza del messaggio, poi riprova.';
+        } else if (error.status === 429) {
+          this.formNotice = 'Hai raggiunto il limite di richieste. Riprova più tardi o scrivi a info@waiter-o.com.';
+        } else {
+          this.formNotice = 'Non è stato possibile inviare la richiesta. I dati sono ancora nel modulo: riprova oppure scrivi a info@waiter-o.com.';
+        }
       }
     });
   }
